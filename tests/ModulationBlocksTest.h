@@ -7,6 +7,12 @@
 #include "../src/dsp/DSPUtils.h"
 #include "TestHelpers.h"
 #include <cmath>
+#include <limits>
+
+#if NK_ALLOCATION_PROBE
+extern "C" void nkBeginAllocationProbe();
+extern "C" unsigned nkEndAllocationProbe();
+#endif
 
 class ModulationBlocksTest : public juce::UnitTest
 {
@@ -471,6 +477,55 @@ public:
             expectWithinAbsoluteError (buf.getSample (0, 1450), 0.0f, 1.0e-3f);
         }
 
+        beginTest ("more than 64 simultaneous control generators render");
+        {
+            juce::String script;
+            for (int i = 1; i <= 80; ++i)
+                script += "stepseq" + juce::String (i)
+                    + ": steps = 1; rate = 100; values = 0.5\n";
+            script += "stage1: y = x * stepseq80\n";
+            dsl::SignalChain chain;
+            juce::String error;
+            expect (chain.loadScript (script, error), error);
+            chain.prepare ({ 48000.0, 256, 1 });
+            juce::AudioBuffer<float> audio (1, 256);
+            for (int sample = 0; sample < 256; ++sample)
+                audio.setSample (0, sample, 1.f);
+            chain.processBlock (audio);
+            expectWithinAbsoluteError (audio.getSample (0, 200), 0.5f, 1.0e-3f);
+           #if NK_ALLOCATION_PROBE
+            nkBeginAllocationProbe();
+            for (int iteration = 0; iteration < 16; ++iteration)
+            {
+                for (int sample = 0; sample < 256; ++sample)
+                    audio.setSample (0, sample, 1.f);
+                chain.processBlock (audio);
+            }
+            const auto allocations = nkEndAllocationProbe();
+            expectEquals ((int) allocations, 0,
+                          "80 generators must not allocate during processBlock");
+           #endif
+        }
+
+        beginTest ("long pure modulation dependency chain has no 64-node cutoff");
+        {
+            juce::String script = "stepseq1: steps = 1; values = 0.5\n";
+            for (int i = 2; i <= 70; ++i)
+                script += "modmath" + juce::String (i)
+                    + ": ina = " + (i == 2 ? juce::String ("stepseq1")
+                                        : juce::String ("modmath") + juce::String (i - 1))
+                    + "; mode = add; amount = 1; mix = 1\n";
+            script += "stage1: y = modmath70\n";
+            dsl::SignalChain chain;
+            juce::String error;
+            expect (chain.loadScript (script, error), error);
+            chain.prepare ({ 48000.0, 256, 1 });
+            juce::AudioBuffer<float> audio (1, 256);
+            audio.clear();
+            chain.processBlock (audio);
+            expectWithinAbsoluteError (audio.getSample (0, 200), 0.5f, 1.0e-3f);
+        }
+
         beginTest ("stepseq supports 64 steps and wraps");
         {
             dsl::SignalChain chain;
@@ -566,6 +621,69 @@ public:
                 buf.setSample (0, i, 1.0f);
             chain.processBlock (buf);
             expectWithinAbsoluteError (buf.getSample (0, 255), 0.0f, 1.0e-3f);
+        }
+
+        beginTest ("host-sync swing respects beat boundaries and negative PPQ");
+        {
+            for (double ppq : { 0.799, -0.201 })
+            {
+                dsl::SignalChain chain;
+                juce::String err;
+                expect (chain.loadScript (
+                    "stepseq1: steps = 2; sync = 1/8; swing = 0.6; "
+                    "gate = 1; mix = 1; values = 1, 0\n"
+                    "stage1: y = x * stepseq1\n", err), err);
+                chain.prepare ({ 48000.0, 128, 1 });
+                chain.setTempo (120.0, ppq, true);
+                juce::AudioBuffer<float> audio (1, 128);
+                for (int i = 0; i < 128; ++i)
+                    audio.setSample (0, i, 1.0f);
+                chain.processBlock (audio);
+                expectWithinAbsoluteError (audio.getSample (0, 10), 1.f, 1.0e-4f);
+                expectWithinAbsoluteError (audio.getSample (0, 64), 0.f, 1.0e-4f);
+            }
+        }
+
+        beginTest ("stepseq host sync does not rewind across buffer splits");
+        {
+            auto setup = [this] (dsl::SignalChain& chain)
+            {
+                juce::String err;
+                expect (chain.loadScript (
+                    "stepseq1: steps = 8; sync = 1/64; values = 1, 0.75, 0.5, 0.25, 0, -0.25, -0.5, -0.75\n"
+                    "stage1: y = x * stepseq1\n", err), err);
+                chain.prepare ({ 1000.0, 64, 1 });
+                chain.setTempo (120.0, 0.0, true);
+            };
+            auto fill = [] (juce::AudioBuffer<float>& b)
+            {
+                for (int i = 0; i < b.getNumSamples(); ++i)
+                    b.setSample (0, i, 1.0f);
+            };
+
+            dsl::SignalChain wholeChain;
+            setup (wholeChain);
+            juce::AudioBuffer<float> whole (1, 64);
+            fill (whole);
+            wholeChain.processBlock (whole);
+
+            dsl::SignalChain splitChain;
+            setup (splitChain);
+            juce::AudioBuffer<float> split (1, 64);
+            fill (split);
+            {
+                juce::AudioBuffer<float> head (split.getArrayOfWritePointers(), 1, 0, 16);
+                splitChain.processBlock (head);
+            }
+            {
+                juce::AudioBuffer<float> tail (split.getArrayOfWritePointers(), 1, 16, 48);
+                splitChain.processBlock (tail);
+            }
+
+            float maxDiff = 0.f;
+            for (int i = 0; i < 64; ++i)
+                maxDiff = juce::jmax (maxDiff, std::abs (whole.getSample (0, i) - split.getSample (0, i)));
+            expect (maxDiff < 1.0e-5f, "split rewind diff=" + juce::String (maxDiff, 6));
         }
 
         beginTest ("legacy step0..step3 args still drive the sequencer");
@@ -861,6 +979,24 @@ public:
             expectWithinAbsoluteError (render (1, 2000), render (4, 500), 1.0e-5f);
         }
 
+        beginTest ("samplehold does not latch a non-finite input");
+        {
+            dsl::SignalChain chain;
+            juce::String err;
+            expect (chain.loadScript (
+                "samplehold1: rate = 1000; mix = 1; slew = 0; quantize = 0\n"
+                "stage1: y = samplehold1\n", err), err);
+            chain.prepare ({ 48000.0, 2000, 1 });
+            juce::AudioBuffer<float> buf (1, 2000);
+            for (int i = 0; i < 100; ++i)
+                buf.setSample (0, i, std::numeric_limits<float>::quiet_NaN());
+            for (int i = 100; i < 2000; ++i)
+                buf.setSample (0, i, 0.5f);
+            chain.processBlock (buf);
+            expectEquals (TestHelpers::countNonFinite (buf), 0);
+            expectWithinAbsoluteError (buf.getSample (0, 1999), 0.5f, 1.0e-3f);
+        }
+
         beginTest ("random is reproducible per seed and independent between seeds");
         {
             auto render = [] (int seed, int samples)
@@ -1086,6 +1222,28 @@ public:
                 b.setSample (0, i, 0.6f);
             legacy.processBlock (b);
             expect (b.getSample (0, 100) > 0.0f, "legacy linear threshold must still fire");
+        }
+
+        beginTest ("envtrigger rms recovers after a non-finite input");
+        {
+            dsl::SignalChain chain;
+            juce::String err;
+            expect (chain.loadScript (
+                "envtrigger1: thresholddb = -24; sensitivity = 0; hysteresis = 6; holdoff = 0; hold = 50; level = 1; source = rms\n"
+                "stage1: y = envtrigger1\n", err), err);
+            chain.prepare ({ 48000.0, 4000, 1 });
+            juce::AudioBuffer<float> buf (1, 4000);
+            buf.clear();
+            buf.setSample (0, 0, std::numeric_limits<float>::quiet_NaN());
+            for (int i = 2000; i < 4000; ++i)
+                buf.setSample (0, i, 1.0f);
+            chain.processBlock (buf);
+            expectEquals (TestHelpers::countNonFinite (buf), 0);
+            int edges = buf.getSample (0, 0) > 0.0f ? 1 : 0;
+            for (int i = 1; i < 4000; ++i)
+                if (buf.getSample (0, i - 1) <= 0.0f && buf.getSample (0, i) > 0.0f)
+                    ++edges;
+            expect (edges >= 1, "must still fire after NaN");
         }
 
         beginTest ("modmath implements the binary operations on control sources");

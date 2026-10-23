@@ -64,11 +64,14 @@ void SignalChain::Clip::prepare (const juce::dsp::ProcessSpec& spec)
         const float v = e.evaluate (0.0f);
         return std::isfinite (v) ? v : fallback;
     };
-    driveSm.setCurrentAndTargetValue (snap (driveExpr, 0.0f));
-    thrSm.setCurrentAndTargetValue (snap (thresholdExpr, 0.0f));
+    driveSm.setCurrentAndTargetValue (juce::Decibels::decibelsToGain (
+        juce::jlimit (-24.f, 36.f, snap (driveExpr, 0.f))));
+    thrSm.setCurrentAndTargetValue (juce::Decibels::decibelsToGain (
+        juce::jlimit (-36.f, 0.f, snap (thresholdExpr, 0.f))));
     kneeSm.setCurrentAndTargetValue (snap (kneeExpr, 0.5f));
     biasSm.setCurrentAndTargetValue (snap (biasExpr, 0.0f));
-    trimSm.setCurrentAndTargetValue (snap (outputTrimExpr, 0.0f));
+    trimSm.setCurrentAndTargetValue (juce::Decibels::decibelsToGain (
+        juce::jlimit (-36.f, 12.f, snap (outputTrimExpr, 0.f))));
     mixSm.setCurrentAndTargetValue (snap (mixExpr, 0.0f));
 
     // Modus ist diskret (0 = hard, 1 = soft, 2 = asymmetric), aufgelöst beim Prepare.
@@ -107,11 +110,14 @@ void SignalChain::Clip::processBlock (juce::AudioBuffer<float>& buffer)
 
     bindings.refresh();
 
-    driveSm.setTargetValue (snapEval (driveExpr, 0.0f));
-    thrSm.setTargetValue (snapEval (thresholdExpr, 0.0f));
+    driveSm.setTargetValue (juce::Decibels::decibelsToGain (
+        juce::jlimit (-24.f, 36.f, snapEval (driveExpr, 0.f))));
+    thrSm.setTargetValue (juce::Decibels::decibelsToGain (
+        juce::jlimit (-36.f, 0.f, snapEval (thresholdExpr, 0.f))));
     kneeSm.setTargetValue (snapEval (kneeExpr, 0.5f));
     biasSm.setTargetValue (snapEval (biasExpr, 0.0f));
-    trimSm.setTargetValue (snapEval (outputTrimExpr, 0.0f));
+    trimSm.setTargetValue (juce::Decibels::decibelsToGain (
+        juce::jlimit (-36.f, 12.f, snapEval (outputTrimExpr, 0.f))));
     mixSm.setTargetValue (snapEval (mixExpr, 0.0f));
 
     const int useCh = juce::jmin (nCh, 2);
@@ -123,15 +129,12 @@ void SignalChain::Clip::processBlock (juce::AudioBuffer<float>& buffer)
 
     for (int i = 0; i < nS; ++i)
     {
-        const float driveDb = juce::jlimit (-24.0f, 36.0f, driveSm.getNextValue());
-        const float thrDb   = juce::jlimit (-36.0f, 0.0f, thrSm.getNextValue());
-        const float knee    = juce::jlimit (0.0f, 1.0f, kneeSm.getNextValue());
-        const float bias    = juce::jlimit (-1.0f, 1.0f, biasSm.getNextValue());
-        const float trimLin = juce::Decibels::decibelsToGain (juce::jlimit (-36.0f, 12.0f, trimSm.getNextValue()));
-        const float mix     = juce::jlimit (0.0f, 1.0f, mixSm.getNextValue());
-
-        const float driveLin = juce::Decibels::decibelsToGain (driveDb);
-        const float thrLin   = juce::Decibels::decibelsToGain (thrDb);
+        const float driveLin = driveSm.getNextValue();
+        const float thrLin = thrSm.getNextValue();
+        const float knee = juce::jlimit (0.f, 1.f, kneeSm.getNextValue());
+        const float bias = juce::jlimit (-1.f, 1.f, biasSm.getNextValue());
+        const float trimLin = trimSm.getNextValue();
+        const float mix = juce::jlimit (0.f, 1.f, mixSm.getNextValue());
 
         // Eingangs-Peak (kanalverknüpft) für Auto Gain.
         float inPeak = 0.0f;

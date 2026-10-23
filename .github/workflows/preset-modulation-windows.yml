@@ -1,0 +1,60 @@
+name: Preset modulation Windows validation
+on:
+  push:
+    branches: ['feat/preset-curation-modulation']
+    paths: ['src/**', 'web/**', 'resources/**', 'scripts/**', 'tests/**', 'CMakeLists.txt', '.github/workflows/preset-modulation-windows.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: preset-modulation-windows-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  windows-vst3:
+    # Expensive native build is intentionally manual-only. Push events still
+    # create a skipped workflow in the same concurrency group, cancelling
+    # any previous running Windows build without consuming another runner.
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    runs-on: windows-2022
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: WebView2 SDK
+        run: nuget install Microsoft.Web.WebView2 -Version 1.0.1901.177 -OutputDirectory deps
+      - name: Configure
+        run: cmake -S . -B build -A x64 -DJUCE_WEBVIEW2_PACKAGE_LOCATION="${{ github.workspace }}/deps"
+      - name: Build VST3 and full native tests
+        run: |
+          cmake --build build --config Release --target NeuroKoreWebEmbed --parallel 3
+          cmake --build build --config Release --target NeuroKore_VST3 --parallel 3
+          cmake --build build --config Release --target NeuroKoreTests --parallel 3
+      - name: Full native contracts
+        id: native
+        continue-on-error: true
+        run: ctest --test-dir build -C Release --output-on-failure --timeout 900
+      - name: Pluginval strictness 5
+        id: pluginval
+        continue-on-error: true
+        run: python scripts/validate_native.py --build build
+      - name: Upload binary and validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: NEUROKORE-windows-vst3-${{ github.sha }}
+          path: |
+            build/NeuroKore_artefacts/Release/VST3/
+            build/Testing/Temporary/
+            build/validation/
+            build/CMakeFiles/CMakeConfigureLog.yaml
+          if-no-files-found: warn
+      - name: Require native and pluginval success
+        if: steps.native.outcome != 'success' || steps.pluginval.outcome != 'success'
+        run: exit 1

@@ -1317,7 +1317,9 @@ bool connectJack (GraphDocument& doc, int fromIndex, const juce::String& fromJac
     error.clear();
     const int n = (int) doc.nodes.size();
     const auto destJack = toJack.trim();
-    if (destJack == "inA" || destJack == "inB")
+    if ((destJack == "inA" || destJack == "inB")
+        && juce::isPositiveAndBelow (toIndex, n)
+        && isModulator (doc.nodes[(size_t) toIndex]))
     {
         if (! juce::isPositiveAndBelow (fromIndex, n)
             || ! isModulator (doc.nodes[(size_t) fromIndex]))
@@ -2123,7 +2125,7 @@ std::vector<GraphJack> jacksFor (const GraphNode& node, const GraphDocument* doc
 
     if (isModulator (node))
     {
-        if (t.startsWith ("env") || t.startsWith ("adsr") || t.startsWith ("samplehold"))
+        if (t.startsWith ("env") || t.startsWith ("adsr") || t.startsWith ("mseg") || t.startsWith ("samplehold"))
             addJack (jacks, "in", false, "audio");
         if (t.startsWith ("modmath") || t.startsWith ("modmix"))
         {

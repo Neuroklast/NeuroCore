@@ -160,6 +160,28 @@ public:
                                                          0.020f, 0.040f, 0.300f);
             expect (nanIn < -5.f); // NaN treated as silence floor
         }
+
+        beginTest ("linear fade-in does not restart at block boundaries");
+        {
+            juce::AudioBuffer<float> buf (1, 64);
+            int remain = 256;
+            const int total = 256;
+            auto fill = [&]
+            {
+                for (int i = 0; i < 64; ++i)
+                    buf.setSample (0, i, 1.f);
+            };
+
+            fill();
+            DSPUtils::applyLinearFadeIn (buf, remain, total);
+            expectWithinAbsoluteError (buf.getSample (0, 0), 0.f, 1.0e-6f);
+            expectWithinAbsoluteError (buf.getSample (0, 63), 1.f - 193.f / 256.f, 1.0e-6f);
+
+            fill();
+            DSPUtils::applyLinearFadeIn (buf, remain, total);
+            expectWithinAbsoluteError (buf.getSample (0, 0), 1.f - 192.f / 256.f, 1.0e-6f);
+            expectEquals (remain, 128);
+        }
     }
 };
 

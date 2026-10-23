@@ -26,6 +26,7 @@ import { persistUi } from "../chrome/persistUi";
 import { PresetExplorer } from "./PresetExplorer";
 import { cancelDiscard, confirmDiscard } from "../presets/presetActions";
 import { StagesPanel } from "./StagesPanel";
+import { MsegEditor } from "./MsegEditor";
 import { StepSeqEditor } from "./StepSeqEditor";
 import { ValidatePanel } from "./ValidatePanel";
 
@@ -82,13 +83,14 @@ export function InspectBody({ nodeId }: { nodeId: string | null }) {
     });
     const terminal = node.type === "in" || node.type === "out";
     const blurb = terminal ? (node.type === "out" ? "Final plugin output sent to the host." : "Audio entering the plugin from the host.") : inspectBlurb(node.type);
-    const editable = argFields.filter((f) => isLiteralNumber(node.args[f.key] ?? "") || f.options.length > 0);
-    const bound = argFields.filter((f) => isMacroOrExpression(node.args[f.key] ?? ""));
+    const editable = argFields.filter((f) => isLiteralNumber(f.value) || f.options.length > 0);
+    const bound = argFields.filter((f) => isMacroOrExpression(f.value));
     const formula = argFields.filter((f) => {
+      if (node.type === "mseg" && f.key === "points") return false;
       if (node.type === "stepseq" && (f.key === "values" || f.key === "mutes")) {
         return false;
       }
-      const v = node.args[f.key] ?? "";
+      const v = f.value;
       return ! isLiteralNumber(v) && ! isMacroOrExpression(v) && f.options.length === 0;
     });
     const detector = argFields.find((f) => f.key === "type" || f.key === "detector");
@@ -119,7 +121,7 @@ export function InspectBody({ nodeId }: { nodeId: string | null }) {
                   nodeId={node.id}
                   nodeType={node.type}
                   field={f}
-                  current={node.args[f.key]}
+                  current={f.value}
                   onCommit={onCommit}
                   onReveal={() => onReveal(f.key)}
                 />
@@ -128,6 +130,7 @@ export function InspectBody({ nodeId }: { nodeId: string | null }) {
           </div>
         ) : null}
 
+        {node.type === "mseg" ? <MsegEditor key={node.id} nodeId={node.id} args={node.args} /> : null}
         {node.type === "stepseq" ? <StepSeqEditor nodeId={node.id} args={node.args} /> : null}
 
         {(node.type === "env" || node.type === "adsr") && (

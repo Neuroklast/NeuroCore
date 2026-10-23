@@ -1,8 +1,42 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-22 (0.7.2-beta)
+**Stand:** 2026-10-23 (0.7.2-beta)
 **Version:** 0.7.2-beta  
 **Branch:** `feat/dsp-expansion-a03-c05` (PR #326)
+
+## Audio-thread correctness (2026-10-23)
+
+Fade-in after reset/gap keeps a frozen length so the ramp does not restart at every block boundary. EnvTrigger RMS and SampleHold ignore non-finite input instead of latching it. StepSeq host-sync across MIDI-sized splits is locked by contract (existing PPQ advance). EnvTrigger converts threshold/hysteresis to linear only when those values move, same cache as Gate. SampleHold/Random/StepSeq cache slew-exp and Utility caches pan-cos the same way. Comp RMS ignores non-finite detector/audio instead of latching GR at zero. `applyFormula` prepares the next graph off `processLock` and publishes with `atomic_store`; variables stay add-only after prepare (`reserve(1024)` / `try_emplace`). Native: `CrackleFixes` lock-miss + applyFormula contract.
+
+## Inspect defaults for expanded controls (2026-10-22)
+
+A failing contract reproduced omitted ModMix/MSEG defaults being absent from Inspect. The inspector now resolves catalog defaults plus explicit arguments for these blocks, including MSEG loop end from its actual point count. Only expressions implemented by the native runtime are offered as macro targets (ModMix gains/mix/offset; MSEG duration), preventing nonfunctional bindings on point lists, loop indices or literal source depth. Model contracts and visible default-Offset/geometry checks pass; 62 focused contracts pass.
+
+## Final preset/control validation checkpoint (2026-10-22)
+
+353 active factory presets: 307 original entries retained, 21 revised, 12 deprecated, 25 new. All 33 original removed/replaced objects remain archived; Mesa High Gain matches its protected hash. Added Curved Sync Duck, MIDI Bowed Resonator and Bipolar Formant Arc for the new MSEG. All 353 re-rendered with the final engine on default, transient, hot, silence and macro-extreme profiles: zero parse errors/nonfinite samples. Audit maximum sample peak 1.715 (stress); this is not a true-peak/LUFS certification. MIDI audit recognizes MSEG source gates.
+
+5 curator contracts, 62 focused web contracts, production web build, native control/MSEG integration, portable MSEG and complete headless FX regression pass. Full web suite: 1020 pass / 10 fail; pristine main d07c0ba1c3dc reproduces the exact same 10 failures (1001 pass / 10 fail), so no new failing web case. Browser checks cover measured ModMix output, real A/B cable magnetization including audio rejection/Join acceptance, and MSEG add/drag/keyboard/delete/curve editing at 1× and 2×. The drag test awaits completion of automatic layout before measuring pins. Windows VST3 and pluginval run on the branch; acceptance is pending its final result. See docs/evidence/preset-modulation/README.md.
+
+## C08 MSEG initial native source (2026-10-22)
+
+Bounded 2–64 immutable points, linear/power curves, point-index loops, gated sustain/release, oneshot/free, retrigger, BPM note division, audio/MIDI/either trigger and normal control output are implemented. Compile validates point grammar/ranges/order and loop/sustain indices; full state persists through DSL/AST. Portable numerical contracts and native timebase/restore/MIDI/BPM/buffer-independence checks pass. Initial sync follows BPM rather than transport/PPQ. Graphical editor is now available in Circuit/Inspect with add, drag, keyboard move/delete and per-segment curve editing. Point/index edits publish atomically, and cancellation restores the prior curve. Browser geometry/editing passes at 1×/2×; metadata/point model/control ports/add/layout contracts pass (46). Offline preset sketches now share the control-source classification, preventing new generators from becoming audio through-nodes. Host acceptance follows; this is an initial C08 implementation, not DAW sign-off.
+
+## C07 control mixer completion (2026-10-22)
+
+ModMix adds signed weights, offset, optional connected-weight normalization and off/bipolar/unipolar limiting. Defaults preserve existing behavior. AST restore contracts cover A-only/B-only, sum, opposite weights, missing inputs, normalize, offset and both clamp ranges. Native integration and complete headless FX suite pass (zero failures). Catalog/ChipSpec share lowercase DSP keys and expose all controls. The chip displays measured weighted A/B contributions plus published output; browser geometry/live-host checks pass at 1×/2×. React review: hooks unconditional, primitive host selectors, no added animation loop. Web production build and 17 focused contracts pass.
+
+## Control routing integration (2026-10-22)
+
+Failing native contracts reproduced Audio Join rejection on both A/B sockets and lost source depth/polarity in ModMath, ModMix and SampleHold. Join validation now distinguishes audio and control destinations; all lane consumers use one shaped-source accessor. Native GraphOp/AST restore and multi-hop tests pass. Circuit classifies every current control block consistently, including source output pins and audio-rail exclusion; ModMix exposes modIns A/B. Hydrated Circuit port contracts and catalog/layout checks pass. Windows/pluginval remains pending.
+
+## Factory preset curation (2026-10-22)
+
+Branch `feat/preset-curation-modulation`, based on main d07c0ba1c3dc after #326/#327. All 340 original entries have an inventory, per-entry decision and native render evidence. 307 retained, 21 revised, 12 deprecated, 22 new: 350 active presets. 33 complete old preset objects are preserved under resources/deprecated. Mesa High Gain is byte-equivalent at the preset-object level; its protected baseline hash contract passes.
+
+The original generator would produce 542 entries and reject/drop manually curated names. Generation and the legacy merge command now apply the idempotent reviewed policy to the committed catalog, so removed seed presets cannot reappear. Tests cover protection, exact archived originals and idempotence.
+
+Native offline audit: all 350 parse/render at defaults, transient and hot inputs, silent input and macro extremes without nonfinite samples. The auditor now drives transport, MIDI gates and required sidechain/voice inputs. DC cleanup follows measured default/hot/stress results. Dark Atmosphere's noise generation is intentional and explicitly controlled/documented. These are SignalChain measurements, not human listening or a Windows/DAW sign-off. 5 curation contracts and 13 catalog/signal-flow web checks pass. Per-entry evidence: docs/presets/2026-10-22-review.json and .md. Routing/C07/C08 follow after this checkpoint.
 
 ## Circuit live instruments (2026-10-22)
 

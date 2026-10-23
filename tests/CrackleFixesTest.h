@@ -12,6 +12,7 @@
 #include "../src/utils/FactoryPresetLibrary.h"
 #include "TestHelpers.h"
 #include <cmath>
+#include <thread>
 #include <vector>
 
 /** Regression tests for known crackle root causes. */
@@ -783,6 +784,30 @@ public:
             expect (heldPeak > 0.05f, "lock-miss should keep last wet, peak="
                     + juce::String (heldPeak, 3));
             proc.releaseResources();
+        }
+
+        beginTest ("applyFormula does not wait on the audio process lock");
+        {
+            ScriptManager mgr;
+            mgr.prepare ({ 48000.0, 64, 2 });
+            juce::String err;
+            expect (mgr.applyFormula ("stage1: y = x", err), err);
+
+            juce::WaitableEvent started;
+            std::thread locker ([&]
+            {
+                const juce::ScopedLock sl (mgr.getProcessLock());
+                started.signal();
+                juce::Thread::sleep (300);
+            });
+            expect (started.wait (1000));
+            const juce::uint32 t0 = juce::Time::getMillisecondCounter();
+            expect (mgr.applyFormula (
+                "delay1: time = 250; mix = 0.4\nstage1: y = x", err), err);
+            const juce::uint32 ms = juce::Time::getMillisecondCounter() - t0;
+            locker.join();
+            expect (ms < 150, "applyFormula blocked on processLock for "
+                    + juce::String ((int) ms) + " ms");
         }
 
         beginTest ("8x then 4x oversampling does not process leftover silence");

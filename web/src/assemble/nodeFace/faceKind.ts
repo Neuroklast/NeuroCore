@@ -91,6 +91,7 @@ const BY_SPEC: Record<string, FaceKind> = {
   freqshift: "filter",
   wavefold: "drive",
   nlfilter: "filter",
+  mseg: "env",
   stepseq: "lfo",
   adsr: "env",
   samplehold: "lfo",

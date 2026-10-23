@@ -334,6 +334,7 @@ private:
     int continuityCh { 0 };
     float continuityDecay { 0.f };
     int fadeInRemain { 0 };
+    int fadeInTotal { 0 };
     struct IrPreviewSnap
     {
         juce::AudioBuffer<float> samples;
@@ -347,6 +348,7 @@ private:
     void drainIrPreviewSnaps();
     void storeContinuity (const juce::AudioBuffer<float>& src);
     void replayContinuity (juce::AudioBuffer<float>& dest) noexcept;
+    void beginFadeIn (int n) noexcept;
     void fadeInAfterGap (juce::AudioBuffer<float>& dest) noexcept;
 
     struct IrAsset

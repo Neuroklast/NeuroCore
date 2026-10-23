@@ -1,3 +1,4 @@
+import { entryById } from "./blockCatalog";
 import { BOARD_GRID } from "./grid";
 import {
   FORK_PITCH,
@@ -33,6 +34,8 @@ export type ChipSpec = {
   audioIns: string[];
   audioOuts: string[];
   paramJacks: string[];
+  /** Explicit runtime macro targets for catalog-backed controls. */
+  bindKeys?: string[];
   paramJackLabels: Record<string, string>;
   modIns: string[];
   enums: Record<string, string[]>;
@@ -557,17 +560,22 @@ add({
 
 add({
   id: "modmix",
+  bindKeys: entryById("modmix")!.params.filter(p => p.automatable).map(p => p.key),
   label: "ModMix",
   typeCodePrefix: "MX",
-  audioIns: ["inA", "inB"],
+  audioIns: [],
+  modIns: ["inA", "inB"],
   audioOuts: ["out"],
-  paramJacks: ["levelA", "levelB", "mix"],
+  paramJacks: ["levela", "levelb", "mix", "offset", "normalize", "clamp", "depth", "polarity"],
   ranges: {
-    levelA: { min: 0, max: 4 },
-    levelB: { min: 0, max: 4 },
+    levela: { min: -4, max: 4 },
+    levelb: { min: -4, max: 4 },
+    offset: { min: -1, max: 1 },
+    depth: { min: 0, max: 1 },
     mix: { min: 0, max: 1, unit: "%" },
   },
-  defaultArgs: { levelA: "1", levelB: "1", mix: "1" },
+  enums: { normalize: ["off", "on"], clamp: ["off", "bipolar", "unipolar"], polarity: ["normal", "invert"] },
+  defaultArgs: { levela: "1", levelb: "1", mix: "1", offset: "0", normalize: "off", clamp: "off", depth: "1", polarity: "normal" },
   blurb: "Mischt zwei Modulationsquellen mit eigenen Leveln und einem Master-Mix.",
 });
 
@@ -1127,6 +1135,19 @@ add({
   blurb: "Output mix-ins plus output gain.",
 });
 
+// New blocks derive their UI controls from the shared catalog instead of duplicating keys/ranges.
+const mseg = entryById("mseg")!;
+add({
+  id: mseg.id, label: mseg.label, typeCodePrefix: mseg.typeCodePrefix,
+  audioIns: mseg.audioIns, audioOuts: mseg.modOuts, modIns: mseg.modIns,
+  paramJacks: mseg.params.map(p => p.key),
+  bindKeys: mseg.params.filter(p => p.automatable).map(p => p.key),
+  ranges: Object.fromEntries(mseg.params.filter(p => !p.enum).map(p => [p.key,{min:p.min,max:p.max,unit:p.unit}])),
+  enums: Object.fromEntries(mseg.params.filter(p => p.enum).map(p => [p.key,p.enum!])),
+  defaultArgs: Object.fromEntries(mseg.params.map(p => [p.key,String(p.def)])),
+  blurb: mseg.description,
+});
+
 export function resolveChipId(type: string, args: Record<string, string> = {}): string {
   const t = type.toLowerCase();
   if (t.startsWith("custom")) return "custom";
@@ -1185,6 +1206,7 @@ export function resolveChipId(type: string, args: Record<string, string> = {}): 
   if (t.startsWith("freqshift")) return "freqshift";
   if (t.startsWith("wavefold")) return "wavefold";
   if (t.startsWith("nlfilter")) return "nlfilter";
+  if (t.startsWith("mseg")) return "mseg";
   if (t.startsWith("stepseq")) return "stepseq";
   if (t.startsWith("adsr")) return "adsr";
   if (t.startsWith("samplehold")) return "samplehold";
@@ -1226,6 +1248,7 @@ const NOT_KNOB_CODE = new Set(["y", "channel", "kanal", "name", "mode", "family"
  * Routing/name/formula fields stay off the rail.
  */
 export function bindableJackKeys(spec: ChipSpec): string[] {
+  if (spec.bindKeys) return [...spec.bindKeys];
   return spec.paramJacks.filter((k) => {
     if (NOT_KNOB_CODE.has(k.toLowerCase())) {
       return false;

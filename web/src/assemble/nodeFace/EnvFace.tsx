@@ -1,9 +1,17 @@
+import { readMsegPoints, msegPath } from "../msegModel";
 import type { FaceProps } from "./faceKind";
 import { adsrEnvelopePath, adsrFaceModel } from "./adsrEnvelope";
 import { envEnvelopePath, envFaceModel } from "./envEnvelope";
 import { parseFaceNumber } from "./faceArgs";
 
 export function EnvFace({ type, args, host }: FaceProps) {
+  if (type === "mseg") {
+    return <div className="nk-node-face" data-glyph="envelope" aria-label="MSEG control curve">
+      <div className="nk-face-plot"><svg viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden>
+        <path d={msegPath(readMsegPoints(args.points))} />
+      </svg></div>
+    </div>;
+  }
   if (type === "envtrigger") {
     const threshold = parseFaceNumber(args.thresholddb ?? args.threshold, -24, -60, 0, host);
     const y = 40 * (1 - (threshold + 60) / 60);

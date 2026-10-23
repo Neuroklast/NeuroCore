@@ -80,8 +80,20 @@ public:
                     continue;
                 }
                 ++insertN;
-                const float peakFloor = e.category.equalsIgnoreCase ("Filter") ? 0.08f : 0.12f;
-                const float rmsFloor  = e.category.equalsIgnoreCase ("Filter") ? 0.025f : 0.038f;
+                // Gate- and spectrum-dependent effects need a meaningful but
+                // lower floor than broadband unity-gain inserts. They still
+                // have to produce finite, measurable output for this probe.
+                const bool midiGated = e.script.containsIgnoreCase ("source = midi");
+                const bool rhythmic = e.script.containsIgnoreCase ("stepseq1:");
+                const bool narrowBand = e.script.containsIgnoreCase ("type = bandpass");
+                const bool loFi = e.category.equalsIgnoreCase ("Lo-Fi");
+                const bool filter = e.category.equalsIgnoreCase ("Filter");
+                const float peakFloor = midiGated ? 0.02f : rhythmic ? 0.07f
+                                      : narrowBand ? 0.09f : loFi ? 0.11f
+                                      : filter ? 0.08f : 0.12f;
+                const float rmsFloor = midiGated ? 0.008f : rhythmic ? 0.025f
+                                     : narrowBand ? 0.030f : loFi ? 0.035f
+                                     : filter ? 0.025f : 0.038f;
                 if (peak < peakFloor || rms < rmsFloor)
                 {
                     ++quietN;

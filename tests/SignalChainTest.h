@@ -534,6 +534,85 @@ public:
             expectWithinAbsoluteError (buf.getSample (0, 0), 1.5f, 1.0e-4f);
         }
 
+        beginTest ("rejected control graph preserves the previous bus routing");
+        {
+            dsl::SignalChain chain;
+            juce::String err;
+            expect (chain.loadScript (
+                "stage1: y = x * 0.5\n"
+                "bus dirt:\n"
+                "send: in = 1\n"
+                "stage2: y = x * 0.25\n"
+                "out: main = 1; dirt = 1\n", err), err);
+            chain.prepare ({ 48000.0, 128, 2 });
+            juce::AudioBuffer<float> baseline (2, 128);
+            for (int i = 0; i < 128; ++i)
+            {
+                baseline.setSample (0, i, 0.2f);
+                baseline.setSample (1, i, -0.2f);
+            }
+            juce::AudioBuffer<float> after (2, 128);
+            after.makeCopyOf (baseline);
+            chain.processBlock (baseline);
+
+            expect (! chain.loadScript (
+                "modmath1: ina = missing123; mode = add; amount = 1\n"
+                "stage1: y = x\n", err));
+            expect (err.containsIgnoreCase ("unknown modulation source"), err);
+            chain.processBlock (after);
+            for (int ch = 0; ch < 2; ++ch)
+                for (int i = 0; i < 128; ++i)
+                    expectWithinAbsoluteError (
+                        after.getSample (ch, i), baseline.getSample (ch, i), 1.0e-5f);
+        }
+
+        beginTest ("rejected patch restores previous parameter metadata");
+        {
+            dsl::SignalChain chain;
+            juce::String error;
+            expect (chain.loadScript (
+                "param a = gain\n"
+                "stage1: y = x * a\n", error), error);
+            chain.prepare ({ 48000.0, 128, 1 });
+            const auto previous = chain.getParamInfo();
+            expect (! previous.empty());
+            expect (! chain.loadScript (
+                "param a = accidental_rename\n"
+                "modmath1: ina = missing123; mode = add\n"
+                "stage1: y = x\n", error));
+            expect (error.containsIgnoreCase ("unknown modulation source"), error);
+            const auto& after = chain.getParamInfo();
+            expectEquals ((int) after.size(), (int) previous.size());
+            if (! previous.empty() && ! after.empty())
+            {
+                expectEquals (after[0].alias, previous[0].alias);
+                expectEquals (after[0].name, previous[0].name);
+            }
+        }
+
+        beginTest ("failed replacement keeps old control variable slots valid");
+        {
+            dsl::SignalChain chain;
+            chain.prepare ({ 48000.0, 128, 1 });
+            juce::String err;
+            expect (chain.loadScript (
+                "stepseq1: steps = 1; values = 0.5\n"
+                "stage1: y = x * stepseq1\n", err), err);
+            juce::AudioBuffer<float> first (1, 128), later (1, 128);
+            for (int i = 0; i < 128; ++i)
+                first.setSample (0, i, 0.5f);
+            later.makeCopyOf (first);
+            chain.processBlock (first);
+            expect (! chain.loadScript (
+                "modmath1: ina = absent123; mode = add; amount = 1\n"
+                "stage2: y = x\n", err));
+            expect (err.containsIgnoreCase ("unknown modulation source"), err);
+            chain.processBlock (later);
+            expectWithinAbsoluteError (
+                later.getSample (0, 127), first.getSample (0, 127), 1.0e-4f);
+            expectWithinAbsoluteError (later.getSample (0, 127), 0.25f, 1.0e-3f);
+        }
+
         beginTest("send from processed main");
         {
             dsl::SignalChain c;

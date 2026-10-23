@@ -1,5 +1,6 @@
 name: DSP expansion contracts
 on:
+  workflow_dispatch:
   push:
     branches: ['main', 'fix/dsp-expansion-completion']
   pull_request:
@@ -13,10 +14,17 @@ on:
       - 'docs/manual/NEUROKORE.md'
       - 'resources/UserManual_en.txt'
       - '.github/workflows/dsp-expansion.yml'
+concurrency:
+  group: dsp-expansion-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
   contracts:
+    # PR #328 iterates rapidly and must not trigger repeated 25-minute
+    # JUCE builds. A manual dispatch still validates it before merge.
+    # Other PRs and main retain normal CI coverage.
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'push' || github.event.pull_request.number != 328 }}
     runs-on: ubuntu-22.04
     timeout-minutes: 25
     steps:
@@ -27,6 +35,8 @@ jobs:
           /tmp/saturation-contract
           g++ -std=c++17 -O2 tests/dsp/FrequencyShifterContract.cpp -o /tmp/frequency-contract
           /tmp/frequency-contract
+          g++ -std=c++17 -O2 tests/dsp/MsegContract.cpp -o /tmp/mseg-contract
+          /tmp/mseg-contract
       - uses: actions/checkout@v4
         with:
           repository: juce-framework/JUCE

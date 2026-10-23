@@ -287,7 +287,7 @@
     "inputGain": 1.5,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Germanium Fuzz\n# Germanium fuzz: bias + soft-pre hard knee + heavy LPF + tube polish (no bare brickwall).\n\nparam a = Fuzz [3.0, 16.0]\nparam b = Tone [250, 4500]\nparam c = Level [0.15, 0.85]\ngate1: threshold = -44; hyst = 8; hold = 0.04; range = -80\nfilter1: type = highpass; cutoff = 45; resonance = 0.3\nstage1: y = hardclip(softclip(x + 0.06, a * 0.4), 0.38)\nfilter2: type = lowpass; cutoff = b; resonance = 0.7\nstage2: y = tube(y, 1.4) * c\nir1: mix = 0.35; gain = 8\nlimit1: ceiling = -0.4; release = 0.1\n",
+    "script": "# Germanium Fuzz\n# Germanium fuzz: bias + soft-pre hard knee + heavy LPF + tube polish (no bare brickwall).\n\nparam a = Fuzz [3.0, 16.0]\nparam b = Tone [250, 4500]\nparam c = Level [0.15, 0.85]\ngate1: threshold = -44; hyst = 8; hold = 0.04; range = -80\nfilter1: type = highpass; cutoff = 45; resonance = 0.3\nstage1: y = hardclip(softclip(x + 0.06, a * 0.4), 0.38)\nfilter2: type = lowpass; cutoff = b; resonance = 0.7\nstage2: y = tube(y, 1.4) * c\nir1: mix = 0.35; gain = 8\nlimit1: ceiling = -0.4; release = 0.1\nfilter999: type = highpass; cutoff = 20; resonance = 0.35\n",
     "tags": [
       "cabinet",
       "clip",
@@ -424,32 +424,33 @@
   {
     "name": "Chopper",
     "category": "Modulation",
-    "description": "Soft-square trem chopper. Rate is a note grid (1/1..1/16). Dynamics preserved (floor).",
+    "description": "Eight-step accented gate at host-synced sixteenths. Gate controls note length; Floor preserves the quiet steps.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Chopper\n# Soft-square trem chopper. Rate is a note grid (1/1..1/16). Dynamics preserved (floor).\n\nparam a = Rate [1/1, 1/16]\nparam b = Depth [0.25, 0.85]\nparam c = Floor [0.15, 0.55]\nosc1: shape = softsquare; sync = a; depth = 1.0\nstage1: y = x * (c + (1.0 - c) * (1.0 - b + b * (0.5 + 0.5 * osc1)))\n",
+    "script": "# Chopper\n# Eight-step accented gate at host-synced sixteenths. Gate controls note length; Floor preserves the quiet steps.\nparam a = Gate [0.2, 1]\nparam b = Depth [0.25, 1]\nparam c = Floor [0.03, 0.5]\nstepseq1: steps = 8; sync = 1/16; values = 1,0,0.7,0,1,0.35,0,0.7; gate = a; glide = 0.01\nstage1: y = x * (c + (1-c) * (1-b+b*stepseq1))\n",
     "tags": [
-      "lfo",
+      "eq",
+      "equalizer",
       "modulation"
     ],
     "paramA": {
-      "name": "Rate",
-      "min": 0,
+      "name": "Gate",
+      "min": 0.2,
       "max": 1,
-      "default": 0.45
+      "default": 0.7
     },
     "paramB": {
       "name": "Depth",
       "min": 0.25,
-      "max": 0.85,
-      "default": 0.55
+      "max": 1,
+      "default": 0.8
     },
     "paramC": {
       "name": "Floor",
-      "min": 0.15,
-      "max": 0.55,
-      "default": 0.28
+      "min": 0.03,
+      "max": 0.5,
+      "default": 0.12
     }
   },
   {
@@ -740,79 +741,6 @@
     }
   },
   {
-    "name": "Radio Voice",
-    "category": "Vocals",
-    "description": "AM radio bandpass + softclip + light bitcrush + LPF (quantize always filtered).",
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "# Radio Voice\n# AM radio bandpass + softclip + light bitcrush + LPF (quantize always filtered).\n\nparam a = Center [500, 2200]\nparam b = Width [180, 900]\nparam c = Drive [1.2, 4.0]\nfilter1: type = bandpass; center = a; width = b\nstage1: y = softclip(x, c)\nstage2: y = bitcrush(y, 10)\nfilter2: type = lowpass; cutoff = 6500; resonance = 0.4\n",
-    "tags": [
-      "bitcrush",
-      "clip",
-      "drive",
-      "filter",
-      "lo-fi",
-      "lowpass",
-      "vocals",
-      "width"
-    ],
-    "paramA": {
-      "name": "Center",
-      "min": 500,
-      "max": 2200,
-      "default": 1050
-    },
-    "paramB": {
-      "name": "Width",
-      "min": 180,
-      "max": 900,
-      "default": 420
-    },
-    "paramC": {
-      "name": "Drive",
-      "min": 1.2,
-      "max": 4,
-      "default": 2.2
-    }
-  },
-  {
-    "name": "Vocal Comp",
-    "category": "Vocals",
-    "description": "Vocal bus compressor + soft ceiling.",
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "# Vocal Comp\n# Vocal bus compressor + soft ceiling.\n\nparam a = Threshold [-28.0, -8.0]\nparam b = Ratio [2.5, 10.0]\nparam c = Drive [1.0, 2.5]\ncomp1: threshold = a; ratio = b; attack = 0.005; release = 0.12\nstage1: y = diode(x, c)\n",
-    "tags": [
-      "bus",
-      "compressor",
-      "diode",
-      "drive",
-      "parallel",
-      "vocal",
-      "vocals"
-    ],
-    "paramA": {
-      "name": "Threshold",
-      "min": -28,
-      "max": -8,
-      "default": -14
-    },
-    "paramB": {
-      "name": "Ratio",
-      "min": 2.5,
-      "max": 10,
-      "default": 5
-    },
-    "paramC": {
-      "name": "Drive",
-      "min": 1,
-      "max": 2.5,
-      "default": 1.35
-    }
-  },
-  {
     "name": "Whisper Edge",
     "category": "Vocals",
     "description": "Airy HPF into soft tube.",
@@ -930,39 +858,6 @@
       "min": 1.1,
       "max": 4,
       "default": 2
-    }
-  },
-  {
-    "name": "Sidechain Pump",
-    "category": "EDM",
-    "description": "Sine ducking envelope (sidechain pump). Rate is note-grid: 1/4 at 120 BPM = 2 Hz, not milliseconds-as-Hz.",
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "# Sidechain Pump\n# Sine ducking envelope (sidechain pump). Rate is note-grid: 1/4 at 120 BPM = 2 Hz, not milliseconds-as-Hz.\n\nparam a = Rate [1/1, 1/16]\nparam b = Depth [0.4, 1.0]\nparam c = Floor [0.0, 0.35]\nosc1: shape = sine; sync = a; depth = 1.0\nstage1: y = x * (c + (1.0 - c) * (1.0 - b + b * (0.5 + 0.5 * osc1)))\n",
-    "tags": [
-      "edm",
-      "lfo",
-      "modulation",
-      "sidechain"
-    ],
-    "paramA": {
-      "name": "Rate",
-      "min": 0,
-      "max": 1,
-      "default": 0.45
-    },
-    "paramB": {
-      "name": "Depth",
-      "min": 0.4,
-      "max": 1,
-      "default": 0.85
-    },
-    "paramC": {
-      "name": "Floor",
-      "min": 0,
-      "max": 0.35,
-      "default": 0.08
     }
   },
   {
@@ -1154,7 +1049,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Preamp Regen Stack\n# HPF -> tube (SIMD) -> ONE y_prev regen stage -> cab LPF -> soft power (SIMD). Fast multi-stage.\n\nparam a = Drive [1.2, 7.0]\nparam b = Regen [0.08, 0.48]\nparam c = Tone [800, 6500]\nparam d = Level [0.35, 1.15]\nfilter1: type = highpass; cutoff = 70; resonance = 0.35\nstage1: y = tube(x, a * 0.55)\nstage2: y = tube(x + y_prev * b, a * 0.4)\nfilter2: type = lowpass; cutoff = c; resonance = 0.45\nstage3: y = softclip(y, 1.15) * d\n",
+    "script": "# Preamp Regen Stack\n# HPF -> tube (SIMD) -> ONE y_prev regen stage -> cab LPF -> soft power (SIMD). Fast multi-stage.\n\nparam a = Drive [1.2, 7.0]\nparam b = Regen [0.08, 0.48]\nparam c = Tone [800, 6500]\nparam d = Level [0.35, 1.15]\nfilter1: type = highpass; cutoff = 70; resonance = 0.35\nstage1: y = tube(x, a * 0.55)\nstage2: y = tube(x + y_prev * b, a * 0.4)\nfilter2: type = lowpass; cutoff = c; resonance = 0.45\nstage3: y = softclip(y, 1.15) * d\nfilter999: type = highpass; cutoff = 20; resonance = 0.35\n",
     "tags": [
       "clip",
       "drive",
@@ -1240,7 +1135,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Cascade Loop Dirt\n# 3-stage dirt: softclip -> feedback tube (only prev stage) -> diode polish + LPF. One scalar stage.\n\nparam a = Drive [1.5, 9.0]\nparam b = Loop [0.1, 0.5]\nparam c = Tone [500, 6000]\nparam d = Level [0.3, 1.05]\nfilter1: type = highpass; cutoff = 65; resonance = 0.35\nstage1: y = softclip(x, a * 0.45)\nstage2: y = tube(x + y_prev * b, a * 0.5)\nstage3: y = diode(y, 1.35)\nfilter2: type = lowpass; cutoff = c; resonance = 0.5\nstage4: y = softclip(y, 1.05) * d\n",
+    "script": "# Cascade Loop Dirt\n# 3-stage dirt: softclip -> feedback tube (only prev stage) -> diode polish + LPF. One scalar stage.\n\nparam a = Drive [1.5, 9.0]\nparam b = Loop [0.1, 0.5]\nparam c = Tone [500, 6000]\nparam d = Level [0.3, 1.05]\nfilter1: type = highpass; cutoff = 65; resonance = 0.35\nstage1: y = softclip(x, a * 0.45)\nstage2: y = tube(x + y_prev * b, a * 0.5)\nstage3: y = diode(y, 1.35)\nfilter2: type = lowpass; cutoff = c; resonance = 0.5\nstage4: y = softclip(y, 1.05) * d\nfilter999: type = highpass; cutoff = 20; resonance = 0.35\n",
     "tags": [
       "clip",
       "diode",
@@ -1416,7 +1311,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Synth Feedback Lead\n# Lead stack: tube pre -> y_prev scream (capped) -> tone LPF -> soft ceiling. No Osc = max speed.\n\nparam a = Drive [1.5, 8.0]\nparam b = Feed [0.12, 0.52]\nparam c = Cutoff [600, 7000]\nparam d = Level [0.3, 1.0]\nstage1: y = tube(x, a * 0.55)\nstage2: y = tube(x + y_prev * b, a * 0.45)\nfilter1: type = lowpass; cutoff = c; resonance = 0.55\nstage3: y = softclip(y, 1.2) * d\n",
+    "script": "# Synth Feedback Lead\n# Lead stack: tube pre -> y_prev scream (capped) -> tone LPF -> soft ceiling. No Osc = max speed.\n\nparam a = Drive [1.5, 8.0]\nparam b = Feed [0.12, 0.52]\nparam c = Cutoff [600, 7000]\nparam d = Level [0.3, 1.0]\nstage1: y = tube(x, a * 0.55)\nstage2: y = tube(x + y_prev * b, a * 0.45)\nfilter1: type = lowpass; cutoff = c; resonance = 0.55\nstage3: y = softclip(y, 1.2) * d\nfilter999: type = highpass; cutoff = 20; resonance = 0.35\n",
     "tags": [
       "clip",
       "drive",
@@ -1449,46 +1344,6 @@
       "min": 0.3,
       "max": 1,
       "default": 0.7
-    }
-  },
-  {
-    "name": "Dual Path Regen",
-    "category": "Creative",
-    "description": "Pre softclip (SIMD) + y_prev path blended in ONE stage. Teaches: prev in a single stage only.",
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "# Dual Path Regen\n# Pre softclip (SIMD) + y_prev path blended in ONE stage. Teaches: prev in a single stage only.\n\nparam a = Drive [1.2, 6.5]\nparam b = Regen [0.1, 0.5]\nparam c = Blend [0.2, 0.9]\nparam d = Tone [1000, 9000]\nstage1: y = softclip(x, a * 0.4)\nstage2: y = lerp(x, softclip(x + y_prev * b, a * 0.55), c)\nfilter1: type = lowpass; cutoff = d; resonance = 0.35\n",
-    "tags": [
-      "clip",
-      "creative",
-      "drive",
-      "filter",
-      "lowpass"
-    ],
-    "paramA": {
-      "name": "Drive",
-      "min": 1.2,
-      "max": 6.5,
-      "default": 3.2
-    },
-    "paramB": {
-      "name": "Regen",
-      "min": 0.1,
-      "max": 0.5,
-      "default": 0.28
-    },
-    "paramC": {
-      "name": "Blend",
-      "min": 0.2,
-      "max": 0.9,
-      "default": 0.6
-    },
-    "paramD": {
-      "name": "Tone",
-      "min": 1000,
-      "max": 9000,
-      "default": 5000
     }
   },
   {
@@ -4066,7 +3921,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Boom Tail\n# Sub-safe boom: rumble cut, tube weight, long dark tail. Park on an impact or drone send.\n\nparam a = Drive [1.3, 4.0]\nparam b = Size [0.52, 0.95]\nparam c = Decay [0.48, 0.9]\nparam d = Mix [0.2, 0.68]\nparam e = Sub [40, 110]\nparam f = Tone [1800, 6500]\nfilter1: type = highpass; cutoff = e; resonance = 0.24\nstage1: y = tube(x, a)\nreverb1: size = b; decay = c; damp = 0.7; mix = d; width = 0.8\nfilter2: type = lowpass; cutoff = f; resonance = 0.26\nstage2: y = softclip(x, 1.06)\n",
+    "script": "# Boom Tail\n# Sub-safe boom: rumble cut, tube weight, long dark tail. Park on an impact or drone send.\n\nparam a = Drive [1.3, 4.0]\nparam b = Size [0.52, 0.95]\nparam c = Decay [0.48, 0.9]\nparam d = Mix [0.2, 0.68]\nparam e = Sub [40, 110]\nparam f = Tone [1800, 6500]\nfilter1: type = highpass; cutoff = e; resonance = 0.24\nstage1: y = tube(x, a)\nreverb1: size = b; decay = c; damp = 0.7; mix = d; width = 0.8\nfilter2: type = lowpass; cutoff = f; resonance = 0.26\nstage2: y = softclip(x, 1.06)\nfilter999: type = highpass; cutoff = 20; resonance = 0.35\n",
     "tags": [
       "boom",
       "cinematic",
@@ -4190,7 +4045,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Tension Bed\n# Slow pulse on a dark hall over mild tube. Underscore bed, not a riser sample.\n\nparam a = Drive [0.9, 2.8]\nparam b = Size [0.4, 0.88]\nparam c = Mix [0.22, 0.7]\nparam d = Rate [0.05, 0.8]\nparam e = Depth [0.12, 0.5]\nparam f = Tone [2500, 8000]\nosc1: shape = sine; freq = d\nstage1: y = tube(x, a)\nreverb1: size = b; decay = 0.7; damp = 0.62; mix = 1; width = 0.85\nstage2: y = y * (1.0 - e + e * (0.5 + 0.5 * osc1))\nfilter1: type = lowpass; cutoff = f; resonance = 0.25\nstage3: y = lerp(x, softclip(y, 1.06), c)\n",
+    "script": "# Tension Bed\n# Slow pulse on a dark hall over mild tube. Underscore bed, not a riser sample.\n\nparam a = Drive [0.9, 2.8]\nparam b = Size [0.4, 0.88]\nparam c = Mix [0.22, 0.7]\nparam d = Rate [0.05, 0.8]\nparam e = Depth [0.12, 0.5]\nparam f = Tone [2500, 8000]\nosc1: shape = sine; freq = d\nstage1: y = tube(x, a)\nreverb1: size = b; decay = 0.7; damp = 0.62; mix = 1; width = 0.85\nstage2: y = y * (1.0 - e + e * (0.5 + 0.5 * osc1))\nfilter1: type = lowpass; cutoff = f; resonance = 0.25\nstage3: y = lerp(x, softclip(y, 1.06), c)\nfilter999: type = highpass; cutoff = 20; resonance = 0.35\n",
     "tags": [
       "cinematic",
       "clip",
@@ -5002,11 +4857,11 @@
   {
     "name": "Optical Leveler Comp",
     "category": "Dynamics",
-    "description": "optical leveler: optical, program-dependent. Attack ~10 ms, release 0.5 s (50% then hang — we use 0.48). Comp ratio ~3:1. Peak Reduction + Gain. T4-cell smoothness, tube makeup.",
+    "description": "Slow optical-style level control with a fixed 10 ms attack and 480 ms release, followed by tube saturation. Ratio reaches down to 2:1.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Optical Leveler Comp\n# optical leveler: optical, program-dependent. Attack ~10 ms, release 0.5 s (50% then hang — we use 0.48). Comp ratio ~3:1. Peak Reduction + Gain. T4-cell smoothness, tube makeup.\n\nparam a = PeakRed [-28.0, -6.0]\nparam b = Gain [0.7, 2.2]\nparam c = Limit [3.0, 12.0]\ncomp1: threshold = a; ratio = c; attack = 0.01; release = 0.48; knee = 6; makeup = 2; hpf = 60\nstage1: y = tube(x * b, 1.12)\nfilter1: type = lowpass; cutoff = 15000; resonance = 0.2\n",
+    "script": "# Optical Leveler Comp\n# optical leveler: optical, program-dependent. Attack ~10 ms, release 0.5 s (50% then hang — we use 0.48). Comp ratio ~3:1. Peak Reduction + Gain. T4-cell smoothness, tube makeup.\n\nparam a = PeakRed [-28.0, -6.0]\nparam b = Gain [0.7, 2.2]\nparam c = Limit [2.0, 12.0]\ncomp1: threshold = a; ratio = c; attack = 0.01; release = 0.48; knee = 6; makeup = 2; hpf = 60\nstage1: y = tube(x * b, 1.12)\nfilter1: type = lowpass; cutoff = 15000; resonance = 0.2\n",
     "tags": [
       "compressor",
       "dynamics",
@@ -5028,7 +4883,7 @@
     },
     "paramC": {
       "name": "Limit",
-      "min": 3,
+      "min": 2,
       "max": 12,
       "default": 3.2
     }
@@ -6033,19 +5888,18 @@
   {
     "name": "Radio Band Vocal",
     "category": "Vocals",
-    "description": "AM radio vocal. Tight band, light crush, then LPF. Insert or send.",
+    "description": "Crushed radio band with adjustable drive, bit depth, center and width. Insert coloration for speech and sung vocals.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Radio Band Vocal\n# AM radio vocal. Tight band, light crush, then LPF. Insert or send.\n\nparam a = Bits [5, 11]\nparam b = Center [800, 2200]\nparam c = Width [400, 1400]\nfilter1: type = bandpass; center = b; width = c\nstage1: y = bitcrush(softclip(x, 1.4), a)\nfilter2: type = lowpass; cutoff = 4500; resonance = 0.3\n",
+    "script": "# Radio Band Vocal\n# Crushed radio band with adjustable drive, bit depth, center and width. Insert coloration for speech and sung vocals.\nparam a = Bits [5, 12]\nparam b = Center [700, 2300]\nparam c = Width [350, 2000]\nparam d = Drive [1, 4]\nfilter1: type = bandpass; center = b; width = c\nstage1: y = bitcrush(softclip(x,d),a)\nfilter2: type = lowpass; cutoff = 4500; resonance = 0.3\n",
     "tags": [
       "bitcrush",
       "clip",
-      "crush",
+      "drive",
       "filter",
       "lo-fi",
       "lowpass",
-      "send",
       "vocal",
       "vocals",
       "width"
@@ -6053,31 +5907,38 @@
     "paramA": {
       "name": "Bits",
       "min": 5,
-      "max": 11,
+      "max": 12,
       "default": 8
     },
     "paramB": {
       "name": "Center",
-      "min": 800,
-      "max": 2200,
+      "min": 700,
+      "max": 2300,
       "default": 1400
     },
     "paramC": {
       "name": "Width",
-      "min": 400,
-      "max": 1400,
-      "default": 800
+      "min": 350,
+      "max": 2000,
+      "default": 1000
+    },
+    "paramD": {
+      "name": "Drive",
+      "min": 1,
+      "max": 4,
+      "default": 1.4
     }
   },
   {
     "name": "Telephone Cup",
     "category": "Vocals",
-    "description": "Narrower than Radio Band. 400–3 kHz cup, diode grit.",
+    "description": "Adjustable telephone band with diode grit and resonant cutoff edges. One phone coloration for dialogue, vocals and instruments.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Telephone Cup\n# Narrower than Radio Band. 400–3 kHz cup, diode grit.\n\nparam a = Grit [0.8, 3.5]\nparam b = Low [280, 700]\nparam c = High [2200, 4200]\nfilter1: type = highpass; cutoff = b; resonance = 0.45\nfilter2: type = lowpass; cutoff = c; resonance = 0.4\nstage1: y = diode(x, a)\n",
+    "script": "# Telephone Cup\n# Adjustable telephone band with diode grit and resonant cutoff edges. One phone coloration for dialogue, vocals and instruments.\nparam a = Grit [0.5, 3.5]\nparam b = Low [120, 700]\nparam c = High [2200, 5000]\nparam d = Resonance [0.25, 1.2]\nfilter1: type = highpass; cutoff = b; resonance = d\nfilter2: type = lowpass; cutoff = c; resonance = d\nstage1: y = diode(x,a)\n",
     "tags": [
+      "dialogue",
       "diode",
       "filter",
       "highpass",
@@ -6086,21 +5947,27 @@
     ],
     "paramA": {
       "name": "Grit",
-      "min": 0.8,
+      "min": 0.5,
       "max": 3.5,
-      "default": 1.6
+      "default": 1.3
     },
     "paramB": {
       "name": "Low",
-      "min": 280,
+      "min": 120,
       "max": 700,
-      "default": 400
+      "default": 380
     },
     "paramC": {
       "name": "High",
       "min": 2200,
-      "max": 4200,
-      "default": 3000
+      "max": 5000,
+      "default": 3200
+    },
+    "paramD": {
+      "name": "Resonance",
+      "min": 0.25,
+      "max": 1.2,
+      "default": 0.4
     }
   },
   {
@@ -8247,38 +8114,6 @@
     }
   },
   {
-    "name": "Vocal Opto Soft",
-    "category": "Dynamics",
-    "description": "Softer than optical leveler stock. Low ratio, long release.",
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "# Vocal Opto Soft\n# Softer than optical leveler stock. Low ratio, long release.\n\nparam a = Pull [12, 32]\nparam b = Release [0.15, 0.5]\nparam c = Makeup [0, 6]\ncomp1: threshold = -a; ratio = 2; attack = 0.018; release = b; knee = 14; makeup = c\n",
-    "tags": [
-      "compressor",
-      "dynamics",
-      "vocal"
-    ],
-    "paramA": {
-      "name": "Pull",
-      "min": 12,
-      "max": 32,
-      "default": 22
-    },
-    "paramB": {
-      "name": "Release",
-      "min": 0.15,
-      "max": 0.5,
-      "default": 0.28
-    },
-    "paramC": {
-      "name": "Makeup",
-      "min": 0,
-      "max": 6,
-      "default": 1.8
-    }
-  },
-  {
     "name": "FET Then Opto",
     "category": "Dynamics",
     "description": "Fast peak compression followed by slower soft-knee leveling. Two timing behaviors, not a hardware circuit emulation. Set thresholds for the input recording.",
@@ -8661,80 +8496,6 @@
     }
   },
   {
-    "name": "Drum Clip Bus",
-    "category": "Distortion",
-    "description": "Drum bus clip, 80 HPF, 6 kHz LPF.",
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "# Drum Clip Bus\n# Drum bus clip, 80 HPF, 6 kHz LPF.\n\nparam a = Drive [1, 5]\nparam b = Ceiling [0.45, 0.9]\nparam c = Top [3500, 8000]\nfilter1: type = highpass; cutoff = 70; resonance = 0.25\nstage1: y = hardclip(softclip(x, a), b)\nfilter2: type = lowpass; cutoff = c; resonance = 0.28\n",
-    "tags": [
-      "bus",
-      "clip",
-      "distortion",
-      "drive",
-      "drum",
-      "filter",
-      "hardclip",
-      "highpass",
-      "lowpass",
-      "parallel"
-    ],
-    "paramA": {
-      "name": "Drive",
-      "min": 1,
-      "max": 5,
-      "default": 2.2
-    },
-    "paramB": {
-      "name": "Ceiling",
-      "min": 0.45,
-      "max": 0.9,
-      "default": 0.7
-    },
-    "paramC": {
-      "name": "Top",
-      "min": 3500,
-      "max": 8000,
-      "default": 5500
-    }
-  },
-  {
-    "name": "Mixbus Satin",
-    "category": "Distortion",
-    "description": "Mixbus: barely-there tube + limit.",
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "# Mixbus Satin\n# Mixbus: barely-there tube + limit.\n\nparam a = Satin [0.4, 1.4]\nparam b = Ceiling [-1.2, -0.2]\nparam c = Air [0, 2]\nstage1: y = tube(x, a)\neq1: type = highshelf; freq = 12000; q = 0.5; gain = c\nlimit1: ceiling = b; release = 0.1\n",
-    "tags": [
-      "air",
-      "distortion",
-      "eq",
-      "equalizer",
-      "limiter",
-      "tube"
-    ],
-    "paramA": {
-      "name": "Satin",
-      "min": 0.4,
-      "max": 1.4,
-      "default": 0.75
-    },
-    "paramB": {
-      "name": "Ceiling",
-      "min": -1.2,
-      "max": -0.2,
-      "default": -0.4
-    },
-    "paramC": {
-      "name": "Air",
-      "min": 0,
-      "max": 2,
-      "default": 0.6
-    }
-  },
-  {
     "name": "Lo-Fi Amp Sim",
     "category": "Distortion",
     "description": "Tiny speaker: 300–3.5 kHz + crush.",
@@ -8770,43 +8531,6 @@
       "min": 2500,
       "max": 5000,
       "default": 3500
-    }
-  },
-  {
-    "name": "Hard Clip Club",
-    "category": "Club",
-    "description": "Club clip lighter than Hardcore Clip.",
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "# Hard Clip Club\n# Club clip lighter than Hardcore Clip.\n\nparam a = Drive [2, 9]\nparam b = Ceiling [0.28, 0.7]\nparam c = Top [3000, 7000]\nfilter1: type = highpass; cutoff = 80; resonance = 0.3\nstage1: y = hardclip(softclip(x, a * 0.4), b)\nfilter2: type = lowpass; cutoff = c; resonance = 0.32\n",
-    "tags": [
-      "clip",
-      "club",
-      "drive",
-      "filter",
-      "hardclip",
-      "hardcore",
-      "highpass",
-      "lowpass"
-    ],
-    "paramA": {
-      "name": "Drive",
-      "min": 2,
-      "max": 9,
-      "default": 5
-    },
-    "paramB": {
-      "name": "Ceiling",
-      "min": 0.28,
-      "max": 0.7,
-      "default": 0.45
-    },
-    "paramC": {
-      "name": "Top",
-      "min": 3000,
-      "max": 7000,
-      "default": 4800
     }
   },
   {
@@ -9349,41 +9073,6 @@
     }
   },
   {
-    "name": "AM Radio Narrow",
-    "category": "Lo-Fi",
-    "description": "Narrower than Phone Line. 500–2.8 kHz.",
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "# AM Radio Narrow\n# Narrower than Phone Line. 500–2.8 kHz.\n\nparam a = Low [350, 700]\nparam b = High [2000, 3500]\nparam c = Bits [6, 11]\nfilter1: type = highpass; cutoff = a; resonance = 0.4\nfilter2: type = lowpass; cutoff = b; resonance = 0.35\nstage1: y = bitcrush(softclip(x, 1.3), c)\nfilter3: type = lowpass; cutoff = b; resonance = 0.28\n",
-    "tags": [
-      "bitcrush",
-      "clip",
-      "filter",
-      "highpass",
-      "lo-fi",
-      "lowpass"
-    ],
-    "paramA": {
-      "name": "Low",
-      "min": 350,
-      "max": 700,
-      "default": 500
-    },
-    "paramB": {
-      "name": "High",
-      "min": 2000,
-      "max": 3500,
-      "default": 2800
-    },
-    "paramC": {
-      "name": "Bits",
-      "min": 6,
-      "max": 11,
-      "default": 8
-    }
-  },
-  {
     "name": "VHS Tracking",
     "category": "Lo-Fi",
     "description": "Wow + dark + tiny crush. Video tape.",
@@ -9712,41 +9401,6 @@
     }
   },
   {
-    "name": "Dialogue Phone",
-    "category": "Cinematic",
-    "description": "Phone filter for dialogue. Not Dialogue Seat.",
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "# Dialogue Phone\n# Phone filter for dialogue. Not Dialogue Seat.\n\nparam a = Low [300, 700]\nparam b = High [2500, 4200]\nparam c = Grit [0.5, 2]\nfilter1: type = highpass; cutoff = a; resonance = 0.4\nfilter2: type = lowpass; cutoff = b; resonance = 0.35\nstage1: y = diode(x, c)\n",
-    "tags": [
-      "cinematic",
-      "dialogue",
-      "diode",
-      "filter",
-      "highpass",
-      "lowpass"
-    ],
-    "paramA": {
-      "name": "Low",
-      "min": 300,
-      "max": 700,
-      "default": 420
-    },
-    "paramB": {
-      "name": "High",
-      "min": 2500,
-      "max": 4200,
-      "default": 3200
-    },
-    "paramC": {
-      "name": "Grit",
-      "min": 0.5,
-      "max": 2,
-      "default": 1
-    }
-  },
-  {
     "name": "Tension Pulse",
     "category": "Cinematic",
     "description": "Slow trem + dark hall. Not Tension Bed.",
@@ -9940,17 +9594,15 @@
   {
     "name": "Glitch Hold Gate",
     "category": "Creative",
-    "description": "Choppy gate, 1/16. Not Glitch Gate.",
+    "description": "A seeded held control value sets each sixteenth's amplitude. The threshold gate keeps background noise out.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Glitch Hold Gate\n# Choppy gate, 1/16. Not Glitch Gate.\n\nparam a = Depth [0.5, 1]\nparam b = Open [-30, -8]\nparam c = Mix [0.3, 1]\nosc1: shape = square; freq = 1/16; depth = 1\ngate1: threshold = b; hyst = 3; hold = 0.01; range = -70\nstage1: y = lerp(x, x * (1 - a + a * (0.05 + 0.95 * (0.5 + 0.5 * osc1))), c)\n",
+    "script": "# Glitch Hold Gate\n# A seeded held control value sets each sixteenth's amplitude. The threshold gate keeps background noise out.\nparam a = Depth [0.5, 1]\nparam b = Open [-30, -8]\nparam c = Mix [0.3, 1]\nrandom1: rate = 200; min = 0; max = 1; seed = 412\nsamplehold1: ina = random1; sync = 1/16; slew = 0.01\ngate1: threshold = b; hyst = 3; hold = 0.01; range = -70\nstage1: y = lerp(x,x*(1-a+a*samplehold1),c)\n",
     "tags": [
       "creative",
       "gate",
-      "glitch",
-      "lfo",
-      "modulation"
+      "glitch"
     ],
     "paramA": {
       "name": "Depth",
@@ -10228,16 +9880,18 @@
   {
     "name": "Acoustic Body",
     "category": "Guitar",
-    "description": "Adds low-mid body to piezo and thin acoustics.",
+    "description": "Low-mid body shelf and gentle transient definition for thin piezo recordings. The full frequency range remains present.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Acoustic Body\n# Adds low-mid body to piezo and thin acoustics.\n\nparam a = Body [120.0, 600.0]\nparam b = Res [0.4, 2.2]\nfilter1: type = bandpass; center = a; width = 500; resonance = b\nstage1: y = x + y_prev * 0.08\nfilter2: type = lowpass; cutoff = 12000; resonance = 0.25\n",
+    "script": "# Acoustic Body\n# Low-mid body shelf and gentle transient definition for thin piezo recordings. The full frequency range remains present.\nparam a = Body [120, 600]\nparam b = Body Gain [0, 6]\nparam c = Pick [0, 1]\nfilter1: type = highpass; cutoff = 45; resonance = 0.4\neq1: type = peak; freq = a; q = 0.75; gain = b\ntransient1: attack = c; sustain = 0; mix = 0.4\nfilter2: type = lowpass; cutoff = 15000; resonance = 0.3\n",
     "tags": [
+      "eq",
+      "equalizer",
       "filter",
       "guitar",
-      "lowpass",
-      "width"
+      "highpass",
+      "lowpass"
     ],
     "paramA": {
       "name": "Body",
@@ -10246,59 +9900,78 @@
       "default": 280
     },
     "paramB": {
-      "name": "Res",
-      "min": 0.4,
-      "max": 2.2,
-      "default": 1.1
+      "name": "Body Gain",
+      "min": 0,
+      "max": 6,
+      "default": 2.5
+    },
+    "paramC": {
+      "name": "Pick",
+      "min": 0,
+      "max": 1,
+      "default": 0.2
     }
   },
   {
     "name": "Arp Shimmer",
     "category": "Synth",
-    "description": "Sparkle for arpeggios and sequences.",
+    "description": "Parallel octave-up delay with a highpassed return. Keep the dry arpeggio intact; Sparkle sets the return highpass.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Arp Shimmer\n# Sparkle for arpeggios and sequences.\n\nparam a = Sparkle [4000.0, 16000.0]\nosc1: shape = sine; freq = 2.5; depth = 1.0\nfilter1: type = highpass; cutoff = a; resonance = 0.6\nstage1: y = x + osc1 * 0.03\n",
+    "script": "# Arp Shimmer\n# Parallel octave-up delay with a highpassed return. Keep the dry arpeggio intact; Sparkle sets the return highpass.\nparam a = Sparkle [1500, 7000]\nparam b = Shimmer [0.08, 0.55]\nstage1: y = x\nbus shimmer:\n send: in = 1\n pitch1: semitones = 12; mix = 1; formant = 1\n delay1: time = 187.5; feedback = 0.28; mix = 1; damp = 11000\n filter1: type = highpass; cutoff = a; resonance = 0.35\nout: main = 1; shimmer = b\n",
     "tags": [
+      "bus",
+      "delay",
       "filter",
       "highpass",
-      "lfo",
-      "modulation",
+      "octaver",
+      "parallel",
+      "pitch",
+      "send",
       "shimmer",
       "synth"
     ],
     "paramA": {
       "name": "Sparkle",
-      "min": 4000,
-      "max": 16000,
-      "default": 10000
+      "min": 1500,
+      "max": 7000,
+      "default": 3200
+    },
+    "paramB": {
+      "name": "Shimmer",
+      "min": 0.08,
+      "max": 0.55,
+      "default": 0.25
     }
   },
   {
     "name": "Bitcrush Glitch",
     "category": "Sound Design",
-    "description": "Digital glitch and bit reduction.",
+    "description": "Clock-jittered decimation with a fixed sixteenth gate pattern. The effect stays silent without input.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Bitcrush Glitch\n# Digital glitch and bit reduction.\n\nparam a = Bits [2.0, 12.0]\nosc1: shape = saw; freq = 3000; depth = 1.0\nstage1: y = bitcrush(x + osc1 * 0.05, a)\nfilter1: type = lowpass; cutoff = 12000; resonance = 0.25\n",
+    "script": "# Bitcrush Glitch\n# Clock-jittered decimation with a fixed sixteenth gate pattern. The effect stays silent without input.\nparam a = Bits [2, 12]\nparam b = Clock [0.05, 0.75]\ndecimate1: rate = b; bits = a; jitter = 0.3; hold = 0; recon = 0.6; mix = 0.85\nstepseq1: steps = 8; sync = 1/16; values = 1,0.1,0.7,0,1,0.3,0,0.9; gate = 0.7; glide = 0.02\nstage1: y = x*(0.25+0.75*stepseq1)\n",
     "tags": [
       "bitcrush",
-      "digital",
-      "filter",
+      "eq",
+      "equalizer",
       "glitch",
-      "lfo",
       "lo-fi",
-      "lowpass",
-      "modulation",
       "sound design"
     ],
     "paramA": {
       "name": "Bits",
       "min": 2,
       "max": 12,
-      "default": 5
+      "default": 7
+    },
+    "paramB": {
+      "name": "Clock",
+      "min": 0.05,
+      "max": 0.75,
+      "default": 0.35
     }
   },
   {
@@ -10308,7 +9981,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Blues Break OD\n# Warm mid-forward overdrive for single coils.\n\nparam a = Drive [0.2, 5.0]\nparam b = Tone [400.0, 8000.0]\nstage1: y = tanh(x * a + 0.05)\nfilter1: type = lowpass; cutoff = b; resonance = 0.7\n",
+    "script": "# Blues Break OD\n# Warm mid-forward overdrive for single coils.\n\nparam a = Drive [0.2, 5.0]\nparam b = Tone [400.0, 8000.0]\nstage1: y = tanh(x * a + 0.05)\nfilter1: type = lowpass; cutoff = b; resonance = 0.7\nfilter999: type = highpass; cutoff = 20; resonance = 0.35\n",
     "tags": [
       "drive",
       "filter",
@@ -10369,14 +10042,15 @@
   {
     "name": "Dark Atmosphere",
     "category": "Ambient",
-    "description": "Low ominous atmosphere layer.",
+    "description": "Low noise generator layered under the source, with seeded slow filter drift. Fog sets the noise level, including when input is silent.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Dark Atmosphere\n# Low ominous atmosphere layer.\n\nparam a = Dark [40.0, 300.0]\nfilter1: type = lowpass; cutoff = a * 4; resonance = 1.1\nstage1: y = x * 0.3 + noise(t * sr) * 0.22 + y_prev * 0.15\nfilter2: type = lowpass; cutoff = a * 12; resonance = 0.25\n",
+    "script": "# Dark Atmosphere\n# Low noise generator layered under the source, with seeded slow filter drift. Fog sets the noise level, including when input is silent.\nparam a = Dark [40, 300]\nparam b = Fog [0, 0.3]\nparam c = Drift [0, 1]\nrandom1: rate = 0.18; min = 0; max = 1; smooth = 0.9; seed = 279\nstage1: y = x*(1-b)+noise(t*sr)*b\nfilter1: type = highpass; cutoff = 20; resonance = 0.35\nfilter2: type = lowpass; cutoff = a*4*(1+c*(random1-0.5)); resonance = 0.85\n",
     "tags": [
       "ambient",
       "filter",
+      "highpass",
       "lowpass"
     ],
     "paramA": {
@@ -10384,6 +10058,18 @@
       "min": 40,
       "max": 300,
       "default": 110
+    },
+    "paramB": {
+      "name": "Fog",
+      "min": 0,
+      "max": 0.3,
+      "default": 0.08
+    },
+    "paramC": {
+      "name": "Drift",
+      "min": 0,
+      "max": 1,
+      "default": 0.3
     }
   },
   {
@@ -10447,36 +10133,6 @@
       "min": 0,
       "max": 1,
       "default": 0.55
-    }
-  },
-  {
-    "name": "Loudness Safe",
-    "category": "Mastering",
-    "description": "Controlled saturation with soft clip ceiling.",
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "# Loudness Safe\n# Controlled saturation with soft clip ceiling.\n\nparam a = Drive [0.5, 4.0]\nparam b = Ceiling [0.5, 1.0]\nfilter1: type = highpass; cutoff = 80; resonance = 0.5\nstage1: y = hardclip(tanh(x * a), b)\nfilter2: type = lowpass; cutoff = 12000; resonance = 0.25\n",
-    "tags": [
-      "clip",
-      "drive",
-      "filter",
-      "hardclip",
-      "highpass",
-      "lowpass",
-      "mastering"
-    ],
-    "paramA": {
-      "name": "Drive",
-      "min": 0.5,
-      "max": 4,
-      "default": 1.8
-    },
-    "paramB": {
-      "name": "Ceiling",
-      "min": 0.5,
-      "max": 1,
-      "default": 0.92
     }
   },
   {
@@ -10665,62 +10321,35 @@
   {
     "name": "Tape Wobble",
     "category": "Lo-Fi",
-    "description": "Slow pitch/wow flutter.",
+    "description": "Wet short-delay wow and flutter with seeded slow drift. No control oscillator is added to the audio.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Tape Wobble\n# Slow pitch/wow flutter.\n\nparam a = Wow [0.1, 3.0]\nosc1: shape = sine; freq = a; depth = 1.0\nstage1: y = x + y_prev * 0.12 + osc1 * 0.04\nfilter1: type = lowpass; cutoff = 12000; resonance = 0.25\n",
+    "script": "# Tape Wobble\n# Wet short-delay wow and flutter with seeded slow drift. No control oscillator is added to the audio.\nparam a = Wow [0, 1]\nparam b = Drift [0, 3]\nparam c = Rate [0.1, 3]\nrandom1: rate = 0.7; min = -1; max = 1; smooth = 0.9; seed = 149\ndelay1: time = 22 + random1 * b; feedback = 0; mix = 1; wow = a; rate = c; flutter = 0.12; damp = 9000\nsaturate1: mode = tape; drive = 1.5; dynamics = 0.3; character = 0.25; tone = 0.55; mix = 0.25\nfilter1: type = lowpass; cutoff = 10000; resonance = 0.3\n",
     "tags": [
+      "delay",
+      "drive",
       "filter",
-      "lfo",
       "lo-fi",
       "lowpass",
-      "modulation",
       "tape"
     ],
     "paramA": {
       "name": "Wow",
-      "min": 0.1,
-      "max": 3,
-      "default": 0.6
-    }
-  },
-  {
-    "name": "Telephone EQ",
-    "category": "Filter",
-    "description": "Bandpass 300-3400 Hz für Telefoncharakter.",
-    "inputGain": 0,
-    "outputGain": 0,
-    "mix": 1,
-    "script": "# Telephone EQ\n# Bandpass 300-3400 Hz für Telefoncharakter.\n\nparam a = LowCut [120.0, 500.0]\nparam b = HighCut [2500.0, 5000.0]\nparam c = Drive [0.8, 2.0]\nparam d = Res [0.3, 1.2]\nfilter1: type = highpass; cutoff = a; resonance = d\nfilter2: type = lowpass; cutoff = b; resonance = d\nstage1: y = tanh(x * c)\n",
-    "tags": [
-      "drive",
-      "filter",
-      "highpass",
-      "lowpass"
-    ],
-    "paramA": {
-      "name": "LowCut",
-      "min": 120,
-      "max": 500,
-      "default": 300
+      "min": 0,
+      "max": 1,
+      "default": 0.35
     },
     "paramB": {
-      "name": "HighCut",
-      "min": 2500,
-      "max": 5000,
-      "default": 3400
-    },
-    "paramC": {
-      "name": "Drive",
-      "min": 0.8,
-      "max": 2,
+      "name": "Drift",
+      "min": 0,
+      "max": 3,
       "default": 1.1
     },
-    "paramD": {
-      "name": "Res",
-      "min": 0.3,
-      "max": 1.2,
+    "paramC": {
+      "name": "Rate",
+      "min": 0.1,
+      "max": 3,
       "default": 0.6
     }
   },
@@ -10752,35 +10381,38 @@
   {
     "name": "Vocal Double",
     "category": "Vocals",
-    "description": "Subtle detune/double thickness.",
+    "description": "Dry vocal plus a delayed micro-pitch bus. Detune is in semitones; no DC offset or feedback-only fake detune.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Vocal Double\n# Subtle detune/double thickness.\n\nparam a = Detune [0.0, 0.4]\nparam b = DelayFb [0.0, 0.6]\nparam c = Blend [0.0, 1.0]\nstage1: y = x * (1.0 - c) + (x + y_prev * b + a * 0.05) * c\nfilter1: type = lowpass; cutoff = 12000; resonance = 0.25\n",
+    "script": "# Vocal Double\n# Dry vocal plus a delayed micro-pitch bus. Detune is in semitones; no DC offset or feedback-only fake detune.\nparam a = Detune [-0.18, 0.18]\nparam b = Delay [12, 45]\nparam c = Blend [0.08, 0.5]\nstage1: y = x\nbus double:\n send: in = 1\n pitch1: semitones = a; mix = 1; formant = 1\n delay1: time = b; feedback = 0; mix = 1; damp = 8500\n filter1: type = highpass; cutoff = 140; resonance = 0.4\nout: main = 1; double = c\n",
     "tags": [
+      "bus",
       "delay",
       "filter",
-      "lowpass",
+      "highpass",
+      "parallel",
+      "send",
       "vocal",
       "vocals"
     ],
     "paramA": {
       "name": "Detune",
-      "min": 0,
-      "max": 0.4,
-      "default": 0.12
+      "min": -0.18,
+      "max": 0.18,
+      "default": 0.07
     },
     "paramB": {
-      "name": "DelayFb",
-      "min": 0,
-      "max": 0.6,
-      "default": 0.22
+      "name": "Delay",
+      "min": 12,
+      "max": 45,
+      "default": 24
     },
     "paramC": {
       "name": "Blend",
-      "min": 0,
-      "max": 1,
-      "default": 0.45
+      "min": 0.08,
+      "max": 0.5,
+      "default": 0.22
     }
   },
   {
@@ -12213,7 +11845,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Frequency Assassin\n# Industrial smash: three notch filters with inverse LFO sweeps cut 200-1800 Hz, remaining spectrum through fuzz + fold, rhythmic gate.\n\nparam a = Notch Sweep [0.3, 2.5]\nparam b = Notch Width [3.0, 4.0]\nparam c = Fuzz [4.0, 14.0]\nparam d = Gate Thresh [-42, -24]\nparam e = Delay FB [0.2, 0.7]\nparam f = Mix [0.5, 1.0]\nfilter1: type = highpass; cutoff = 90; resonance = 0.4\nosc1: shape = triangle; freq = a; depth = 1.0\neq1: type = notch; freq = 500 + (0.5 + 0.5 * osc1) * 400; q = b; gain = 0\neq2: type = notch; freq = 1100 + (0.5 - 0.5 * osc1) * 400; q = b; gain = 0\neq3: type = notch; freq = 1700 + (0.5 + 0.5 * osc1) * 400; q = b; gain = 0\nstage1: y = tube(x, c * 0.4)\nstage2: y = tube(x, c * 0.5)\nstage3: y = fold(x, -0.4, 0.5)\ngate1: threshold = d; hyst = 6; hold = 0.04; range = -18\ndelay1: sync = 1/16; feedback = e; mix = 0.22; damp = 5000; pingpong = true\nfilter2: type = lowpass; cutoff = 7200; resonance = 0.35\ncomp1: threshold = -16; ratio = 6; attack = 0.005; release = 0.1; makeup = 4\nstage4: y = x * f\n",
+    "script": "# Frequency Assassin\n# Industrial smash: three notch filters with inverse LFO sweeps cut 200-1800 Hz, remaining spectrum through fuzz + fold, rhythmic gate.\n\nparam a = Notch Sweep [0.3, 2.5]\nparam b = Notch Width [3.0, 4.0]\nparam c = Fuzz [4.0, 14.0]\nparam d = Gate Thresh [-42, -24]\nparam e = Delay FB [0.2, 0.7]\nparam f = Mix [0.5, 1.0]\nfilter1: type = highpass; cutoff = 90; resonance = 0.4\nosc1: shape = triangle; freq = a; depth = 1.0\neq1: type = notch; freq = 500 + (0.5 + 0.5 * osc1) * 400; q = b; gain = 0\neq2: type = notch; freq = 1100 + (0.5 - 0.5 * osc1) * 400; q = b; gain = 0\neq3: type = notch; freq = 1700 + (0.5 + 0.5 * osc1) * 400; q = b; gain = 0\nstage1: y = tube(x, c * 0.4)\nstage2: y = tube(x, c * 0.5)\nstage3: y = fold(x, -0.4, 0.5)\ngate1: threshold = d; hyst = 6; hold = 0.04; range = -18\ndelay1: sync = 1/16; feedback = e; mix = 0.22; damp = 5000; pingpong = true\nfilter2: type = lowpass; cutoff = 7200; resonance = 0.35\ncomp1: threshold = -16; ratio = 6; attack = 0.005; release = 0.1; makeup = 4\nstage4: y = x * f\nfilter999: type = highpass; cutoff = 20; resonance = 0.35\n",
     "tags": [
       "compressor",
       "delay",
@@ -12523,11 +12155,11 @@
   {
     "name": "Midtempo Pressure Pump",
     "category": "Synth",
-    "description": "Midtempo 110-130 BPM: triangle LFO (1/8 sync) modulates filter cutoff/reso/drive, asymmetric fold, noise injection, counter-pump sidechain.",
+    "description": "Tempo-synced moving filter into tube and asymmetric fold distortion, followed by compressor pumping. Push adds pre-filter gain; no external sidechain is required.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Midtempo Pressure Pump\n# Midtempo 110-130 BPM: triangle LFO (1/8 sync) modulates filter cutoff/reso/drive, asymmetric fold, noise injection, counter-pump sidechain.\n\nparam a = LFO Rate [1/1, 1/16]\nparam b = Filter Depth [1000, 4000]\nparam c = Reso Depth [0.5, 2.5]\nparam d = Drive Depth [2.0, 5.0]\nparam e = Noise [0.05, 0.2]\nparam f = Pump [2.0, 8.0]\nfilter1: type = highpass; cutoff = 70; resonance = 0.35\nosc1: shape = triangle; sync = a; depth = 1.0\nstage1: y = x * (1 - e) + x * e * 1.15\nfilter2: type = lowpass; cutoff = 300 + (0.5 + 0.5 * osc1) * b; resonance = 0.4 + (0.5 + 0.5 * osc1) * c\nstage2: y = tube(x, 1.5 + (0.5 + 0.5 * osc1) * d)\nstage3: y = fold(x, -0.35, 0.45)\ncomp1: threshold = -14; ratio = f; attack = 0.003; release = 0.08; makeup = 4\nfilter3: type = lowpass; cutoff = 7500; resonance = 0.28\nlimit1: ceiling = -0.3; release = 0.1\n",
+    "script": "# Midtempo Pressure Pump\n# Tempo-synced moving filter into tube and asymmetric fold distortion, followed by compressor pumping. Push adds pre-filter gain; no external sidechain is required.\n\nparam a = LFO Rate [1/1, 1/16]\nparam b = Filter Depth [1000, 4000]\nparam c = Reso Depth [0.5, 2.5]\nparam d = Drive Depth [2.0, 5.0]\nparam e = Push [0.05, 0.2]\nparam f = Pump [2.0, 8.0]\nfilter1: type = highpass; cutoff = 70; resonance = 0.35\nosc1: shape = triangle; sync = a; depth = 1.0\nstage1: y = x * (1 - e) + x * e * 1.15\nfilter2: type = lowpass; cutoff = 300 + (0.5 + 0.5 * osc1) * b; resonance = 0.4 + (0.5 + 0.5 * osc1) * c\nstage2: y = tube(x, 1.5 + (0.5 + 0.5 * osc1) * d)\nstage3: y = fold(x, -0.35, 0.45)\ncomp1: threshold = -14; ratio = f; attack = 0.003; release = 0.08; makeup = 4\nfilter3: type = lowpass; cutoff = 7500; resonance = 0.28\nlimit1: ceiling = -0.3; release = 0.1\nfilter999: type = highpass; cutoff = 20; resonance = 0.35\n",
     "tags": [
       "compressor",
       "drive",
@@ -12567,7 +12199,7 @@
       "default": 3.5
     },
     "paramE": {
-      "name": "Noise",
+      "name": "Push",
       "min": 0.05,
       "max": 0.2,
       "default": 0.1
@@ -12617,25 +12249,23 @@
   {
     "name": "Broken Grid Chaos",
     "category": "Creative",
-    "description": "Experimental glitch: S&H square LFO drives random filter jumps, stepped bitcrush modulation, feedback-modulated delay, asymmetric fold + gate.",
+    "description": "Seeded sample-and-hold steps drive cutoff and crush depth. A second smooth random lane moves the delay feedback.",
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Broken Grid Chaos\n# Experimental glitch: S&H square LFO drives random filter jumps, stepped bitcrush modulation, feedback-modulated delay, asymmetric fold + gate.\n\nparam a = Chaos Rate [4.0, 18.0]\nparam b = Crush Depth [4.0, 10.0]\nparam c = Fold Asym [0.3, 0.8]\nparam d = Delay Chaos [0.2, 1.5]\nparam e = Gate Thresh [-42, -30]\nparam f = Mix [0.5, 1.0]\nfilter1: type = highpass; cutoff = 85; resonance = 0.4\nosc1: shape = square; freq = a; depth = 1.0\nosc2: shape = triangle; freq = d; depth = 1.0\nfilter2: type = lowpass; cutoff = 400 + (0.5 + 0.5 * osc1) * 3000; resonance = 0.85\nstage1: y = bitcrush(x, b + (0.5 + 0.5 * osc1) * 3)\ndelay1: time = 80; feedback = 0.4 + (0.5 + 0.5 * osc2) * 0.25; mix = 0.35; damp = 5000\nstage2: y = fold(x, -0.2 * c, 0.6 * c)\nfilter3: type = lowpass; cutoff = 6800; resonance = 0.32\ngate1: threshold = e; hyst = 6; hold = 0.06; range = -18; attack = 0.001; release = 0.06\nstage3: y = x * f\n",
+    "script": "# Broken Grid Chaos\n# Seeded sample-and-hold steps drive cutoff and crush depth. A second smooth random lane moves the delay feedback.\nparam a = Chaos Rate [4, 18]\nparam b = Crush Depth [4, 10]\nparam c = Fold Asym [0.3, 0.8]\nparam d = Delay Chaos [0.2, 1.5]\nparam e = Gate Thresh [-42, -30]\nparam f = Mix [0.5, 1]\nfilter1: type = highpass; cutoff = 85; resonance = 0.4\nrandom1: rate = 100; min = 0; max = 1; seed = 735\nsamplehold1: ina = random1; rate = a; slew = 0.02\nrandom2: rate = d; min = 0; max = 1; smooth = 0.8; seed = 832\nfilter2: type = lowpass; cutoff = 400 + samplehold1 * 3000; resonance = 0.85\nstage1: y = bitcrush(x,b+samplehold1*3)\ndelay1: time = 80; feedback = 0.4 + random2 * 0.22; mix = 0.35; damp = 5000\nstage2: y = fold(x,-0.2*c,0.6*c)\nfilter3: type = lowpass; cutoff = 6800; resonance = 0.32\ngate1: threshold = e; hyst = 6; hold = 0.06; range = -18; attack = 0.001; release = 0.06\nstage3: y = x * f\nfilter999: type = highpass; cutoff = 20; resonance = 0.35\n",
     "tags": [
       "bitcrush",
       "creative",
       "crush",
       "delay",
+      "drive",
       "filter",
       "fold",
       "gate",
-      "glitch",
       "highpass",
-      "lfo",
       "lo-fi",
-      "lowpass",
-      "modulation"
+      "lowpass"
     ],
     "paramA": {
       "name": "Chaos Rate",
@@ -15371,6 +15001,810 @@
       "min": -1.5,
       "max": -0.3,
       "default": -1
+    }
+  },
+  {
+    "name": "Curved Sync Duck",
+    "category": "Modulation",
+    "description": "Continuous curved quarter-note ducking from a looping MSEG. No external sidechain; the recovery curve differs from stepped gates.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Curved Sync Duck\n# Continuous curved quarter-note ducking from a looping MSEG. No external sidechain; the recovery curve differs from stepped gates.\nparam a = Duck [0.2, 0.95]\nmseg1: points = 0:0:0,0.08:0.05:-1,0.7:1:1.5,1:1:0; sync = 1/4; mode = loop; source = free\nstage1: y = x*(1-a+a*mseg1)\nfilter1: type = highpass; cutoff = 25; resonance = 0.35\n",
+    "tags": [
+      "filter",
+      "highpass",
+      "modulation",
+      "sidechain"
+    ],
+    "paramA": {
+      "name": "Duck",
+      "min": 0.2,
+      "max": 0.95,
+      "default": 0.78
+    }
+  },
+  {
+    "name": "MIDI Bowed Resonator",
+    "category": "Ambient",
+    "description": "MIDI-gated curved bow into a resonant body and room. Hold sustains the second point; release plays the remaining curved tail. Route MIDI notes to the insert.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# MIDI Bowed Resonator\n# MIDI-gated curved bow into a resonant body and room. Hold sustains the second point; release plays the remaining curved tail. Route MIDI notes to the insert.\nparam a = Bow Time [0.3, 4]\nparam b = Body [140, 1800]\nparam c = Space [0.4, 3]\nmseg1: points = 0:0:1.5,0.35:0.8:-0.5,0.65:0.6:1,1:0:0; duration = a; source = midi; sustain = 2; retrigger = on\nstage1: y = x*(0.08+0.92*mseg1)\nresonator1: freq = b; res = 2.8; gain = -5; mix = 0.28\nreverb1: size = 0.65; decay = c; damp = 0.7; mix = 0.3\n",
+    "tags": [
+      "ambient",
+      "reverb",
+      "room",
+      "space"
+    ],
+    "paramA": {
+      "name": "Bow Time",
+      "min": 0.3,
+      "max": 4,
+      "default": 1.8
+    },
+    "paramB": {
+      "name": "Body",
+      "min": 140,
+      "max": 1800,
+      "default": 420
+    },
+    "paramC": {
+      "name": "Space",
+      "min": 0.4,
+      "max": 3,
+      "default": 1.3
+    }
+  },
+  {
+    "name": "Bipolar Formant Arc",
+    "category": "Filter",
+    "description": "Asymmetric bipolar MSEG sweeps a bandpass through a repeatable curved arc. Range moves the formant while the dry floor keeps the original body.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Bipolar Formant Arc\n# Asymmetric bipolar MSEG sweeps a bandpass through a repeatable curved arc. Range moves the formant while the dry floor keeps the original body.\nparam a = Arc Time [0.4, 8]\nparam b = Range [800, 7000]\nparam c = Formant [0.2, 0.9]\nmseg1: points = 0:-1:-1,0.2:0.7:2,0.65:-0.3:-2,0.85:1:1,1:-1:0; duration = a; source = free; mode = loop\nbus formant:\n filter1: type = bandpass; center = 400+(0.5+0.5*mseg1)*b; width = 900; resonance = 1.1\nout: main = 1-c; formant = c\n",
+    "tags": [
+      "bus",
+      "filter",
+      "parallel",
+      "width"
+    ],
+    "paramA": {
+      "name": "Arc Time",
+      "min": 0.4,
+      "max": 8,
+      "default": 2.6
+    },
+    "paramB": {
+      "name": "Range",
+      "min": 800,
+      "max": 7000,
+      "default": 3000
+    },
+    "paramC": {
+      "name": "Formant",
+      "min": 0.2,
+      "max": 0.9,
+      "default": 0.55
+    }
+  },
+  {
+    "name": "Sixteen Step Filter",
+    "category": "Modulation",
+    "description": "Sixteen cutoff accents at host-synced sixteenths. Depth opens the filter; Glide rounds the steps.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Sixteen Step Filter\n# Sixteen cutoff accents at host-synced sixteenths. Depth opens the filter; Glide rounds the steps.\nparam a = Base [180, 2000]\nparam b = Depth [300, 6000]\nparam c = Glide [0, 0.5]\nstepseq1: steps = 16; sync = 1/16; values = 0.1,0.4,0.2,0.8,0.1,0.6,0.3,1,0.2,0.45,0.1,0.7,0.3,0.9,0.2,0.6; gate = 1; glide = c\nfilter1: type = lowpass; cutoff = a + stepseq1*b; resonance = 0.8\n",
+    "tags": [
+      "eq",
+      "equalizer",
+      "filter",
+      "lowpass",
+      "modulation"
+    ],
+    "paramA": {
+      "name": "Base",
+      "min": 180,
+      "max": 2000,
+      "default": 500
+    },
+    "paramB": {
+      "name": "Depth",
+      "min": 300,
+      "max": 6000,
+      "default": 2800
+    },
+    "paramC": {
+      "name": "Glide",
+      "min": 0,
+      "max": 0.5,
+      "default": 0.05
+    }
+  },
+  {
+    "name": "Probability Break Chops",
+    "category": "Drums",
+    "description": "Seeded chance-based sixteenth gating with a short open window. Floor preserves some drum sustain.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Probability Break Chops\n# Seeded chance-based sixteenth gating with a short open window. Floor preserves some drum sustain.\nparam a = Gate [0.1, 0.9]\nparam b = Chance [0.25, 1]\nparam c = Floor [0.03, 0.6]\nstepseq1: steps = 8; sync = 1/16; values = 1,0.4,0,1,0.2,0.7,1,0; gate = a; probability = b; seed = 1987; glide = 0.01\nstage1: y = x*(c+(1-c)*stepseq1)\n",
+    "tags": [
+      "drum",
+      "drums",
+      "eq",
+      "equalizer"
+    ],
+    "paramA": {
+      "name": "Gate",
+      "min": 0.1,
+      "max": 0.9,
+      "default": 0.4
+    },
+    "paramB": {
+      "name": "Chance",
+      "min": 0.25,
+      "max": 1,
+      "default": 0.7
+    },
+    "paramC": {
+      "name": "Floor",
+      "min": 0.03,
+      "max": 0.6,
+      "default": 0.15
+    }
+  },
+  {
+    "name": "MIDI Pluck Filter",
+    "category": "Synth",
+    "description": "MIDI-triggered ADSR opens a resonant lowpass. Route MIDI notes to the insert; audio stays audible between notes.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# MIDI Pluck Filter\n# MIDI-triggered ADSR opens a resonant lowpass. Route MIDI notes to the insert; audio stays audible between notes.\nparam a = Decay [0.03, 0.8]\nparam b = Base [250, 2500]\nparam c = Envelope [800, 9000]\nadsr1: gate = midi; attack = 0.003; decay = a; sustain = 0.1; release = 0.12; velocity = 0.7\nfilter1: type = lowpass; cutoff = b + adsr1*c; resonance = 0.95\n",
+    "tags": [
+      "filter",
+      "lowpass",
+      "synth"
+    ],
+    "paramA": {
+      "name": "Decay",
+      "min": 0.03,
+      "max": 0.8,
+      "default": 0.2
+    },
+    "paramB": {
+      "name": "Base",
+      "min": 250,
+      "max": 2500,
+      "default": 700
+    },
+    "paramC": {
+      "name": "Envelope",
+      "min": 800,
+      "max": 9000,
+      "default": 4000
+    }
+  },
+  {
+    "name": "MIDI Swell Return",
+    "category": "Ambient",
+    "description": "MIDI-gated ADSR swells the reverb input while the low dry floor remains. Requires MIDI notes routed to the insert.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# MIDI Swell Return\n# MIDI-gated ADSR swells the reverb input while the low dry floor remains. Requires MIDI notes routed to the insert.\nparam a = Swell [0.1, 2]\nparam b = Release [0.1, 3]\nparam c = Space [0.2, 0.85]\nadsr1: gate = midi; attack = a; decay = 0.1; sustain = 0.8; release = b\nstage1: y = x*(0.15+0.85*adsr1)\nreverb1: size = 0.72; decay = 0.7; damp = 0.5; mix = c; width = 0.9\n",
+    "tags": [
+      "ambient",
+      "reverb",
+      "space",
+      "width"
+    ],
+    "paramA": {
+      "name": "Swell",
+      "min": 0.1,
+      "max": 2,
+      "default": 0.6
+    },
+    "paramB": {
+      "name": "Release",
+      "min": 0.1,
+      "max": 3,
+      "default": 1.2
+    },
+    "paramC": {
+      "name": "Space",
+      "min": 0.2,
+      "max": 0.85,
+      "default": 0.55
+    }
+  },
+  {
+    "name": "Held Envelope Cutoff",
+    "category": "Filter",
+    "description": "The input envelope is sampled at eighth notes to make held cutoff levels rather than continuous auto-wah.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Held Envelope Cutoff\n# The input envelope is sampled at eighth notes to make held cutoff levels rather than continuous auto-wah.\nparam a = Base [200, 1600]\nparam b = Sensitivity [1000, 14000]\nparam c = Slew [0, 0.5]\nenv1: type = peak; attack = 0.002; release = 0.08\nsamplehold1: ina = env1; sync = 1/8; slew = c\nfilter1: type = lowpass; cutoff = a + samplehold1*b; resonance = 0.75\n",
+    "tags": [
+      "envelope",
+      "filter",
+      "lowpass"
+    ],
+    "paramA": {
+      "name": "Base",
+      "min": 200,
+      "max": 1600,
+      "default": 600
+    },
+    "paramB": {
+      "name": "Sensitivity",
+      "min": 1000,
+      "max": 14000,
+      "default": 6500
+    },
+    "paramC": {
+      "name": "Slew",
+      "min": 0,
+      "max": 0.5,
+      "default": 0.06
+    }
+  },
+  {
+    "name": "Seeded Drift Filter",
+    "category": "Sound Design",
+    "description": "Smooth deterministic random cutoff motion. Seed is fixed so patch reload restores the same starting sequence.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Seeded Drift Filter\n# Smooth deterministic random cutoff motion. Seed is fixed so patch reload restores the same starting sequence.\nparam a = Drift [0.1, 4]\nparam b = Range [700, 6000]\nparam c = Width [400, 3000]\nrandom1: rate = a; min = 0; max = 1; smooth = 0.85; shape = gaussian; seed = 119\nfilter1: type = bandpass; center = 350 + random1*b; width = c\n",
+    "tags": [
+      "filter",
+      "sound design",
+      "width"
+    ],
+    "paramA": {
+      "name": "Drift",
+      "min": 0.1,
+      "max": 4,
+      "default": 0.8
+    },
+    "paramB": {
+      "name": "Range",
+      "min": 700,
+      "max": 6000,
+      "default": 2600
+    },
+    "paramC": {
+      "name": "Width",
+      "min": 400,
+      "max": 3000,
+      "default": 1200
+    }
+  },
+  {
+    "name": "Transient Accent Fold",
+    "category": "Industrial",
+    "description": "Detected onsets briefly increase folding. Threshold selects attacks and Hold controls the accent window.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Transient Accent Fold\n# Detected onsets briefly increase folding. Threshold selects attacks and Hold controls the accent window.\nparam a = Threshold [-42, -8]\nparam b = Hold [10, 160]\nparam c = Accent [0.5, 8]\nenvtrigger1: thresholddb = a; sensitivity = 0; hysteresis = 7; holdoff = 45; hold = b; level = 1\nstage1: y = lerp(x,fold(x*(1+envtrigger1*c),-0.7,0.7),0.55)\nfilter1: type = lowpass; cutoff = 10000; resonance = 0.3\n",
+    "tags": [
+      "filter",
+      "fold",
+      "industrial",
+      "lowpass"
+    ],
+    "paramA": {
+      "name": "Threshold",
+      "min": -42,
+      "max": -8,
+      "default": -23
+    },
+    "paramB": {
+      "name": "Hold",
+      "min": 10,
+      "max": 160,
+      "default": 45
+    },
+    "paramC": {
+      "name": "Accent",
+      "min": 0.5,
+      "max": 8,
+      "default": 3
+    }
+  },
+  {
+    "name": "Control Crossfade Filter",
+    "category": "Modulation",
+    "description": "A stepped pattern and smooth random drift are mixed before driving one filter. A/B balance changes the motion itself.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Control Crossfade Filter\n# A stepped pattern and smooth random drift are mixed before driving one filter. A/B balance changes the motion itself.\nparam a = Pattern [0, 2]\nparam b = Drift [0, 2]\nparam c = Range [800, 8000]\nstepseq1: steps = 4; sync = 1/8; values = 0.1,0.9,0.35,0.65; glide = 0.06\nrandom1: rate = 1.1; min = 0; max = 1; smooth = 0.85; seed = 731\nmodmix1: ina = stepseq1; inb = random1; levela = a; levelb = b; mix = 0.5\nfilter1: type = lowpass; cutoff = 350 + modmix1*c; resonance = 0.7\n",
+    "tags": [
+      "eq",
+      "equalizer",
+      "filter",
+      "lowpass",
+      "modulation"
+    ],
+    "paramA": {
+      "name": "Pattern",
+      "min": 0,
+      "max": 2,
+      "default": 1.2
+    },
+    "paramB": {
+      "name": "Drift",
+      "min": 0,
+      "max": 2,
+      "default": 0.8
+    },
+    "paramC": {
+      "name": "Range",
+      "min": 800,
+      "max": 8000,
+      "default": 3600
+    }
+  },
+  {
+    "name": "Rectified Motion",
+    "category": "Modulation",
+    "description": "Absolute-value control math doubles the LFO's positive envelope without rectifying the audio.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Rectified Motion\n# Absolute-value control math doubles the LFO's positive envelope without rectifying the audio.\nparam a = Rate [0.1, 8]\nparam b = Base [250, 2500]\nparam c = Depth [600, 7000]\nosc1: shape = sine; freq = a; depth = 1\nmodmath1: ina = osc1; mode = abs; amount = 1; mix = 1\nfilter1: type = lowpass; cutoff = b + modmath1*c; resonance = 0.65\n",
+    "tags": [
+      "filter",
+      "lfo",
+      "lowpass",
+      "modulation"
+    ],
+    "paramA": {
+      "name": "Rate",
+      "min": 0.1,
+      "max": 8,
+      "default": 1.1
+    },
+    "paramB": {
+      "name": "Base",
+      "min": 250,
+      "max": 2500,
+      "default": 700
+    },
+    "paramC": {
+      "name": "Depth",
+      "min": 600,
+      "max": 7000,
+      "default": 2400
+    }
+  },
+  {
+    "name": "Quantized Random Steps",
+    "category": "Creative",
+    "description": "Random control is quantized into discrete levels, then used as an amplitude pattern. No audio bit reduction.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Quantized Random Steps\n# Random control is quantized into discrete levels, then used as an amplitude pattern. No audio bit reduction.\nparam a = Rate [1, 24]\nparam b = Coarseness [0.5, 1]\nparam c = Floor [0.05, 0.6]\nrandom1: rate = a; min = -1; max = 1; seed = 441\nmodmath1: ina = random1; mode = quantize; quantize = b; amount = 1; mix = 1\nstage1: y = x*(c+(1-c)*(0.5+0.5*modmath1))\n",
+    "tags": [
+      "creative"
+    ],
+    "paramA": {
+      "name": "Rate",
+      "min": 1,
+      "max": 24,
+      "default": 7
+    },
+    "paramB": {
+      "name": "Coarseness",
+      "min": 0.5,
+      "max": 1,
+      "default": 0.94
+    },
+    "paramC": {
+      "name": "Floor",
+      "min": 0.05,
+      "max": 0.6,
+      "default": 0.12
+    }
+  },
+  {
+    "name": "Transient Clip Bus",
+    "category": "Drums",
+    "description": "Hard peak clipping with a real threshold and knee. Use Drive for the hit density and Trim for level matching.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Transient Clip Bus\n# Hard peak clipping with a real threshold and knee. Use Drive for the hit density and Trim for level matching.\nparam a = Drive [0, 18]\nparam b = Threshold [-12, 0]\nparam c = Knee [0, 0.8]\nparam d = Trim [-18, 0]\nfilter1: type = highpass; cutoff = 25; resonance = 0.35\nclip1: mode = hard; drive = a; threshold = b; knee = c; bias = 0; outputtrim = d; mix = 1; autogain = off\nfilter2: type = lowpass; cutoff = 15000; resonance = 0.3\n",
+    "tags": [
+      "bus",
+      "drive",
+      "drums",
+      "filter",
+      "highpass",
+      "lowpass",
+      "parallel"
+    ],
+    "paramA": {
+      "name": "Drive",
+      "min": 0,
+      "max": 18,
+      "default": 5
+    },
+    "paramB": {
+      "name": "Threshold",
+      "min": -12,
+      "max": 0,
+      "default": -2
+    },
+    "paramC": {
+      "name": "Knee",
+      "min": 0,
+      "max": 0.8,
+      "default": 0.08
+    },
+    "paramD": {
+      "name": "Trim",
+      "min": -18,
+      "max": 0,
+      "default": -2
+    }
+  },
+  {
+    "name": "Transformer Bus Cushion",
+    "category": "Mastering",
+    "description": "Transformer-style saturation adds level-dependent weight before a conservative ceiling. Match the output before judging color.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Transformer Bus Cushion\n# Transformer-style saturation adds level-dependent weight before a conservative ceiling. Match the output before judging color.\nparam a = Drive [0, 12]\nparam b = Character [0, 1]\nparam c = Color [0.05, 0.6]\nsaturate1: mode = transformer; drive = a; character = b; dynamics = 0.4; tone = 0.55; mix = c; autogain = on\nlimit1: ceiling = -0.7; release = 0.12\n",
+    "tags": [
+      "bus",
+      "drive",
+      "limiter",
+      "mastering",
+      "parallel"
+    ],
+    "paramA": {
+      "name": "Drive",
+      "min": 0,
+      "max": 12,
+      "default": 3
+    },
+    "paramB": {
+      "name": "Character",
+      "min": 0,
+      "max": 1,
+      "default": 0.4
+    },
+    "paramC": {
+      "name": "Color",
+      "min": 0.05,
+      "max": 0.6,
+      "default": 0.2
+    }
+  },
+  {
+    "name": "Folded Parallel Texture",
+    "category": "Sound Design",
+    "description": "Foldback waveshaping on a parallel bus keeps a dry foundation. Tone removes harsh fold images.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Folded Parallel Texture\n# Foldback waveshaping on a parallel bus keeps a dry foundation. Tone removes harsh fold images.\nparam a = Drive [3, 24]\nparam b = Tone [1500, 10000]\nparam c = Fold Mix [0.1, 0.8]\nstage1: y = x\nbus folds:\n send: in = 1\n shaper1: mode = fold; drive = a; outputtrim = -9; mix = 1\n filter1: type = lowpass; cutoff = b; resonance = 0.4\nout: main = 1-c; folds = c\n",
+    "tags": [
+      "bus",
+      "drive",
+      "filter",
+      "fold",
+      "lowpass",
+      "parallel",
+      "send",
+      "sound design"
+    ],
+    "paramA": {
+      "name": "Drive",
+      "min": 3,
+      "max": 24,
+      "default": 12
+    },
+    "paramB": {
+      "name": "Tone",
+      "min": 1500,
+      "max": 10000,
+      "default": 4800
+    },
+    "paramC": {
+      "name": "Fold Mix",
+      "min": 0.1,
+      "max": 0.8,
+      "default": 0.4
+    }
+  },
+  {
+    "name": "Jittered Drum Sampler",
+    "category": "Lo-Fi",
+    "description": "Rate reduction with clock jitter and a reconstruction filter. The dry blend keeps drum transients readable.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Jittered Drum Sampler\n# Rate reduction with clock jitter and a reconstruction filter. The dry blend keeps drum transients readable.\nparam a = Reduction [0.05, 0.75]\nparam b = Bits [4, 14]\nparam c = Jitter [0, 0.8]\nparam d = Blend [0.15, 0.85]\ndecimate1: rate = a; bits = b; jitter = c; hold = 0.15; recon = 0.65; outputtrim = 0; mix = d\n",
+    "tags": [
+      "drum",
+      "filter",
+      "lo-fi"
+    ],
+    "paramA": {
+      "name": "Reduction",
+      "min": 0.05,
+      "max": 0.75,
+      "default": 0.3
+    },
+    "paramB": {
+      "name": "Bits",
+      "min": 4,
+      "max": 14,
+      "default": 9
+    },
+    "paramC": {
+      "name": "Jitter",
+      "min": 0,
+      "max": 0.8,
+      "default": 0.3
+    },
+    "paramD": {
+      "name": "Blend",
+      "min": 0.15,
+      "max": 0.85,
+      "default": 0.55
+    }
+  },
+  {
+    "name": "Transparent Gain Trim",
+    "category": "Mixing",
+    "description": "Gain in dB with no saturation or modulation. Use to match bypass loudness and feed subsequent processors.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Transparent Gain Trim\n# Gain in dB with no saturation or modulation. Use to match bypass loudness and feed subsequent processors.\nparam a = Gain [-18, 18]\namp1: gain = a; outputtrim = 0; mix = 1\n",
+    "tags": [
+      "mixing"
+    ],
+    "paramA": {
+      "name": "Gain",
+      "min": -18,
+      "max": 18,
+      "default": 0
+    }
+  },
+  {
+    "name": "Metallic Resonant Body",
+    "category": "Sound Design",
+    "description": "A narrow resonant body blended under the source, followed by a short room. Tune selects the ringing frequency.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Metallic Resonant Body\n# A narrow resonant body blended under the source, followed by a short room. Tune selects the ringing frequency.\nparam a = Tune [180, 2400]\nparam b = Resonance [1, 8]\nparam c = Body [0.1, 0.8]\nresonator1: freq = a; res = b; gain = -3; mix = c\nreverb1: size = 0.24; decay = 0.28; damp = 0.65; mix = 0.12\n",
+    "tags": [
+      "reverb",
+      "room",
+      "sound design",
+      "space"
+    ],
+    "paramA": {
+      "name": "Tune",
+      "min": 180,
+      "max": 2400,
+      "default": 670
+    },
+    "paramB": {
+      "name": "Resonance",
+      "min": 1,
+      "max": 8,
+      "default": 3.5
+    },
+    "paramC": {
+      "name": "Body",
+      "min": 0.1,
+      "max": 0.8,
+      "default": 0.4
+    }
+  },
+  {
+    "name": "Frequency Shift Halo",
+    "category": "Creative",
+    "description": "Small single-sideband frequency shift mixed around the dry signal. Slow beating differs from pitch-shift doubling.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Frequency Shift Halo\n# Small single-sideband frequency shift mixed around the dry signal. Slow beating differs from pitch-shift doubling.\nparam a = Shift [-35, 35]\nparam b = Halo [0.1, 0.75]\nfreqshift1: hz = a; mix = b\nfilter1: type = highpass; cutoff = 35; resonance = 0.35\n",
+    "tags": [
+      "creative",
+      "filter",
+      "highpass"
+    ],
+    "paramA": {
+      "name": "Shift",
+      "min": -35,
+      "max": 35,
+      "default": 6
+    },
+    "paramB": {
+      "name": "Halo",
+      "min": 0.1,
+      "max": 0.75,
+      "default": 0.45
+    }
+  },
+  {
+    "name": "Fold Threshold Bass",
+    "category": "Bass",
+    "description": "Dedicated wavefolder with independent drive and fold threshold, followed by a lowpass recovery filter.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Fold Threshold Bass\n# Dedicated wavefolder with independent drive and fold threshold, followed by a lowpass recovery filter.\nparam a = Drive [1, 8]\nparam b = Fold [0.15, 1.2]\nparam c = Tone [900, 6500]\nfilter1: type = highpass; cutoff = 28; resonance = 0.3\nwavefold1: drive = a; fold = b; mix = 0.7\nfilter2: type = lowpass; cutoff = c; resonance = 0.4\n",
+    "tags": [
+      "bass",
+      "drive",
+      "filter",
+      "fold",
+      "highpass",
+      "lowpass"
+    ],
+    "paramA": {
+      "name": "Drive",
+      "min": 1,
+      "max": 8,
+      "default": 2.5
+    },
+    "paramB": {
+      "name": "Fold",
+      "min": 0.15,
+      "max": 1.2,
+      "default": 0.6
+    },
+    "paramC": {
+      "name": "Tone",
+      "min": 900,
+      "max": 6500,
+      "default": 3200
+    }
+  },
+  {
+    "name": "Nonlinear Lowpass Drive",
+    "category": "Filter",
+    "description": "Saturation before the lowpass changes the material entering the cutoff. Parallel Mix keeps the original attack.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Nonlinear Lowpass Drive\n# Saturation before the lowpass changes the material entering the cutoff. Parallel Mix keeps the original attack.\nparam a = Cutoff [250, 12000]\nparam b = Drive [1, 8]\nparam c = Mix [0.15, 1]\nnlfilter1: cutoff = a; drive = b; mix = c\n",
+    "tags": [
+      "drive",
+      "filter",
+      "lowpass"
+    ],
+    "paramA": {
+      "name": "Cutoff",
+      "min": 250,
+      "max": 12000,
+      "default": 2200
+    },
+    "paramB": {
+      "name": "Drive",
+      "min": 1,
+      "max": 8,
+      "default": 2
+    },
+    "paramC": {
+      "name": "Mix",
+      "min": 0.15,
+      "max": 1,
+      "default": 0.7
+    }
+  },
+  {
+    "name": "Tape Brake Transition",
+    "category": "Creative",
+    "description": "One-shot slowing delay for a transition. Reload or reset the patch to restart the brake; it is not a transport stop command.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Tape Brake Transition\n# One-shot slowing delay for a transition. Reload or reset the patch to restart the brake; it is not a transport stop command.\nparam a = Stop [0.15, 3]\nparam b = Depth [0.2, 0.95]\nparam c = Blend [0.1, 0.85]\ntapestop1: stop = a; depth = b; mix = c\n",
+    "tags": [
+      "creative",
+      "delay",
+      "tape"
+    ],
+    "paramA": {
+      "name": "Stop",
+      "min": 0.15,
+      "max": 3,
+      "default": 0.7
+    },
+    "paramB": {
+      "name": "Depth",
+      "min": 0.2,
+      "max": 0.95,
+      "default": 0.75
+    },
+    "paramC": {
+      "name": "Blend",
+      "min": 0.1,
+      "max": 0.85,
+      "default": 0.5
+    }
+  },
+  {
+    "name": "Reverse Grain Return",
+    "category": "Delay",
+    "description": "Filtered reverse-delay return blended with the dry input. Time sets the reverse window and Repeat controls regeneration.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Reverse Grain Return\n# Filtered reverse-delay return blended with the dry input. Time sets the reverse window and Repeat controls regeneration.\nparam a = Window [60, 750]\nparam b = Repeat [0, 0.6]\nparam c = Return [0.1, 0.7]\nreversedelay1: time = a; feedback = b; mix = c\nfilter1: type = lowpass; cutoff = 9500; resonance = 0.35\n",
+    "tags": [
+      "delay",
+      "filter",
+      "lowpass"
+    ],
+    "paramA": {
+      "name": "Window",
+      "min": 60,
+      "max": 750,
+      "default": 280
+    },
+    "paramB": {
+      "name": "Repeat",
+      "min": 0,
+      "max": 0.6,
+      "default": 0.22
+    },
+    "paramC": {
+      "name": "Return",
+      "min": 0.1,
+      "max": 0.7,
+      "default": 0.35
+    }
+  },
+  {
+    "name": "Ring Sideband Percussion",
+    "category": "Sound Design",
+    "description": "Audio-rate ring modulation gives percussion inharmonic sidebands. Carrier frequency changes the metallic spacing.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Ring Sideband Percussion\n# Audio-rate ring modulation gives percussion inharmonic sidebands. Carrier frequency changes the metallic spacing.\nparam a = Carrier [35, 1600]\nparam b = Ring [0.15, 0.9]\nparam c = Tone [2000, 14000]\nringmod1: freq = a; mix = b\nfilter1: type = lowpass; cutoff = c; resonance = 0.4\n",
+    "tags": [
+      "filter",
+      "lowpass",
+      "sound design"
+    ],
+    "paramA": {
+      "name": "Carrier",
+      "min": 35,
+      "max": 1600,
+      "default": 190
+    },
+    "paramB": {
+      "name": "Ring",
+      "min": 0.15,
+      "max": 0.9,
+      "default": 0.55
+    },
+    "paramC": {
+      "name": "Tone",
+      "min": 2000,
+      "max": 14000,
+      "default": 9000
     }
   }
 ]

@@ -761,11 +761,11 @@ private:
                 "Acoustic Body", "Arp Shimmer", "Bitcrush Glitch",
                 "Blues Break OD", "Chug Palm Mute",
                 "Dark Atmosphere", "Harmonic Exciter",
-                "Loudness Safe", "Low End Control", "Metal Scoop",
+                "Streaming Ceiling", "Low End Control", "Metal Scoop",
                 "Pluck Bite", "Podcast Voice",
                 "Riff Sustain",
                 "Sub Weight", "Tape Wobble",
-                "Telephone EQ",
+                "Telephone Cup",
                 "Vocal De-Ess",
                 "Vocal Double", "Vocal Presence", "Vocal Warmth", "Vowel Filter"
             };
@@ -773,7 +773,34 @@ private:
             for (const auto& e : entries)
                 haveNames.add (e.name);
             for (const auto& n : restored)
-                expect (haveNames.contains (n), "missing restored factory preset: " + n);
+                expect (haveNames.contains (n), "missing active factory preset: " + n);
+
+            // Curated duplicates leave the active library; their complete original
+            // scripts must still be recoverable in the deprecated archive.
+            const auto archive = resDir.getChildFile ("deprecated")
+                                       .getChildFile ("factory-2026-10-22.json");
+            expect (archive.existsAsFile(), "factory migration archive is missing");
+            if (archive.existsAsFile())
+            {
+                const auto retired = juce::JSON::parse (archive.loadFileAsString());
+                expect (retired.isArray(), "deprecated archive must be a JSON array");
+                juce::StringArray archivedNames;
+                if (const auto* originals = retired.getArray())
+                    for (const auto& original : *originals)
+                        if (const auto* object = original.getDynamicObject())
+                        {
+                            const auto name = object->getProperty ("name").toString();
+                            if (object->getProperty ("script").toString().isNotEmpty())
+                                archivedNames.addIfNotAlreadyThere (name);
+                        }
+                for (const auto& name : { "Loudness Safe", "Telephone EQ", "Sidechain Pump" })
+                {
+                    expect (! haveNames.contains (name),
+                            juce::String (name) + " must not return as an active duplicate");
+                    expect (archivedNames.contains (name),
+                            juce::String (name) + " needs its complete retired script");
+                }
+            }
 
             juce::StringArray categories;
             juce::StringArray names;
@@ -1093,9 +1120,10 @@ private:
             requireBlock ("Data Mosher", "bitcrush");
             requireBlock ("Chrome Fold", "fold");
             requireBlock ("Nonlinear Snap", "lowpass");
-            requireBlock ("Sidechain Pump", "[1/1, 1/16]");
+            requireBlock ("Sidechain Pad EDM", "source = sidechain");
             requireBlock ("Classic Tremolo", "[1/1, 1/16]");
-            requireBlock ("Chopper", "[1/1, 1/16]");
+            requireBlock ("Chopper", "stepseq1:");
+            requireBlock ("Chopper", "sync = 1/16");
             requireBlock ("Low Pass Sweep", "[1/1, 1/16]");
             requireBlock ("Stereo Guitar Wall", "gate1");
             requireBlock ("Stereo Guitar Wall", "ir1");
@@ -1348,7 +1376,7 @@ private:
             expect (! vhs.contains ("osc1"), "VHS Tracking still fakes wow with an oscillator");
             expect (vhs.contains ("bitcrush1"), "VHS Tracking still uses the aliasing formula");
             const auto scripts = text.replace ("\\n", "\n");
-            int ottBare = 0, pitchBare = 0;
+            int ottBare = 0, pitchMissingControls = 0;
             for (int i = 0; i < scripts.length();)
             {
                 const int nl = scripts.indexOfChar (i, '\n');
@@ -1356,13 +1384,16 @@ private:
                 if (line.contains ("ott") && line.contains (":") && line.contains ("depth")
                     && ! line.contains ("in ="))
                     ++ottBare;
-                if ((line.contains ("pitch1:") || line.contains ("pitch2:")) && ! line.contains ("ceiling"))
-                    ++pitchBare;
+                // Pitch offers semitones/mix/formant; it has no ceiling parameter.
+                if ((line.contains ("pitch1:") || line.contains ("pitch2:"))
+                    && (! line.contains ("semitones") || ! line.contains ("mix")))
+                    ++pitchMissingControls;
                 if (nl < 0) break;
                 i = nl + 1;
             }
             expect (ottBare == 0, "OTT lines missing in, count=" + juce::String (ottBare));
-            expect (pitchBare == 0, "pitch lines missing ceiling, count=" + juce::String (pitchBare));
+            expect (pitchMissingControls == 0,
+                    "pitch lines missing semitones/mix, count=" + juce::String (pitchMissingControls));
         }
 
         beginTest ("bitcrush block rolls off what the formula leaves");

@@ -1,5 +1,7 @@
 """Run a pinned external host validator against the actual native bundles."""
 import argparse
+import ctypes
+import sys
 from pathlib import Path
 import platform
 import subprocess
@@ -34,4 +36,17 @@ for plugin in plugins:
     command = [str(executable), '--strictness-level', '5', '--output-dir', str(logs), '--validate', str(plugin)]
     if os_name == 'Linux':
         command = ['xvfb-run', '-a'] + command
-    subprocess.run(command, check=True, timeout=600)
+    if os_name == 'Windows':
+        # Separate a Windows loader failure from a VST3 class-ID/host failure.
+        binary = plugin / 'Contents' / 'x86_64-win' / (plugin.stem + '.vst3')
+        try:
+            ctypes.WinDLL(str(binary))
+            print(f'Windows LoadLibrary passed: {binary}', flush=True)
+        except OSError as exc:
+            print(f'Windows LoadLibrary failed: {binary}: {exc}', file=sys.stderr, flush=True)
+    outcome = subprocess.run(command, check=False, timeout=600)
+    if outcome.returncode != 0:
+        for logfile in sorted(logs.glob('*.txt')):
+            print(f'--- pluginval diagnostics: {logfile.name} ---', flush=True)
+            print(logfile.read_text(encoding='utf-8', errors='replace')[-12000:], flush=True)
+        raise SystemExit(f'pluginval strictness 5 failed for {plugin}: {outcome.returncode}')

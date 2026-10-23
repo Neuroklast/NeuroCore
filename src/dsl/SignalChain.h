@@ -11,6 +11,7 @@
 #include "../dsp/DSPUtils.h"
 #include "../dsp/SaturationModels.h"
 #include "../dsp/FrequencyShifterDSP.h"
+#include "../dsp/MsegDSP.h"
 #include "../core/EffectParameters.h"
 #include <algorithm>
 #include <array>
@@ -202,6 +203,13 @@ private:
         float shapedControl (float v) const noexcept
         {
             return controlInvert ? -v * controlDepth : v * controlDepth;
+        }
+        /** Raw lane samples need source shaping; the published scalar already has it. */
+        float controlAt (int sample) const noexcept
+        {
+            if (juce::isPositiveAndBelow (sample, (int) modLane.size()))
+                return shapedControl (modLane[(size_t) sample]);
+            return destSlot != nullptr ? *destSlot : 0.0f;
         }
         void reserveControlLane (const juce::dsp::ProcessSpec& spec)
         {
@@ -454,7 +462,10 @@ private:
 
         ExpressionEvaluator driveExpr, thresholdExpr, kneeExpr, biasExpr;
         ExpressionEvaluator modeExpr, outputTrimExpr, mixExpr;
-        juce::SmoothedValue<float> driveSm, thrSm, kneeSm, biasSm, trimSm, mixSm;
+        // Preserve linear-in-dB sweeps with multiplicative linear-gain
+        // smoothing; avoid three decibelsToGain() calls per audio sample.
+        juce::SmoothedValue<float, juce::ValueSmoothingTypes::Multiplicative> driveSm, thrSm, trimSm;
+        juce::SmoothedValue<float> kneeSm, biasSm, mixSm;
         Mode mode { Mode::Hard };
         bool autoGain { false };
         float sampleRate { 44100.f };
@@ -486,8 +497,8 @@ private:
 
         ExpressionEvaluator driveExpr, biasExpr, dynamicsExpr, toneExpr, characterExpr;
         ExpressionEvaluator modeExpr, outputExpr, mixExpr;
-        juce::SmoothedValue<float> driveSm, biasSm, dynamicsSm, toneSm, characterSm;
-        juce::SmoothedValue<float> outputSm, mixSm;
+        juce::SmoothedValue<float, juce::ValueSmoothingTypes::Multiplicative> driveSm, outputSm;
+        juce::SmoothedValue<float> biasSm, dynamicsSm, toneSm, characterSm, mixSm;
         Mode mode { Mode::Tube };
         bool autoGain { false };
         float sampleRate { 44100.f };
@@ -513,7 +524,10 @@ private:
 
         ExpressionEvaluator driveExpr, outputExpr, mixExpr;
         ExpressionEvaluator modeExpr;
-        juce::SmoothedValue<float> driveSm, outputSm, mixSm;
+        // Linear smoothing in dB is exactly multiplicative smoothing in gain.
+        // Convert the dB target only once per block, not on every sample.
+        juce::SmoothedValue<float, juce::ValueSmoothingTypes::Multiplicative> driveSm, outputSm;
+        juce::SmoothedValue<float> mixSm;
         Mode mode { Mode::Fold };
         float sampleRate { 44100.f };
         int channels { 1 };
@@ -532,11 +546,16 @@ private:
         ExpressionEvaluator rateExpr, bitsExpr, jitterExpr, holdExpr;
         ExpressionEvaluator reconExpr, mixExpr, outputExpr;
         juce::SmoothedValue<float> rateSm, bitsSm, jitterSm, holdSm;
-        juce::SmoothedValue<float> reconSm, mixSm, outputSm;
+        juce::SmoothedValue<float> reconSm, mixSm;
+        juce::SmoothedValue<float, juce::ValueSmoothingTypes::Multiplicative> outputSm;
         float sampleRate { 44100.f };
         int channels { 1 };
         float holdL { 0.f }, holdR { 0.f };
         int holdCounter { 0 };
+        int nextHoldSamples { 1 };
+        // Stable per-instance jitter sequence, reset with the DSP state.
+        // Draw once per hold interval, never allocate or call random_device in audio.
+        juce::uint32 jitterState { 0x9e3779b9u };
         float lastSampleL { 0.f }, lastSampleR { 0.f };
         std::unordered_map<juce::String, float>* varPtr { nullptr };
         void prepare (const juce::dsp::ProcessSpec& spec) override;
@@ -549,11 +568,12 @@ private:
     struct Amp : Block
     {
         ExpressionEvaluator gainExpr, outputExpr, mixExpr;
-        juce::SmoothedValue<float> gainSm, trimSm, mixSm;
+        // dB-linear smoothing has an equivalent multiplicative linear-gain
+        // envelope. The expensive dB conversion only happens on targets.
+        juce::SmoothedValue<float, juce::ValueSmoothingTypes::Multiplicative> gainSm, trimSm;
+        juce::SmoothedValue<float> mixSm;
         float sampleRate { 44100.f };
         int channels { 1 };
-        float cachedDb { -1000.f };
-        float lin { 1.f };
         std::unordered_map<juce::String, float>* varPtr { nullptr };
         void prepare (const juce::dsp::ProcessSpec& spec) override;
         float process (int ch, float x);
@@ -581,10 +601,12 @@ private:
     {
         juce::dsp::StateVariableTPTFilter<float> filter;
         ExpressionEvaluator freqExpr, resExpr, gainExpr, mixExpr;
-        juce::SmoothedValue<float> freqSm, resSm, gainSm, mixSm;
+        juce::SmoothedValue<float> freqSm, resSm, mixSm;
+        juce::SmoothedValue<float, juce::ValueSmoothingTypes::Multiplicative> gainSm;
         float sampleRate { 44100.f };
         int channels { 1 };
-        float cachedF { -1.f }, cachedQ { -1.f }, cachedG { -1000.f }, lin { 1.f };
+        float cachedF { -1.f }, cachedQ { -1.f };
+        int coefficientStep { 0 };
         std::unordered_map<juce::String, float>* varPtr { nullptr };
         void prepare (const juce::dsp::ProcessSpec& spec) override;
         float process (int ch, float x);
@@ -631,6 +653,8 @@ private:
         float sampleRate { 44100.f };
         int channels { 1 };
         float z1[2] { 0.f, 0.f };
+        float cachedCoefficient { 0.f };
+        int coefficientStep { 0 };
         std::unordered_map<juce::String, float>* varPtr { nullptr };
         void prepare (const juce::dsp::ProcessSpec& spec) override;
         float process (int ch, float x);
@@ -660,6 +684,8 @@ private:
         long long gateStep { -1 };
         bool gateStepOn { true };
         float glideValue { 0.f };
+        float glideCoefficient { 1.f };
+        int glideCoefficientStep { 0 };
         uint32_t seed { 12345u };
         bool syncEnabled { false };
         float syncWhole { 0.0625f };     ///< step length as a whole-note fraction
@@ -678,6 +704,26 @@ private:
         float stepValue (int index) const noexcept;
         int mapStep (long long absoluteStep) const noexcept;
         float probabilityFor (long long absoluteStep) const noexcept;
+    };
+
+    /** Initial C08 source: immutable bounded curve and normalized playback phase. */
+    struct Mseg : Modulator
+    {
+        enum class Source { Free, Audio, Midi, Either };
+        Source source { Source::Free };
+        nk::MsegDSP curve;
+        ExpressionEvaluator durationExpr;
+        juce::SmoothedValue<float> durationSm;
+        double sampleRate { 44100. }, hostBpm { Config::kDefaultTempo };
+        float syncWhole { 0.f };
+        float* midiGatePtr { nullptr };
+        int sustain { -1 }, loopStart { 0 }, loopEnd { 2 };
+        bool loop { false }, retrigger { true };
+        bool configure (const BlockDesc& desc, juce::String& error);
+        bool needsAudioInput() const noexcept override { return source == Source::Audio || source == Source::Either; }
+        void prepare (const juce::dsp::ProcessSpec& spec) override;
+        void processBlock (juce::AudioBuffer<float>& buffer) override;
+        void clearRuntimeState() noexcept override;
     };
 
     /** ADSR envelope: gate-triggered attack/decay/sustain/release. Params: attack, decay, sustain, release (seconds). */
@@ -803,11 +849,14 @@ private:
         void clearRuntimeState() noexcept override;
     };
 
-    /** ModMix: mixes inA and inB with individual levels and master mix. Params: levelA, levelB, mix. */
+    /** Signed control mixer. Optional connected-weight normalization, offset and final clamp. */
     struct ModMix : Modulator
     {
-        ExpressionEvaluator levelAExpr, levelBExpr, mixExpr;
-        juce::SmoothedValue<float> levelASm, levelBSm, mixSm;
+        ExpressionEvaluator levelAExpr, levelBExpr, mixExpr, offsetExpr;
+        juce::SmoothedValue<float> levelASm, levelBSm, mixSm, offsetSm;
+        enum class Clamp { Off, Bipolar, Unipolar };
+        Clamp clamp { Clamp::Off };
+        bool normalize { false };
         float sampleRate { 44100.f };
         int channels { 1 };
         void prepare (const juce::dsp::ProcessSpec& spec) override;
@@ -975,6 +1024,7 @@ private:
         juce::SmoothedValue<float> bitsSm, mixSm, toneSm;
         float sampleRate { 44100.f };
         float coeff { 0.f };
+        int toneCoeffStep { 0 };
         float zL { 0.f }, zR { 0.f };
         std::unordered_map<juce::String, float>* varPtr { nullptr };
         void prepare (const juce::dsp::ProcessSpec& spec) override;
@@ -1218,7 +1268,7 @@ private:
         void processFrame (float& left, float* right) noexcept;
     };
 
-    /** Reversed delay: writes into a ring, reads backwards at timeSec offset. Params: time [ms], feedback, mix. */
+    /** Reversed delay: records complete segments, then plays each backwards. Params: time [ms], feedback, mix. */
     struct ReverseDelay : Block
     {
         static constexpr float kMaxDelaySec = 2.0f;
@@ -1231,6 +1281,9 @@ private:
         int channels { 1 };
         std::array<std::vector<float>, 2> delayBuf;
         size_t writePos { 0 };
+        size_t captureStart { 0 }, previousStart { 0 };
+        int capturePos { 0 }, captureSamples { 0 }, previousSamples { 0 };
+        float feedbackWet[2] {};
 
         juce::SmoothedValue<float> timeSm, feedbackSm, mixSm;
 
@@ -1521,6 +1574,9 @@ private:
             std::vector<float> fftWork;    // 2 * kFftSize
             std::vector<float> dryDelay;
             int dryIndex { 0 };
+            // Rotating STFT input and OLA accumulation; no hop-sized
+            // FIFO/overlap buffer shift in the audio callback.
+            int inputWrite { 0 }, accumHead { 0 };
             float delayDry (float input) noexcept
             {
                 const float result = dryDelay[(size_t) dryIndex];
@@ -1544,6 +1600,8 @@ private:
                 fftWork.assign ((size_t) (2 * size), 0.f);
                 dryDelay.assign ((size_t) size, 0.f);
                 dryIndex = 0;
+                inputWrite = size - size / kOsamp;
+                accumHead = 0;
                 rover = size - size / kOsamp;
             }
             void clear (int hopSz) noexcept
@@ -1555,7 +1613,9 @@ private:
                 std::fill (sumPhase.begin(), sumPhase.end(), 0.f);
                 std::fill (dryDelay.begin(), dryDelay.end(), 0.f);
                 dryIndex = 0;
-                rover = (int) inFifo.size() - juce::jmax (1, hopSz);
+                inputWrite = (int) inFifo.size() - juce::jmax (1, hopSz);
+                accumHead = 0;
+                rover = inputWrite;
             }
         };
         Chan ch[2];
@@ -1569,7 +1629,19 @@ private:
         float processSample (Chan& c, float x, float pitchRatio, float formantRatio) noexcept;
     };
 
-    using Chain   = std::vector<std::unique_ptr<Block>>;
+    // Compiled once during loadScript. The execution plan's node pointers
+    // are owned by the same graph; no separate audio-thread lifetime.
+    struct Chain : std::vector<std::unique_ptr<Block>>
+    {
+        std::vector<Osc*> oscillators;
+        std::vector<Env*> envelopes;
+        std::vector<Modulator*> controlMods;
+        std::vector<Modulator*> pureControlOrder;
+        // Bus-local lists avoid scanning the entire chain once for each bus
+        // on the audio callback; order inside each bus remains unchanged.
+        std::vector<Block*> orderedBlocks;
+        std::array<std::vector<Block*>, Config::kMaxNamedBuses + 1> blocksByBus;
+    };
 
     std::shared_ptr<Chain>   chain;
     std::shared_ptr<AliasMap> aliases;

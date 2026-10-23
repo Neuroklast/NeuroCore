@@ -12,6 +12,8 @@ using namespace dsl;
 
 SignalChain::SignalChain()
 {
+    variables.max_load_factor (0.5f);
+    variables.reserve (1024);
     chain   = std::make_shared<Chain>();
     aliases = std::make_shared<AliasMap>();
     busGraph = std::make_shared<BusGraph>();
@@ -221,6 +223,39 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
 
     const juce::SpinLock::ScopedLockType scriptGuard(scriptLock);
 
+    // A rejected patch must not change the active graph's control/parameter
+    // metadata or values. Roll back in-place: replacing the variables map
+    // wholesale would invalidate float* cached by the active audio graph.
+    // This snapshot and all its allocations are on the loader/UI thread.
+    const auto previousMappings = parameterMappings;
+    const auto previousParamInfo = paramInfo;
+    const auto previousNotes = knobNotes;
+    const auto previousIsNote = knobIsNote;
+    const auto previousVariables = variables;
+    bool committed = false;
+    struct Rollback
+    {
+        bool& committed;
+        std::function<void()> undo;
+        ~Rollback() { if (! committed) undo(); }
+    } rollback { committed, [&]
+    {
+        parameterMappings = previousMappings;
+        paramInfo = previousParamInfo;
+        knobNotes = previousNotes;
+        knobIsNote = previousIsNote;
+        for (auto it = variables.begin(); it != variables.end(); )
+        {
+            if (previousVariables.find (it->first) == previousVariables.end())
+                it = variables.erase (it);
+            else
+                ++it;
+        }
+        for (const auto& item : previousVariables)
+            variables[item.first] = item.second;
+        hot.bind (variables);
+    } };
+
     parameterMappings.clear();
     paramInfo = parsedParams;
     knobIsNote.fill (false);
@@ -241,6 +276,7 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
         variables.emplace(kv.second, 0.0f);
 
     auto newChain = std::make_shared<Chain>();
+    std::shared_ptr<BusGraph> pendingBusGraph;
 
     auto isNumeric = [](const juce::String& s)
     {
@@ -1672,6 +1708,21 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
 
             newChain->push_back (std::move (nf));
         }
+        else if (d.type == "mseg")
+        {
+            auto mg = std::make_unique<Mseg>();
+            mg->kind = NodeKind::Modulator;
+            mg->name = d.name;
+            mg->varPtr = &variables;
+            applyControlArgs (d, *mg);
+            if (! mg->configure (d, error)) return false;
+            const auto raw = d.args.count ("duration") ? d.args.at ("duration") : juce::String ("1");
+            const auto expr = addDefaultMap (raw, 0.001f, 60.f);
+            if (! mg->durationExpr.parseFormula (expr.toStdString())) { error = "Invalid MSEG duration"; return false; }
+            const auto pn = findParam (expr);
+            if (pn.isNotEmpty()) parameterMappings[pn].add (d.name + " duration [s]");
+            newChain->push_back (std::move (mg));
+        }
         else if (d.type.startsWith ("stepseq"))
         {
             auto ss = std::make_unique<StepSeq>();
@@ -2067,9 +2118,23 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
                 if (pn.isNotEmpty())
                     parameterMappings[pn].add (d.name + " " + label);
             };
-            parseAmt ("levela", nullptr, 0.f, 4.f, "1", mx->levelAExpr, "levelA");
-            parseAmt ("levelb", nullptr, 0.f, 4.f, "1", mx->levelBExpr, "levelB");
+            parseAmt ("levela", nullptr, -4.f, 4.f, "1", mx->levelAExpr, "levelA");
+            parseAmt ("levelb", nullptr, -4.f, 4.f, "1", mx->levelBExpr, "levelB");
             parseAmt ("mix", "wet", 0.f, 1.f, "1", mx->mixExpr, "mix [0..1]");
+
+            parseAmt ("offset", nullptr, -1.f, 1.f, "0", mx->offsetExpr, "offset");
+            if (d.args.count ("normalize"))
+            {
+                const auto value = d.args.at ("normalize").trim().toLowerCase();
+                mx->normalize = value == "on" || value == "true" || value == "1";
+            }
+            if (d.args.count ("clamp"))
+            {
+                const auto value = d.args.at ("clamp").trim().toLowerCase();
+                if (value == "bipolar") mx->clamp = ModMix::Clamp::Bipolar;
+                else if (value == "unipolar") mx->clamp = ModMix::Clamp::Unipolar;
+                else if (value != "off") { error = "ModMix clamp must be off, bipolar or unipolar"; return false; }
+            }
 
             newChain->push_back (std::move (mx));
         }
@@ -2569,35 +2634,24 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
             if (b->busIndex < 0)
                 b->busIndex = 0;
         }
-        retiredBusGraph = std::atomic_load (&busGraph);
-        std::atomic_store (&busGraph, std::make_shared<BusGraph> (std::move (newGraph)));
+        // Do not publish a bus topology before control refs/cycles, module
+        // prepare and graph latency have all succeeded. Failed scripts must
+        // leave the existing audio routing intact.
+        pendingBusGraph = std::make_shared<BusGraph> (std::move (newGraph));
     }
 
-    // Drop stale modulation vars (osc1, env1, …) from previous script so they
-    // cannot keep feeding stages after switching away from an oscillator preset.
+    // Insert prospective variable keys without erasing or resetting values
+    // still in use by the currently published graph. Invalid references
+    // may reject the new script below; a failed load must not invalidate
+    // the old graph's cached float* pointers.
     {
-        static const juce::StringArray keep {
-            "x", "y", "x_prev", "y_prev", "ch", "t", "a", "b", "c", "d", "e", "f",
-            "pi", "sr", "midi_note", "midi_freq", "midi_vel", "midi_gate",
-            "midi_bend", "midi_mod", "sc", "sc_l", "sc_r", "sidechain"
-        };
-        for (auto it = variables.begin(); it != variables.end(); )
-        {
-            if (keep.contains (it->first))
-                ++it;
-            else
-                it = variables.erase (it);
-        }
-        // Every control source publishes into variables[name], starting at 0.
-        for (const auto& b : *newChain)
-            if (auto* mod = dynamic_cast<Modulator*> (b.get()))
+        for (const auto& node : *newChain)
+            if (auto* mod = dynamic_cast<Modulator*> (node.get()))
                 if (mod->name.isNotEmpty())
-                    variables[mod->name] = 0.0f;
-        // Param aliases (e.g. a → "gain") must exist before Stage::prepare
-        // builds varRefs — otherwise "y = gain * x" never sees the knob value.
+                    variables.try_emplace (mod->name, 0.0f);
         for (const auto& kv : newAliases)
             if (kv.second.isNotEmpty())
-                variables[kv.second] = 0.0f;
+                variables.try_emplace (kv.second, 0.0f);
     }
 
     std::vector<Modulator*> modulators;
@@ -2605,7 +2659,7 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
         if (auto* mod = dynamic_cast<Modulator*> (b.get()))
             if (mod->name.isNotEmpty())
             {
-                variables[mod->name] = 0.0f;
+                variables.try_emplace (mod->name, 0.0f);
                 modulators.push_back (mod);
             }
 
@@ -2686,6 +2740,59 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
         }
     }
 
+    // The bus routing DAG is already validated and each node's busIndex is
+    // bound. Group nodes once, instead of scanning every graph node for each
+    // bus on every callback. No allocations during audio processing.
+    newChain->orderedBlocks.reserve (newChain->size());
+    for (auto& bucket : newChain->blocksByBus)
+        bucket.reserve (newChain->size() / (Config::kMaxNamedBuses + 1) + 1);
+    for (auto& node : *newChain)
+    {
+        auto* block = node.get();
+        newChain->orderedBlocks.push_back (block);
+        if (juce::isPositiveAndBelow (block->busIndex, (int) newChain->blocksByBus.size()))
+            newChain->blocksByBus[(size_t) block->busIndex].push_back (block);
+    }
+
+    // Construct the immutable control execution plan before graph publication.
+    // This removes the old 64-generator cap and the repeated O(N^2) per-block
+    // dependency scans. Cycle and source order were validated above.
+    newChain->oscillators.reserve (modulators.size());
+    newChain->envelopes.reserve (modulators.size());
+    newChain->controlMods.reserve (modulators.size());
+    newChain->pureControlOrder.reserve (modulators.size());
+    for (auto& node : *newChain)
+    {
+        if (node->kind == NodeKind::Osc)
+            newChain->oscillators.push_back (static_cast<Osc*> (node.get()));
+        else if (node->kind == NodeKind::Env)
+            newChain->envelopes.push_back (static_cast<Env*> (node.get()));
+        else if (node->kind == NodeKind::Modulator)
+            newChain->controlMods.push_back (static_cast<Modulator*> (node.get()));
+    }
+
+    std::unordered_map<Modulator*, bool> pureStatus;
+    pureStatus.reserve (modulators.size());
+    std::function<bool (Modulator*)> visitPure = [&] (Modulator* mod) -> bool
+    {
+        if (mod == nullptr || mod->kind == NodeKind::Osc)
+            return true;
+        if (mod->kind == NodeKind::Env || mod->needsAudioInput())
+            return false;
+        if (const auto found = pureStatus.find (mod); found != pureStatus.end())
+            return found->second;
+        bool pure = true;
+        for (auto* input : mod->inputSources)
+            if (input != nullptr && ! visitPure (input))
+                pure = false;
+        pureStatus.emplace (mod, pure);
+        if (pure && mod->kind == NodeKind::Modulator)
+            newChain->pureControlOrder.push_back (mod);
+        return pure;
+    };
+    for (auto* mod : newChain->controlMods)
+        visitPure (mod);
+
     // A stage or filter that reads any control source must inject it per sample.
     {
         auto referencesMod = [&modulators] (const ExpressionEvaluator& e)
@@ -2707,6 +2814,34 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
                 eq->modulated = eq->modulated || referencesMod (eq->freq)
                              || referencesMod (eq->q) || referencesMod (eq->gainDb);
         }
+    }
+
+    // Validation has succeeded. Only now may the old graph's variable
+    // entries be retired. No old audio callbacks can run during this step
+    // because ScriptManager holds its process lock while applying the patch.
+    {
+        juce::StringArray active {
+            "x", "y", "x_prev", "y_prev", "ch", "t", "a", "b", "c", "d", "e", "f",
+            "pi", "sr", "midi_note", "midi_freq", "midi_vel", "midi_gate",
+            "midi_bend", "midi_mod", "sc", "sc_l", "sc_r", "sidechain"
+        };
+        for (auto* mod : modulators)
+            active.addIfNotAlreadyThere (mod->name);
+        for (const auto& kv : newAliases)
+            if (kv.second.isNotEmpty())
+                active.addIfNotAlreadyThere (kv.second);
+        for (auto it = variables.begin(); it != variables.end(); )
+        {
+            if (active.contains (it->first))
+                ++it;
+            else
+                it = variables.erase (it);
+        }
+        for (auto* mod : modulators)
+            variables[mod->name] = 0.f;
+        for (const auto& kv : newAliases)
+            if (kv.second.isNotEmpty())
+                variables[kv.second] = 0.f;
     }
 
     // prepare newly created blocks when a valid spec is available
@@ -2746,24 +2881,31 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
 
     bindNodeTaps (*newChain);
 
-    retiredAliases   = std::atomic_load (&aliases);
-    retiredAliasPtrs = std::atomic_load (&aliasPtrs);
-    retiredChain     = std::atomic_load (&chain);
-    std::atomic_store (&aliases, std::make_shared<AliasMap> (std::move (newAliases)));
-    std::atomic_store (&aliasPtrs, std::move (newAliasPtrs));
-    std::atomic_store (&chain, newChain);
-    hot.bind (variables);
     if (currentSpec.sampleRate > 0.0)
     {
         const int busCh = (int) juce::jmax ((juce::uint32) 1, currentSpec.numChannels);
         const int busN  = (int) juce::jmax (currentSpec.maximumBlockSize, (juce::uint32) 64);
         ensureBusBuffers (busCh, busN);
     }
-    if (auto g = std::atomic_load (&busGraph))
+    if (pendingBusGraph)
     {
-        bindXoverDestinations (*newChain, *g);
-        prepareBusLatency (*newChain, *g);
+        bindXoverDestinations (*newChain, *pendingBusGraph);
+        prepareBusLatency (*newChain, *pendingBusGraph);
     }
+
+    // Publish the fully prepared graph last. The plugin's process lock
+    // excludes audio callbacks during this short commit. The independent
+    // atomic fields must NOT be interpreted as a lock-free transaction.
+    retiredAliases   = std::atomic_load (&aliases);
+    retiredAliasPtrs = std::atomic_load (&aliasPtrs);
+    retiredChain     = std::atomic_load (&chain);
+    retiredBusGraph  = std::atomic_load (&busGraph);
+    std::atomic_store (&aliases, std::make_shared<AliasMap> (std::move (newAliases)));
+    std::atomic_store (&aliasPtrs, std::move (newAliasPtrs));
+    std::atomic_store (&busGraph, std::move (pendingBusGraph));
+    std::atomic_store (&chain, newChain);
+    hot.bind (variables);
+    committed = true;
     return true;
 }
 
@@ -3148,104 +3290,44 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
     };
 
     // ---- Pre-render Osc/Env into mod lanes (O(n), not O(n * chain * ch)) ----
-    constexpr int kMaxMods = 64;
-    Osc* oscs[kMaxMods];
-    Env* envs[kMaxMods];
-    Modulator* mods[kMaxMods];
-    int nOsc = 0, nEnv = 0, nMod = 0;
-
-    for (auto& b : *chainPtr)
-    {
-        if (b->kind == NodeKind::Osc)
-        {
-            if (nOsc < kMaxMods)
-                oscs[nOsc++] = static_cast<Osc*> (b.get());
-        }
-        else if (b->kind == NodeKind::Env)
-        {
-            if (nEnv < kMaxMods)
-                envs[nEnv++] = static_cast<Env*> (b.get());
-        }
-        else if (b->kind == NodeKind::Modulator)
-        {
-            if (nMod < kMaxMods)
-                mods[nMod++] = static_cast<Modulator*> (b.get());
-        }
-    }
+    // Execution vectors are immutable and co-owned with the active chain.
+    const auto& oscs = chainPtr->oscillators;
+    const auto& envs = chainPtr->envelopes;
+    const auto& mods = chainPtr->controlMods;
 
     auto writeModsAt = [&] (int i) noexcept
     {
-        for (int o = 0; o < nOsc; ++o)
-            if (oscs[o]->destSlot != nullptr && (int) oscs[o]->modLane.size() > i)
-                *oscs[o]->destSlot = oscs[o]->modLane[(size_t) i];
-        for (int e = 0; e < nEnv; ++e)
-            if (envs[e]->destSlot != nullptr && (int) envs[e]->modLane.size() > i)
-                *envs[e]->destSlot = envs[e]->modLane[(size_t) i];
-        for (int m = 0; m < nMod; ++m)
-            if (mods[m]->destSlot != nullptr && (int) mods[m]->modLane.size() > i)
-                *mods[m]->destSlot = mods[m]->shapedControl (mods[m]->modLane[(size_t) i]);
+        for (auto* osc : oscs)
+            if (osc->destSlot != nullptr && (int) osc->modLane.size() > i)
+                *osc->destSlot = osc->modLane[(size_t) i];
+        for (auto* env : envs)
+            if (env->destSlot != nullptr && (int) env->modLane.size() > i)
+                *env->destSlot = env->modLane[(size_t) i];
+        for (auto* mod : mods)
+            if (mod->destSlot != nullptr && (int) mod->modLane.size() > i)
+                *mod->destSlot = mod->shapedControl (mod->modLane[(size_t) i]);
     };
 
-    for (int i = 0; i < nOsc; ++i)
+    for (auto* osc : oscs)
     {
-        oscs[i]->renderModBlock (numSamples);
-        if (! oscs[i]->modLane.empty())
-            writeNodeTapLane (oscs[i]->tapSlot, oscs[i]->modLane.data(),
-                              (int) oscs[i]->modLane.size());
+        osc->renderModBlock (numSamples);
+        if (! osc->modLane.empty())
+            writeNodeTapLane (osc->tapSlot, osc->modLane.data(),
+                              juce::jmin (numSamples, (int) osc->modLane.size()));
     }
 
-    // Pure control generators run once per block in dependency order. Sources that
-    // need audio stay at their graph position and defer their consumers too.
-    bool preRendered[kMaxMods] {};
-    for (int i = 0; i < nMod; ++i)
-        mods[i]->startRendered = false;
-
-    auto modIndex = [&mods, nMod] (const Modulator* m) noexcept
+    // Topological ordering is compiled at loadScript, not recomputed while
+    // audio is processing. Audio-dependent modulators retain their position.
+    for (auto* mod : mods)
+        mod->startRendered = false;
+    for (auto* mod : chainPtr->pureControlOrder)
     {
-        for (int i = 0; i < nMod; ++i)
-            if (mods[i] == m)
-                return i;
-        return -1;
-    };
-
-    bool changed = true;
-    for (int guard = 0; changed && guard < nMod; ++guard)
-    {
-        changed = false;
-        for (int i = 0; i < nMod; ++i)
-        {
-            if (preRendered[i] || mods[i]->needsAudioInput())
-                continue;
-
-            bool blocked = false;
-            for (const auto* input : mods[i]->inputSources)
-            {
-                if (input == nullptr || input->kind == NodeKind::Osc)
-                    continue;
-                if (input->kind == NodeKind::Env || input->needsAudioInput())
-                {
-                    blocked = true;
-                    break;
-                }
-                const int j = modIndex (input);
-                if (j < 0 || ! preRendered[j])
-                {
-                    blocked = true;
-                    break;
-                }
-            }
-            if (blocked)
-                continue;
-
-            mods[i]->processBlock (buffer);
-            if (! mods[i]->modLane.empty())
-                writeNodeTapLane (mods[i]->tapSlot, mods[i]->modLane.data(),
-                                  juce::jmin (numSamples, (int) mods[i]->modLane.size()));
-            mods[i]->publishLast (numSamples);
-            mods[i]->startRendered = true;
-            preRendered[i] = true;
-            changed = true;
-        }
+        mod->processBlock (buffer);
+        if (! mod->modLane.empty())
+            writeNodeTapLane (mod->tapSlot, mod->modLane.data(),
+                              juce::jmin (numSamples, (int) mod->modLane.size()));
+        mod->publishLast (numSamples);
+        mod->startRendered = true;
     }
 
     for (auto& b : *chainPtr)
@@ -3298,7 +3380,11 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
         juce::AudioBuffer<float> slice (work.getArrayOfWritePointers(), workCh, nWork);
         if (onlyBus < 0 || onlyBus == 0)
             writeNodeTap (kTapSlotIn, slice);
-        for (auto& b : *chainPtr)
+        const auto& blocks = juce::isPositiveAndBelow (
+            onlyBus, (int) chainPtr->blocksByBus.size())
+            ? chainPtr->blocksByBus[(size_t) onlyBus]
+            : chainPtr->orderedBlocks;
+        for (auto* b : blocks)
         {
             if (onlyBus >= 0 && b->busIndex != onlyBus)
                 continue;
@@ -3310,7 +3396,7 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
                 case NodeKind::Env:
                 {
                     // Detectors observe the signal at their actual graph position.
-                    auto* env = static_cast<Env*> (b.get());
+                    auto* env = static_cast<Env*> (b);
                     const float* l = slice.getReadPointer (0);
                     const float* r = workCh > 1 ? slice.getReadPointer (1) : l;
                     if (env->followSidechain)
@@ -3329,7 +3415,7 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
 
                 case NodeKind::Modulator:
                 {
-                    auto* mod = static_cast<Modulator*> (b.get());
+                    auto* mod = static_cast<Modulator*> (b);
                     if (mod->startRendered)
                         continue;
                     mod->processBlock (slice);
@@ -3345,7 +3431,7 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
 
                 case NodeKind::Stage:
                 {
-                    auto* st = static_cast<Stage*> (b.get());
+                    auto* st = static_cast<Stage*> (b);
                     if (st->msEncode && workCh >= 2)
                     {
                         auto* l = work.getWritePointer (0);
@@ -3422,7 +3508,7 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
 
                 case NodeKind::Delay:
                 {
-                    auto* dl = static_cast<Delay*> (b.get());
+                    auto* dl = static_cast<Delay*> (b);
                     auto* L = work.getWritePointer (0);
                     auto* R = workCh > 1 ? work.getWritePointer (1) : nullptr;
                     if (dl->useSync)
@@ -3458,7 +3544,7 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
 
                 case NodeKind::Filter:
                 {
-                    auto* fi = static_cast<Filter*> (b.get());
+                    auto* fi = static_cast<Filter*> (b);
                     if (fi->modulated)
                     {
                         const int stride = juce::jmax (1, Config::kFilterCoeffStride);
@@ -3498,7 +3584,7 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
             b->processBlock (slice);
             if (tapCaptureActive && b->kind == NodeKind::Xover)
             {
-                const auto* xo = static_cast<Xover*> (b.get());
+                const auto* xo = static_cast<Xover*> (b);
                 if (xo->lowOut != nullptr) writeNodeTap (xo->lowTap, *xo->lowOut, nWork);
                 if (xo->midOut != nullptr && xo->threeBand) writeNodeTap (xo->midTap, *xo->midOut, nWork);
                 if (xo->highOut != nullptr) writeNodeTap (xo->highTap, *xo->highOut, nWork);
@@ -4834,6 +4920,8 @@ void SignalChain::setTempo(double bpm, double ppqPosition, bool isPlaying) noexc
             sq->setHost (bpm, ppqPosition, isPlaying, started || seeked);
         if (auto* sh = dynamic_cast<SampleHold*> (b.get()))
             sh->applyTempo (bpm);
+        if (auto* mg = dynamic_cast<Mseg*> (b.get()))
+            mg->hostBpm = bpm;
         if (auto* rn = dynamic_cast<Random*> (b.get()))
             rn->applyTempo (bpm);
     }

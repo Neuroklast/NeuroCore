@@ -17,6 +17,8 @@ void SignalChain::Decimate::clearRuntimeState() noexcept
 {
     holdL = holdR = 0.0f;
     holdCounter = 0;
+    nextHoldSamples = 1;
+    jitterState = 0x9e3779b9u;
     lastSampleL = 0.0f;
     lastSampleR = 0.0f;
 }
@@ -43,7 +45,8 @@ void SignalChain::Decimate::prepare (const juce::dsp::ProcessSpec& spec)
     holdSm.setCurrentAndTargetValue (snap (holdExpr, 0.0f));
     reconSm.setCurrentAndTargetValue (snap (reconExpr, 0.5f));
     mixSm.setCurrentAndTargetValue (snap (mixExpr, 0.0f));
-    outputSm.setCurrentAndTargetValue (snap (outputExpr, 0.0f));
+    outputSm.setCurrentAndTargetValue (juce::Decibels::decibelsToGain (
+        juce::jlimit (-36.f, 12.f, snap (outputExpr, 0.f))));
     bindings.prepare (varPtr, { &rateExpr, &bitsExpr, &jitterExpr, &holdExpr,
                                 &reconExpr, &mixExpr, &outputExpr });
     clearRuntimeState();
@@ -65,6 +68,19 @@ void SignalChain::Decimate::processBlock (juce::AudioBuffer<float>& buffer)
 
     bindings.refresh();
 
+    auto target = [] (ExpressionEvaluator& expr, float fallback, float lo, float hi)
+    {
+        return juce::jlimit (lo, hi, snapEval (expr, fallback));
+    };
+    rateSm.setTargetValue (target (rateExpr, 0.5f, 0.f, 1.f));
+    bitsSm.setTargetValue (target (bitsExpr, 8.f, 1.f, 16.f));
+    jitterSm.setTargetValue (target (jitterExpr, 0.f, 0.f, 1.f));
+    holdSm.setTargetValue (target (holdExpr, 0.f, 0.f, 1.f));
+    reconSm.setTargetValue (target (reconExpr, 0.5f, 0.f, 1.f));
+    mixSm.setTargetValue (target (mixExpr, 1.f, 0.f, 1.f));
+    outputSm.setTargetValue (juce::Decibels::decibelsToGain (
+        target (outputExpr, 0.f, -36.f, 12.f)));
+
     const int useCh = juce::jmin (nCh, 2);
     float* out[2] {};
     for (int c = 0; c < useCh; ++c)
@@ -72,30 +88,57 @@ void SignalChain::Decimate::processBlock (juce::AudioBuffer<float>& buffer)
 
     for (int i = 0; i < nS; ++i)
     {
-        const float rate    = juce::jlimit (0.0f, 1.0f, rateSm.getNextValue());
-        const float bits    = juce::jlimit (1.0f, 16.0f, bitsSm.getNextValue());
-        jitterSm.skip (1);
-        holdSm.skip (1);
-        const float recon   = juce::jlimit (0.0f, 1.0f, reconSm.getNextValue());
-        const float mix     = juce::jlimit (0.0f, 1.0f, mixSm.getNextValue());
-        const float trimLin = juce::Decibels::decibelsToGain (juce::jlimit (-36.0f, 12.0f, outputSm.getNextValue()));
+        const float rate   = juce::jlimit (0.f, 1.f, rateSm.getNextValue());
+        const int bits     = juce::jlimit (1, 16, (int) std::lround (bitsSm.getNextValue()));
+        const float jitter = juce::jlimit (0.f, 1.f, jitterSm.getNextValue());
+        const float hold   = juce::jlimit (0.f, 1.f, holdSm.getNextValue());
+        const float recon  = juce::jlimit (0.f, 1.f, reconSm.getNextValue());
+        const float mix    = juce::jlimit (0.f, 1.f, mixSm.getNextValue());
+        const float trimLin = outputSm.getNextValue();
 
-        const int holdN = static_cast<int> (juce::jlimit (1.0f, 100.0f, 1.0f / (1.0f - rate + 1.0e-6f)));
-        if (++holdCounter >= holdN)
+        // A sample-and-hold interval is shared by L/R: stereo stays aligned.
+        // Hold extends the normal decimation period, jitter perturbs its length.
+        // At both zero, the original decimation timing is unchanged.
+        if (holdCounter == 0)
+        {
+            // Truncation collapses rate=0.5 (nominal 1.99999...) to a
+            // one-sample period, removing decimation entirely. Round the
+            // intended rate-reduction factor to its nearest sample count.
+            const int nominal = (int) std::lround (juce::jlimit (1.f, 100.f,
+                1.f / (1.f - rate + 1.0e-6f)));
+            const int base = juce::jlimit (1, 200,
+                nominal + (int) std::lround (hold * 99.f));
+            int duration = base;
+            if (jitter > 0.f)
+            {
+                jitterState ^= jitterState << 13;
+                jitterState ^= jitterState >> 17;
+                jitterState ^= jitterState << 5;
+                const float noise = (float) (jitterState & 0xffffu) / 32767.5f - 1.f;
+                duration = (int) std::lround ((float) base
+                    * (1.f + noise * 0.5f * jitter));
+            }
+            nextHoldSamples = juce::jlimit (1, 300, duration);
+        }
+
+        if (++holdCounter >= nextHoldSamples)
         {
             holdCounter = 0;
             holdL = out[0][i];
             holdR = useCh > 1 ? out[1][i] : holdL;
         }
 
-        const int levels = static_cast<int> (juce::jlimit (1.0f, 65536.0f, std::pow (2.0f, bits)));
+        // Bit depth is a discrete property; use an integer shift instead of
+        // a transcendental pow() on every sample.
+        const float levels = (float) (1u << bits);
+        const float response = 1.f - 0.98f * recon;
         for (int c = 0; c < useCh; ++c)
         {
             const float dry = out[c][i];
             const float held = (c == 0) ? holdL : holdR;
-            const float quantized = std::floor (held * static_cast<float> (levels)) / static_cast<float> (levels);
+            const float quantized = std::round (held * levels) / levels;
             float& last = (c == 0) ? lastSampleL : lastSampleR;
-            const float reconOut = quantized * (1.0f - recon) + last * recon;
+            const float reconOut = last + response * (quantized - last);
             last = reconOut;
             out[c][i] = dry * (1.0f - mix) + reconOut * trimLin * mix;
         }

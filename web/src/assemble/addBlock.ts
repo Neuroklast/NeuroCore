@@ -34,13 +34,14 @@ export const ADDABLE_BLOCKS: AddableBlock[] = [
   { type: "freqshift", label: "FreqShift", args: "hz = 0; mix = 1", category: "Tone" },
   { type: "wavefold", label: "WaveFold", args: "drive = 1; fold = 1; mix = 1", category: "Drive" },
   { type: "nlfilter", label: "NlFilter", args: "cutoff = 1000; drive = 1; mix = 1", category: "Tone" },
+  { type: "mseg", label: "MSEG", args: entryById("mseg")!.dslTemplate, category: "Mod" },
   { type: "stepseq", label: "StepSeq", args: "rate = 1; step0 = 1; step1 = 0; step2 = -1; step3 = 0; mix = 1", category: "Mod" },
   { type: "adsr", label: "ADSR", args: "attack = 0.1; decay = 0.1; sustain = 0.7; release = 0.1", category: "Mod" },
   { type: "samplehold", label: "SampleHold", args: "rate = 10; mix = 1", category: "Mod" },
   { type: "random", label: "Random", args: "rate = 10; min = -1; max = 1; mix = 1", category: "Mod" },
   { type: "modmath", label: "ModMath", args: "mode = add; amount = 1; mix = 1", category: "Mod" },
   { type: "envtrigger", label: "EnvTrigger", args: "threshold = 0.5; hold = 100; level = 1", category: "Mod" },
-  { type: "modmix", label: "ModMix", args: "levelA = 1; levelB = 1; mix = 1", category: "Mod" },
+  { type: "modmix", label: "ModMix", args: entryById("modmix")!.dslTemplate, category: "Mod" },
   { type: "tapestop", label: "TapeStop", args: "stop = 1; depth = 1; mix = 1", category: "Time" },
   { type: "reversedelay", label: "ReverseDelay", args: "time = 250; feedback = 0.35; mix = 0.35", category: "Time" },
   { type: "ringmod", label: "Ringmod", args: "freq = 440; mix = 1", category: "Drive" },
@@ -371,6 +372,14 @@ export function setCircuitArg(id: string, key: string, value: string): void {
     "canvas",
     { historyKey: `setArg:${id}:${key}` },
   );
+}
+
+/** Publish related control edits as one script/undo transaction. */
+export function setCircuitArgs(id: string, args: Record<string, string>): void {
+  const cur = useAstStore.getState();
+  let script = cur.lastValidScript || cur.script;
+  for (const [key, value] of Object.entries(args)) script = scriptAfterSetArg(script, id, key, value);
+  publishScript(script, "canvas", { historyKey: `setArgs:${id}` });
 }
 
 export function renameCircuitBlock(oldId: string, newId: string): void {

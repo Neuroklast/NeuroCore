@@ -322,3 +322,38 @@ Shaper is a symmetric waveshaper with two modes. `fold` wraps signal beyond ±1 
 Circuit signal traces
 Connections remain visible during silence and retain a minimum screen width while zooming out. Wave mode sends measured impulses from each source contact along the routed trace. Motion speed eases over 150 ms. Emitted impulses fade independently when fresh measurements stop. The restrained glow is reduced in the overview. Motion Reduced/Off and Dots retain their existing stationary presentation.
 New installations default to Wave. An existing saved Dots preference is preserved. Change Cables to Wave in Settings to enable travelling impulses.
+
+
+### Factory library curation
+
+The reviewed factory library contains 350 presets. Mesa High Gain keeps its original script, cabinet and controls. Step sequencer, ADSR, Sample & Hold, Random, EnvTrigger, ModMath and ModMix have purpose-built examples. Other additions cover clipping, saturation, decimation, folding, nonlinear filtering, frequency shift, resonators, reverse delay, ring modulation and gain trim.
+
+Chopper now uses editable sequencer accents. Broken Grid Chaos and Glitch Hold Gate use real held control sources. Tape Wobble varies delay time, Vocal Double uses micro-pitch and a delay bus, and Arp Shimmer uses an octave-up return. MIDI Pluck Filter and MIDI Swell Return need MIDI notes routed to the insert. Dark Atmosphere is intentionally a noise generator and can sound with silent input; turn Fog down to remove its generated noise.
+
+The overlapping radio/telephone/clipper variants are consolidated. Complete removed presets and earlier versions of revised presets are preserved in resources/deprecated/factory-2026-10-22.json, with a replacement/reason manifest. They are excluded from factory browsing. The per-preset review is in docs/presets/2026-10-22-review.md.
+
+### Control-chain connections
+
+Audio Join accepts audio on `inA` and `inB`. ModMath and ModMix accept control sources on those contacts. StepSeq, ADSR, Sample & Hold, Random, ModMath and ModMix expose control outputs in Circuit. A source’s Depth and Polarity apply once at every outgoing connection, including connections into another modulator.
+
+### ModMix control mixer
+
+Connect two control sources to `inA`/`inB`. Independent `levela`/`levelb` gains range from −4 to +4; negative gain reverses a contribution. `mix` scales their sum (0–1), then `offset` adds a bias (−1–1). `normalize = on` divides the sum by the absolute weights of connected inputs; missing inputs contribute zero and have no normalization weight. `clamp = bipolar` limits to −1…1; `unipolar` limits to 0…1; `off` preserves the sum. Defaults retain the previous positive-weight behavior. Common `depth` (literal 0–1) and `polarity = normal|invert` shape the published result once.
+
+The chip plots the latest measured weighted A contribution, weighted B contribution, and final published output from top to bottom around a central zero. Contributions are shown before normalization/master/offset; output includes all stages. Unavailable measurements remain dim. Display length saturates at ±1; the DSP value is only limited when Clamp is enabled. Hover each bar for its numeric reading.
+
+### MSEG — initial C08 control source
+
+`mseg1: points = 0:0:0,0.25:1:2,1:0:0; duration = 1; source = free; mode = loop`
+
+Use 2–64 points as `time:value[:curve]`, separated by commas. Time starts at 0 and ends at 1 in strictly increasing order. Level is −1…1. Each point’s curve shapes its outgoing segment: 0 is linear; positive curves delay the transition, negative curves make it early (range −8…8). Invalid data stops compilation with a diagnostic.
+
+`duration` sets a complete cycle in seconds (0.001–60). `sync = 1/4` instead uses a complete quarter-note cycle at the host BPM; `sync = off` uses Duration. This initial sync implementation follows BPM and runs independently of transport position. `source = free` starts on prepare/reset. `audio` starts on channel 0 crossing above 0.5, `midi` uses the host MIDI gate and `either` accepts both. `retrigger = on` restarts on each rising gate; off waits until the curve has finished.
+
+`mode = oneshot` holds the final value. `mode = loop` wraps between zero-based `loopstart`/`loopend` point indices while gated (or continuously in Free). Default bounds span the curve. `sustain` is a zero-based hold point, or −1 to disable. Gated sustain takes precedence over looping. Gate release disables hold/loop and completes the remaining curve. Output is a normal control source and supports common literal Depth/Polarity. Route host MIDI to the plug-in for MIDI triggering.
+
+In Circuit, add **MSEG** under Mod and open Inspect to edit its curve. Drag points or focus one and use arrow keys. **Add point** inserts in the widest time interval; Delete removes an interior point. Endpoint times stay fixed. **Segment curve** shapes the selected point’s outgoing segment; its endpoint has no outgoing segment. Escape or pointer cancellation restores a drag. Point changes commit on release. Adding/removing points remaps loop/sustain indices in the same script transaction; removing a sustain point disables that hold. The chip shows the calculated curve, not a measured waveform tap.
+
+The factory catalog now contains 353 active presets. Curved Sync Duck demonstrates a continuous looping MSEG recovery, MIDI Bowed Resonator uses gated sustain/release, and Bipolar Formant Arc sweeps a repeatable bipolar curve on a parallel bandpass. Mesa High Gain is retained unchanged. Removed/replaced original preset objects are backed up in the repository’s `resources/deprecated` catalog; the active browser omits deprecated entries.
+
+ModMix and MSEG Inspect panels also show controls omitted from a short script, using the engine defaults. MSEG’s default loop end follows its actual last point. Macro binding is available for ModMix A/B gain, Mix and Offset, and MSEG Duration. Point lists, loop/sustain indices and common source Depth/Polarity are literal settings.

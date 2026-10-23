@@ -115,8 +115,8 @@ public:
     InputGain&      getInputGain()      noexcept { return inputGain; }
     int getSanitationLatency() const noexcept { return sanitation.limiterLatencySamples(); }
 
-    /** Allocated OS working length after prepare. processBlock must not grow this. */
-    int getScriptBufferNumSamples() const noexcept { return scriptBuffer.getNumSamples(); }
+    /** Prepared OS domain ceiling (DSL processes the oversampler in place). */
+    int getScriptBufferNumSamples() const noexcept { return preparedOsN; }
 
 private:
     juce::dsp::ProcessSpec currentSpec { Config::kDefaultSampleRate,
@@ -148,7 +148,7 @@ private:
     int hostScN { 0 };
     LatencyAlignedSidechain drySidechain;
     LatencyAlignedSidechain scHostAlign;
-    juce::AudioBuffer<float> scriptBuffer;
+    // No redundant scriptBuffer: the DSL operates on oversampler-owned memory.
 
     /** [1]=2× [2]=4× [3]=8× — built once per host spec so OS switches do not realloc. */
     std::unique_ptr<juce::dsp::Oversampling<float>> osStudio[4];
@@ -170,6 +170,10 @@ private:
     bool bypassActive { false };
     bool hostBypass { false };
     double silentSec { 0.0 };
+    // Refresh the longest audible tail at a bounded cadence, not once for
+    // every host/MIDI audio slice. Invalidate on script/spec/reset changes.
+    float cachedTailSeconds { 0.f };
+    int tailRefreshSamples { 0 };
     std::atomic<bool> idleActive { false };
 
     std::array<juce::SmoothedValue<float>, Config::kNumUserParams> smoothedParams;

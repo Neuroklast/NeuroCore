@@ -169,6 +169,7 @@ set(SOURCE_FILES
     src/dsl/blocks/FreqShiftBlock.cpp
     src/dsl/blocks/WaveFoldBlock.cpp
     src/dsl/blocks/NlFilterBlock.cpp
+    src/dsl/blocks/MsegBlock.cpp
     src/dsl/blocks/StepSeqBlock.cpp
     src/dsl/blocks/AdsrBlock.cpp
     src/dsl/blocks/SampleHoldBlock.cpp

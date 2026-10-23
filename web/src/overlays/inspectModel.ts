@@ -1,4 +1,5 @@
 import type { AstDocument, AstNode, AstParam } from "../bridge/ast";
+import { readMsegPoints } from "../assemble/msegModel";
 import { chipSpec } from "../assemble/chipSpec";
 import { nodeProbe, probeLabel } from "../assemble/nodeProbe";
 import {
@@ -194,7 +195,13 @@ export function inspectSnapNote(raw: string, unit: string, min: number, max: num
 
 export function inspectArgFields(node: AstNode): InspectArgField[] {
   const spec = chipSpec(node.type, node.args);
-  return Object.entries(node.args).map(([key, value]) => {
+  const control = spec.id === "modmix" || spec.id === "mseg";
+  const explicit = control ? Object.fromEntries(Object.entries(node.args).map(([k,v]) => [k.toLowerCase(),v])) : node.args;
+  const defaults = spec.id === "mseg"
+    ? { ...spec.defaultArgs, loopend: String(readMsegPoints(explicit.points).length-1) }
+    : spec.defaultArgs;
+  const values = control ? { ...defaults, ...explicit } : explicit;
+  return Object.entries(values).map(([key, value]) => {
     const options = inspectEnumOptions(node.type, key);
     if (options.length > 0) {
       return { key, value, kind: "enum", options, unit: "", min: 0, max: 0, timing: false };

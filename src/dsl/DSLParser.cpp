@@ -740,6 +740,7 @@ bool DSLParser::parse(const juce::String& text,
                 desc.type != "wavefold" &&
                 desc.type != "nlfilter" &&
                 desc.type != "stepseq" &&
+                desc.type != "mseg" &&
                 desc.type != "adsr" &&
                 desc.type != "samplehold" &&
                 desc.type != "random" &&

@@ -8,6 +8,7 @@
 #include "TestHelpers.h"
 #include <array>
 #include <cmath>
+#include <limits>
 
 class DynamicsBlocksTest : public juce::UnitTest
 {
@@ -583,6 +584,26 @@ public:
                 chain.processBlock (buf);
                 expectEquals (TestHelpers::countNonFinite (buf), 0);
             }
+        }
+
+        beginTest ("comp rms recovers after a non-finite input");
+        {
+            dsl::SignalChain chain;
+            juce::String err;
+            expect (chain.loadScript (
+                "comp1: threshold = -24; ratio = 8; attack = 0.001; release = 0.05; detector = rms",
+                err), err);
+            chain.prepare ({ 48000.0, 2048, 1 });
+            juce::AudioBuffer<float> buf (1, 2048);
+            buf.setSample (0, 0, std::numeric_limits<float>::quiet_NaN());
+            for (int i = 1; i < 2048; ++i)
+                buf.setSample (0, i, 0.8f * std::sin ((float) i * 0.13f));
+            chain.processBlock (buf);
+            expectEquals (TestHelpers::countNonFinite (buf), 0);
+            float peak = 0.f;
+            for (int i = 512; i < 2048; ++i)
+                peak = juce::jmax (peak, std::abs (buf.getSample (0, i)));
+            expect (peak < 0.7f, "must still compress after NaN, peak=" + juce::String (peak, 3));
         }
 
         beginTest ("ott block parses");

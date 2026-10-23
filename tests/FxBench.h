@@ -3,6 +3,10 @@
 #include "FxRuntimeTest.h"
 #include "../src/third_party/nlohmann/json.hpp"
 #include <chrono>
+#include <algorithm>
+#include <cmath>
+#include <string>
+#include <vector>
 #include <fstream>
 #include <iostream>
 
@@ -42,7 +46,110 @@ inline int runFxBenchmark()
     return 0;
 }
 
-inline int auditFactory (const char* catalogPath, const char* outputPath, bool stress = false)
+// Deterministic, manually invoked DSL-only baseline. Does NOT include host,
+// WebView2 or the resampling FIR/IIR. No GitHub CI run is required.
+inline int runDensePerformanceBenchmark()
+{
+    using Clock = std::chrono::steady_clock;
+    constexpr int kHostBlock = 256;
+    std::cout << "scenario,nodes,os_domain_factor,sample_rate,block_samples,"
+                 "p50_us,p95_us,p99_us,max_us,block_budget_percent,nonfinite\n";
+    for (const auto& scenario : {
+             std::pair<const char*, int> { "serial", 10 },
+             { "serial", 50 }, { "serial", 100 }, { "serial", 200 },
+             { "modulators", 128 }, { "multibus", 80 } })
+    {
+        const std::string kind = scenario.first;
+        const int count = scenario.second;
+        juce::String script;
+        if (kind == "serial")
+        {
+            for (int i = 1; i <= count; ++i)
+                script += "stage" + juce::String (i) + ": y = x * 0.999\n";
+        }
+        else if (kind == "modulators")
+        {
+            for (int i = 1; i <= count; ++i)
+                script += "stepseq" + juce::String (i)
+                    + ": steps = 1; values = 0.5\n";
+            script += "stage1: y = stepseq128 * x\n";
+        }
+        else
+        {
+            for (int bus = 0; bus < 4; ++bus)
+            {
+                if (bus > 0)
+                    script += "bus route" + juce::String (bus)
+                        + ":\nsend: in = 1\n";
+                for (int i = 0; i < count / 4; ++i)
+                    script += "stage" + juce::String (bus * (count / 4) + i + 1)
+                        + ": y = x * 0.999\n";
+            }
+            script += "out: main = 0.25; route1 = 0.25; "
+                      "route2 = 0.25; route3 = 0.25\n";
+        }
+
+        for (const int factor : { 1, 2, 4, 8 })
+        {
+            const auto sampleRate = 48000.0 * (double) factor;
+            const int samples = kHostBlock * factor;
+            dsl::SignalChain chain;
+            chain.prepare ({ sampleRate, (juce::uint32) samples, 2 });
+            juce::String err;
+            if (! chain.loadScript (script, err))
+            {
+                std::cerr << "Cannot bench " << kind << "/" << count
+                          << ": " << err << '\n';
+                return 2;
+            }
+            chain.setNodeTapsWanted (false);
+            juce::AudioBuffer<float> input (2, samples), work (2, samples);
+            for (int i = 0; i < samples; ++i)
+            {
+                input.setSample (0, i, 0.2f * std::sin (0.071f * (float) i));
+                input.setSample (1, i, 0.2f * std::cos (0.064f * (float) i));
+            }
+
+            std::vector<double> times;
+            times.reserve (160);
+            int nonfinite = 0;
+            for (int block = -40; block < 160; ++block)
+            {
+                for (int ch = 0; ch < 2; ++ch)
+                    work.copyFrom (ch, 0, input, ch, 0, samples);
+                const auto start = Clock::now();
+                chain.processBlock (work);
+                const double us = std::chrono::duration<double, std::micro> (
+                    Clock::now() - start).count();
+                if (block >= 0)
+                {
+                    times.push_back (us);
+                    for (int ch = 0; ch < 2; ++ch)
+                        for (int i = 0; i < samples; ++i)
+                            nonfinite += ! std::isfinite (work.getSample (ch, i));
+                }
+            }
+            std::sort (times.begin(), times.end());
+            const auto percentile = [&times] (double p)
+            {
+                const auto idx = (size_t) std::floor (p * (double) (times.size() - 1));
+                return times[idx];
+            };
+            const double p50 = percentile (0.50), p95 = percentile (0.95);
+            const double p99 = percentile (0.99);
+            const double budgetUs = (double) kHostBlock / 48000.0 * 1.0e6;
+            std::cout << kind << ',' << count << ',' << factor << ','
+                      << (int) sampleRate << ',' << samples << ','
+                      << p50 << ',' << p95 << ',' << p99 << ','
+                      << times.back() << ',' << 100. * p99 / budgetUs << ','
+                      << nonfinite << '\n';
+            if (nonfinite != 0) return 3;
+        }
+    }
+    return 0;
+}
+
+inline int auditFactory (const char* catalogPath, const char* outputPath, bool stress = false, const std::string& profile = "broadband")
 {
     using nlohmann::json;
     json presets; std::ifstream (catalogPath) >> presets;
@@ -86,7 +193,12 @@ inline int auditFactory (const char* catalogPath, const char* outputPath, bool s
         const float inGain = juce::Decibels::decibelsToGain (preset.value ("inputGain", 0.f));
         const float outGain = juce::Decibels::decibelsToGain (preset.value ("outputGain", 0.f));
         const float mix = preset.value ("mix", 1.f);
-        juce::AudioBuffer<float> b (2, 256), dry (2, 256);
+        juce::AudioBuffer<float> b (2, 256), dry (2, 256), sidechain (2, 256);
+        MidiVariableMapper midi;
+        const auto scriptText = preset.at ("script").get<std::string>();
+        const bool wantsMidi = (scriptText.find ("gate = midi") != std::string::npos || scriptText.find ("source = midi") != std::string::npos);
+        const bool wantsSidechain = scriptText.find ("sidechain") != std::string::npos;
+        const bool wantsVoice = scriptText.find ("vocoder") != std::string::npos;
         LatencyAlignedSidechain dryAlign;
         dryAlign.prepare (2, 256, chain.getIrLatencySamples());
         double energy = 0, sum = 0;
@@ -96,6 +208,13 @@ inline int auditFactory (const char* catalogPath, const char* outputPath, bool s
         std::vector<float> signature;
         for (int block = 0; block < 256; ++block)
         {
+            chain.setTempo (120.0, (double) block * 256.0 / 48000.0 * 2.0, true);
+            if (wantsMidi)
+            {
+                if (block % 48 == 0) midi.processEvent (juce::MidiMessage::noteOn (1, 60, 0.8f));
+                if (block % 48 == 24) midi.processEvent (juce::MidiMessage::noteOff (1, 60));
+                chain.setMidiVariables (midi);
+            }
             if (stress && block % 32 == 0)
                 for (int knob = 0; knob < Config::kNumUserParams; ++knob)
                     chain.setParameter ((size_t) knob, (block / 32) % 2 ? 1.f : 0.f);
@@ -106,15 +225,30 @@ inline int auditFactory (const char* catalogPath, const char* outputPath, bool s
                 rng = rng * 1664525u + 1013904223u;
                 const float noise = (float) (rng >> 8) / 8388608.f - 1.f;
                 const float pulse = std::exp (-20.f * std::fmod (t, 0.25f));
-                const float x = 0.13f * std::sin (juce::MathConstants<float>::twoPi * 110.f * t)
+                float x = 0.13f * std::sin (juce::MathConstants<float>::twoPi * 110.f * t)
                               + 0.07f * std::sin (juce::MathConstants<float>::twoPi * 997.f * t)
                               + 0.1f * noise * (0.25f + pulse);
+                if (profile == "transients")
+                    x = pulse * (0.55f * std::sin (juce::MathConstants<float>::twoPi * 83.f * t) + 0.22f * noise);
+                else if (profile == "hot") x *= 4.f;
+                else if (profile == "sweep")
+                {
+                    const float duration = 256.f * 256.f / 48000.f;
+                    const float phase = 25.f * duration / std::log (720.f) * (std::pow (720.f, t / duration) - 1.f);
+                    x = 0.35f * std::sin (juce::MathConstants<float>::twoPi * phase);
+                }
+                else if (profile == "silence") x = 0.f;
+                const float sc = profile == "silence" ? 0.f : 0.7f * std::exp (-30.f * std::fmod (t, 0.5f));
+                sidechain.setSample (0, i, wantsVoice ? sc * std::sin (t * 110.f * juce::MathConstants<float>::twoPi) : sc);
+                sidechain.setSample (1, i, sidechain.getSample (0, i));
                 b.setSample (0, i, x * inGain);
-                b.setSample (1, i, (x * 0.8f + 0.02f * std::sin (0.217f * sample)) * inGain);
+                b.setSample (1, i, (x * 0.8f + (profile == "silence" ? 0.f : 0.02f * std::sin (0.217f * sample))) * inGain);
             }
             dry.makeCopyOf (b, true);
             dryAlign.pushAndRead (dry, 256);
             if (stress && block >= 192) { b.clear(); dry.clear(); }
+            if (wantsSidechain) chain.setExternalSidechain (sidechain.getReadPointer (0), sidechain.getReadPointer (1), 256);
+            if (wantsVoice) chain.setVoiceInput (sidechain.getReadPointer (0), sidechain.getReadPointer (1), 256);
             chain.processBlock (b);
             if (block < 64) continue;
             for (int i = 0; i < 256; ++i)
