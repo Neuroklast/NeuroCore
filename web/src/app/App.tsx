@@ -6,6 +6,7 @@ import { AssembleView } from "../assemble/AssembleView";
 import { BindCables, BindDragGhost } from "../assemble/BindCables";
 
 import { Footer, Hud, Knobs, MixOs, Toolbar, WorkspaceTabs } from "../chrome/Chrome";
+import { TooltipLayer } from "../chrome/TooltipLayer";
 import { browserShortcutStopsPropagation, canForwardHostKey, circuitHasOverlay, circuitHasSelection, shouldBlockBrowserShortcut, shouldBlockNativeContextMenu, shouldBlockWheelZoom, shouldForwardToHost } from "../chrome/shortcuts";
 import { isRedoKey, isUndoKey, undoTargetIsText } from "../chrome/undoModel";
 import { redoCircuit, undoCircuit } from "../assemble/addBlock";
@@ -210,6 +211,7 @@ export function App() {
       <Footer />
       <CrtFx />
       <Overlays />
+      <TooltipLayer />
       <PerfHud />
     </main>
     </ScaleShell>

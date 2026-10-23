@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { explorerSession, patchExplorer } from "./explorerSession";
+import { explorerSession, forgetHiddenCategory, patchExplorer } from "./explorerSession";
 
 describe("explorer session", () => {
   it("keeps category, selection and scroll after close", () => {
@@ -10,5 +10,12 @@ describe("explorer session", () => {
     expect(explorerSession.selectedName).toBe("Metal Scoop");
     expect(explorerSession.folderScroll).toBe(80);
     expect(explorerSession.listScroll).toBe(240);
+  });
+
+  it("forgets a leftover category so it cannot stay hidden", () => {
+    patchExplorer({ cat: "Distortion", sources: ["Guitar"], types: ["Distortion"] });
+    expect(forgetHiddenCategory(explorerSession).cat).toBe("");
+    expect(explorerSession.sources).toEqual(["Guitar"]);
+    expect(explorerSession.types).toEqual(["Distortion"]);
   });
 });

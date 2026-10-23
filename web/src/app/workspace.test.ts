@@ -60,4 +60,9 @@ describe("workspace modes", () => {
     expect(circuitPaintActive("assemble", 40, 40)).toBe(false);
     expect(circuitPaintActive("assemble", 41, 41)).toBe(true);
   });
+
+  it("does not run the browser demo clip clock off Circuit", () => {
+    const board = readFileSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../assemble/BoardView.tsx"), "utf8");
+    expect(board).toMatch(/hasJuceBridge\(\)\s*\|\|\s*!active/);
+  });
 });

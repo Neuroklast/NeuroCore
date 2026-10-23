@@ -25,27 +25,17 @@
   background: var(--nk-accent);
 }
 
-[data-tip] {
-  position: relative;
-}
-
-[data-tip]:hover::after,
-[data-tip]:focus-visible::after {
-  content: attr(data-tip);
+.nk-tooltip {
   position: absolute;
-  left: 50%;
-  bottom: calc(100% + 6px);
-  transform: translateX(-50%);
-  z-index: 80;
-  white-space: nowrap;
+  z-index: 90;
+  max-width: 280px;
   padding: 4px 8px;
-  font-family: "Apex", "Segoe UI", sans-serif;
-  font-size: 11px;
-  letter-spacing: 0.08em;
+  pointer-events: none;
   color: var(--nk-cyan);
   background: var(--nk-bg);
   border: 1px solid var(--nk-accent);
-  pointer-events: none;
+  font: 11px/1.35 "Apex", "Segoe UI", sans-serif;
+  letter-spacing: 0.06em;
 }
 
 @font-face {
@@ -122,9 +112,7 @@
 .nk-input-switch,
 .nk-preset-now,
 .nk-chip-expand,
-.nk-overlay,
-[data-tip]:hover::after,
-[data-tip]:focus-visible::after {
+.nk-overlay {
   clip-path: polygon(
     var(--nk-cut-size, var(--nk-cut)) 0,
     100% 0,
@@ -1962,9 +1950,17 @@ html[data-motion="reduced"] [data-dof="on"] .nk-dof-edge[data-focus="soft"] {
   margin-left: auto;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   flex-shrink: 0;
 }
+.nk-header-tools,
+.nk-header-primary {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.nk-header-primary { gap: 8px; }
 
 .nk-ws-row {
   display: flex;
@@ -2544,6 +2540,9 @@ html[data-motion="reduced"] .nk-lfo-lamp {
 .nk-preset-browser [data-folder][aria-pressed="true"],
 .nk-preset-browser [data-type][aria-pressed="true"] { border-left-color: var(--nk-accent); background: rgba(var(--nk-accent-rgb), .12); color: var(--nk-ink); }
 .nk-preset-results { display: flex; min-width: 0; min-height: 0; flex: 1; flex-direction: column; border: 1px solid var(--nk-panel); }
+.nk-preset-active { display: flex; flex-shrink: 0; flex-wrap: wrap; align-items: center; gap: 4px; min-height: 32px; padding: 4px 8px; border-bottom: 1px solid var(--nk-panel); }
+.nk-preset-browser [data-type]:disabled,
+.nk-preset-facet-chip:disabled { opacity: .45; pointer-events: none; }
 .nk-archive-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; height: 32px; flex-shrink: 0; padding: 0 12px; background: var(--nk-bg); border-bottom: 1px solid var(--nk-line); font: 10px "JetBrains Mono", monospace; color: var(--nk-ink-muted); }
 .nk-preset-list { min-height: 0; flex: 1; overflow: auto; }
 .nk-preset-row {
@@ -2563,22 +2562,29 @@ html[data-motion="reduced"] .nk-lfo-lamp {
   color: var(--nk-ink);
   text-align: left;
   overflow: hidden;
+  cursor: pointer;
 }
 .nk-preset-row > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .nk-preset-row:hover { background: rgba(var(--nk-accent-rgb), .07); }
 .nk-preset-row[data-selected="true"] { border-color: var(--nk-accent); background: rgba(var(--nk-accent-rgb), .07); }
+.nk-preset-row[data-selected="true"] .nk-preset-loaded { color: var(--nk-cyan); }
 .nk-preset-loaded { flex-shrink: 0; color: var(--nk-accent); font: 10px "JetBrains Mono", monospace; letter-spacing: .12em; }
 .nk-preset-detail { display: flex; width: 280px; flex-shrink: 0; flex-direction: column; min-height: 0; border: 1px solid var(--nk-panel); border-left: 2px solid var(--nk-accent); background: linear-gradient(90deg, rgba(var(--nk-accent-rgb), .06), transparent); }
 .nk-preset-detail-body { min-height: 0; flex: 1; overflow: auto; padding: 12px; }
-.nk-preset-detail-name { margin: 6px 0 4px; color: var(--nk-ink); font: 18px "Apex", sans-serif; letter-spacing: .06em; }
+.nk-preset-detail-name { margin: 6px 0 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--nk-ink); font: 18px "Apex", sans-serif; letter-spacing: .06em; }
 .nk-preset-detail-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--nk-ink-muted); font-size: 12px; }
 .nk-preset-fav { min-width: 26px; min-height: 26px; color: var(--nk-cyan); }
 .nk-preset-detail-blurb { margin: 10px 0 0; color: var(--nk-ink-soft); font: 13px/1.5 "JetBrains Mono", monospace; }
+.nk-preset-detail-loaded { margin-top: 6px; color: var(--nk-accent); font: 11px "JetBrains Mono", monospace; letter-spacing: .08em; }
+.nk-preset-load-error { margin: 8px 0 0; color: var(--nk-accent); font: 12px "JetBrains Mono", monospace; }
 .nk-preset-tags { margin-top: 14px; }
 .nk-preset-tag-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .nk-preset-tag { padding: 2px 8px; border: 1px solid var(--nk-line); color: var(--nk-ink-muted); font: 11px "JetBrains Mono", monospace; }
 .nk-preset-load { margin: 12px; min-height: 32px; flex-shrink: 0; }
-.nk-preset-foot { display: flex; height: 32px; flex-shrink: 0; align-items: center; justify-content: space-between; gap: 12px; }
+.nk-preset-foot { display: flex; min-height: 32px; flex-shrink: 0; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.nk-preset-fav-filter { margin-top: 8px; min-height: 26px; flex-shrink: 0; text-align: left; color: var(--nk-cyan); }
+.nk-preset-fav-filter[aria-pressed="true"] { color: var(--nk-accent); }
+.nk-preset-chain { margin: 10px 0 0; color: var(--nk-ink-muted); font: 11px/1.4 "JetBrains Mono", monospace; }
 .nk-preset-browser :is(button, input, select):focus-visible { outline: 1px solid var(--nk-cyan); outline-offset: -2px; }
 
 
@@ -2983,6 +2989,7 @@ html[data-motion="reduced"] .nk-lfo-lamp {
 
 .nk-overlay-host[data-phase="exit"] {
   animation: nk-overlay-dim-out 0.28s ease both;
+  pointer-events: none;
 }
 
 .nk-overlay {
