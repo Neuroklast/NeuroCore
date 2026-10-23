@@ -253,6 +253,35 @@ html[data-motion="off"] .nk-boot {
   cursor: default;
 }
 
+.nk-board-terminal {
+  background: color-mix(in srgb, var(--nk-plate) 88%, #000);
+  border: 1px solid color-mix(in srgb, var(--nk-ink-soft) 35%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--nk-ink) 12%, transparent);
+  color: var(--nk-ink);
+  cursor: default;
+  overflow: visible;
+}
+.nk-board-terminal[data-terminal="midi"] {
+  border-color: color-mix(in srgb, #c4a574 55%, transparent);
+}
+.nk-board-terminal[data-terminal="sidechain"] {
+  border-color: color-mix(in srgb, var(--nk-ink-soft) 55%, transparent);
+}
+.nk-terminal-name {
+  display: block;
+  padding: 8px 10px 0;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--nk-ink-soft);
+}
+.nk-terminal-lr {
+  display: block;
+  padding: 2px 10px 0;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  color: var(--nk-ink-soft);
+}
+
 .nk-chip-grip {
   width: 8px;
   height: 14px;

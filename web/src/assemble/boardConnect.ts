@@ -13,6 +13,9 @@ export function canLink(src: BoardPort, dst: BoardPort): boolean {
   if (src.nodeId === dst.nodeId) {
     return false;
   }
+  if (src.nodeId === "MIDI" || dst.nodeId === "MIDI") {
+    return false;
+  }
   if (! src.east || dst.east) {
     return false;
   }

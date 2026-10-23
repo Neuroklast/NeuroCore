@@ -15,13 +15,13 @@ function emptyAst(): AstDocument {
 }
 
 describe("headless board model", () => {
-  it("gives IN two east ports and OUT one west port, never the reverse", () => {
+  it("gives IN one east audio port and OUT one west port, never the reverse", () => {
     const g = hydrateBoard(emptyAst());
     const inPorts = Object.values(g.ports).filter((p) => p.nodeId === "IN");
     expect(inPorts.every((p) => p.east)).toBe(true);
-    expect(inPorts.map((p) => p.jackId).sort()).toEqual(["out", "sc"]);
+    expect(inPorts.map((p) => p.jackId)).toEqual(["out"]);
     expect(Object.values(g.ports).filter((p) => p.nodeId === "IN" && ! p.east)).toHaveLength(0);
-    const outPorts = Object.values(g.ports).filter((p) => p.nodeId === "OUT");
+    const outPorts = Object.values(g.ports).filter((p) => p.nodeId === "OUT" && ! p.south);
     expect(outPorts).toHaveLength(1);
     expect(outPorts[0]?.east).toBe(false);
     expect(outPorts[0]?.jackId).toBe("in");
@@ -100,7 +100,7 @@ describe("headless board model", () => {
       }],
       edges: [],
     };
-    expect(previewBoardIds(ast).sort()).toEqual(["IN", "OUT", "stage1"].sort());
+    expect(previewBoardIds(ast).sort()).toEqual(["IN", "MIDI", "OUT", "SC", "stage1"].sort());
     expect(previewBoardIds(null)).toEqual([]);
   });
 
@@ -188,8 +188,8 @@ describe("headless board model", () => {
   });
 });
 
-it("allows moving the input terminal", () => {
-  expect(hydrateBoard(emptyAst()).nodes.IN?.locked).toBe(false);
+it("locks the input terminal", () => {
+  expect(hydrateBoard(emptyAst()).nodes.IN?.locked).toBe(true);
 });
 
 it("gives every fan-out and fan-in connection a distinct physical socket", async () => {

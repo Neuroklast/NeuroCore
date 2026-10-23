@@ -155,6 +155,17 @@ function addSouthPorts(
   });
 }
 
+const MIDI_VARS = ["midi_note", "midi_freq", "midi_vel", "midi_gate", "midi_bend", "midi_mod"] as const;
+
+function midiJack(name: string): string {
+  return name.replace(/^midi_/, "");
+}
+
+function midiRefs(args: Record<string, string>): string[] {
+  const blob = Object.values(args).join(" ");
+  return MIDI_VARS.filter((name) => new RegExp(`\\b${name}\\b`).test(blob));
+}
+
 function makeNode(
   id: string,
   type: string,
@@ -188,9 +199,9 @@ export function previewBoardIds(ast: AstDocument | null, sidechainOn = false): s
     return [];
   }
   const vis = visibleNodes(ast, sidechainOn);
-  const ids: string[] = ["IN"];
+  const ids: string[] = ["IN", "MIDI", "SC"];
   for (const n of vis) {
-    if (n.id !== "IN" && n.type !== "in") {
+    if (n.id !== "IN" && n.type !== "in" && n.id !== "MIDI" && n.id !== "SC") {
       ids.push(n.id);
     }
   }
@@ -207,28 +218,85 @@ export function hydrateBoard(ast: AstDocument, sidechainOn = false): BoardGraph 
   let x = BOARD_GRID;
   const rowY = BOARD_GRID * 4;
 
-  const inJacks = canonicalIoJacks("in");
-  nodes.IN = makeNode("IN", "in", "io", x, rowY, inJacks, {}, "IN", "", false);
+  const inJacks = canonicalIoJacks("in").filter((j) => j.id !== "sc");
+  nodes.IN = makeNode("IN", "in", "io", x, rowY, inJacks, {}, "AUDIO IN", "", true);
   addSidePorts(ports, "IN", inJacks, true);
+
+  const midiJacks: AstJack[] = MIDI_VARS.map((name) => ({
+    id: midiJack(name),
+    label: midiJack(name),
+    output: true,
+    kind: "mod",
+  }));
+  nodes.MIDI = makeNode(
+    "MIDI",
+    "midi",
+    "io",
+    x,
+    rowY + nodes.IN.h + CHIP_GAP,
+    midiJacks,
+    {},
+    "MIDI IN",
+    "",
+    true,
+  );
+  MIDI_VARS.forEach((name, index) => {
+    const id = portId("MIDI", midiJack(name), true);
+    ports[id] = {
+      id,
+      nodeId: "MIDI",
+      jackId: midiJack(name),
+      east: true,
+      index,
+      count: MIDI_VARS.length,
+      kind: "mod",
+    };
+  });
+
+  const scJacks = canonicalIoJacks("sidechain");
+  nodes.SC = makeNode(
+    "SC",
+    "sidechain",
+    "io",
+    x,
+    nodes.MIDI.y + nodes.MIDI.h + CHIP_GAP,
+    scJacks,
+    {},
+    "SIDECHAIN IN",
+    "",
+    true,
+  );
+  ports[portId("IN", "sc", true)] = {
+    id: portId("IN", "sc", true),
+    nodeId: "SC",
+    jackId: "sc",
+    east: true,
+    index: 0,
+    count: 1,
+    kind: "sc",
+  };
   x += nodes.IN.w + CHIP_GAP;
 
   for (const n of visible) {
+    if (n.type === "in" || n.id === "IN" || n.id === "MIDI" || n.id === "SC") {
+      continue;
+    }
     const jacks = visualJacksFor(n, visible).length ? visualJacksFor(n, visible) : (n.jacks ?? []);
     const custom = n.id.toLowerCase().startsWith("custom") || n.type.toLowerCase() === "custom";
-    const role: "io" | "chip" = n.type === "out" || isSidechainType(n.type) ? "io" : "chip";
+    const role: "io" | "chip" = n.type === "out" ? "io" : "chip";
     const px = x;
     const py = rowY;
     nodes[n.id] = makeNode(
       n.id,
-      isSidechainType(n.type) ? "sidechain" : n.type,
+      n.type,
       role,
       px,
       py,
       jacks,
       n.args,
-      custom ? n.id : (isSidechainType(n.type) ? "Sidechain" : kindLabel(n.type)),
+      custom ? n.id : (n.type === "out" ? "AUDIO OUT" : kindLabel(n.type)),
       channelOf(n),
-      isSidechainType(n.type),
+      n.type === "out",
     );
     nodes[n.id]!.busName = n.busName;
     addSidePorts(ports, n.id, jacks, false);
@@ -239,7 +307,7 @@ export function hydrateBoard(ast: AstDocument, sidechainOn = false): BoardGraph 
 
   if (! ast.nodes.some((n) => n.type === "out")) {
     const outJacks = canonicalIoJacks("out");
-    nodes.OUT = makeNode("OUT", "out", "io", x, rowY, outJacks, {}, "OUT", "MAIN", false);
+    nodes.OUT = makeNode("OUT", "out", "io", x, rowY, outJacks, {}, "AUDIO OUT", "MAIN", true);
     addSidePorts(ports, "OUT", outJacks, false);
     addSouthPorts(ports, "OUT", outJacks);
   }
@@ -350,8 +418,12 @@ export function assignRanks(graph: BoardGraph): Record<string, number> {
   return rank;
 }
 
+function layoutOwned(n: BoardNode): boolean {
+  return n.id !== "MIDI" && n.id !== "SC";
+}
+
 export function graphToLayout(graph: BoardGraph): { nodes: LayoutNode[]; edges: LayoutEdge[] } {
-  const nodes: LayoutNode[] = Object.values(graph.nodes).map((n) => {
+  const nodes: LayoutNode[] = Object.values(graph.nodes).filter(layoutOwned).map((n) => {
     const ins = Object.values(graph.ports).filter((p) => p.nodeId === n.id && ! p.east && ! p.south);
     const outs = Object.values(graph.ports).filter((p) => p.nodeId === n.id && p.east);
     return {
@@ -365,13 +437,16 @@ export function graphToLayout(graph: BoardGraph): { nodes: LayoutNode[]; edges: 
       outs: outs.map((p) => ({ id: p.id, y: portLocal(n, p).y })),
     };
   });
-  const edges: LayoutEdge[] = Object.values(graph.edges).map((e) => ({
-    id: e.id,
-    source: e.sourceNodeId,
-    target: e.targetNodeId,
-    fromJack: e.sourcePortId,
-    toJack: e.targetPortId,
-  }));
+  const owned = new Set(nodes.map((n) => n.id));
+  const edges: LayoutEdge[] = Object.values(graph.edges)
+    .filter((e) => owned.has(e.sourceNodeId) && owned.has(e.targetNodeId))
+    .map((e) => ({
+      id: e.id,
+      source: e.sourceNodeId,
+      target: e.targetNodeId,
+      fromJack: e.sourcePortId,
+      toJack: e.targetPortId,
+    }));
   return { nodes, edges };
 }
 
@@ -387,6 +462,16 @@ export function applyPlaced(
       continue;
     }
     nodes[id] = { ...n, x: snapToGrid(p.x), y: snapToGrid(p.y), w: p.w, h: p.h };
+  }
+  if (nodes.IN) {
+    const inn = nodes.IN;
+    if (nodes.MIDI) {
+      nodes.MIDI = { ...nodes.MIDI, x: inn.x, y: inn.y + inn.h + CHIP_GAP };
+    }
+    if (nodes.SC) {
+      const above = nodes.MIDI ?? inn;
+      nodes.SC = { ...nodes.SC, x: inn.x, y: above.y + above.h + CHIP_GAP };
+    }
   }
   const edges = { ...graph.edges };
   for (const [id, route] of Object.entries(routes)) {
