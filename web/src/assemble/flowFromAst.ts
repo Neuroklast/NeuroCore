@@ -82,7 +82,10 @@ export function inferModLinks(nodes: AstNode[]): AstEdge[] {
       if (! byId.has(j.id)) {
         continue;
       }
-      push({ from: j.id, to: dest.id, kind: "mod", fromJack: "mod", toJack: j.id });
+      const src = byId.get(j.id)!;
+      for (const toJack of destJacksFor(dest, src)) {
+        push({ from: src.id, to: dest.id, kind: "mod", fromJack: modulatorOutJack(src), toJack });
+      }
     }
     for (const src of mods) {
       if (src.id === dest.id) {
