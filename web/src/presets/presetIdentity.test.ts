@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { factoryPresetId, migrateStarKeys, rowKey } from "./presetIdentity";
+import { isPresetFavorite } from "./presetStars";
+import { factoryPresetId, migrateStarKeys, rowKey, starKey } from "./presetIdentity";
 
 describe("preset identity", () => {
   it("keeps factory ids stable", () => {
@@ -22,5 +23,12 @@ describe("preset identity", () => {
     expect(next.Airy).toBeUndefined();
     expect(next["Heavy Drive"]).toBe(5);
     expect(next["id-2"]).toBeUndefined();
+  });
+
+  it("favorites after migrate match by id not name", () => {
+    const rows = [{ id: "id-1", name: "Airy" }];
+    const stars = migrateStarKeys({ Airy: 1 }, rows);
+    expect(isPresetFavorite(starKey(rows[0]), stars)).toBe(true);
+    expect(isPresetFavorite(rows[0].name, stars)).toBe(false);
   });
 });

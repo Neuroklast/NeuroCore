@@ -23,7 +23,6 @@ struct PresetIndexEntry
     juce::String sourceType; // factory | user | pack
     juce::String origin;
     juce::String filePath;
-    juce::String contentHash;
     int formatVersion { 2 };
     juce::String minimumPluginVersion;
 };

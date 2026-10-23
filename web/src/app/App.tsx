@@ -93,6 +93,13 @@ export function App() {
     listen("params", (p) => useHostStore.getState().applyParams(p as Record<string, unknown>));
     listen("host", (p) => useHostStore.getState().applyHost(p as Record<string, unknown>));
     listen("presetState", (p) => useHostStore.getState().applyPresets(p as Record<string, unknown>));
+    listen("presetImportOffer", (payload) => {
+      const rec = payload as { paths?: unknown };
+      const paths = Array.isArray(rec?.paths) ? rec.paths.map(String).filter(Boolean) : [];
+      if (paths.length > 0) {
+        useHostStore.getState().offerImport(paths);
+      }
+    });
     listen("license", (p) => useHostStore.getState().applyLicense(p as Record<string, unknown>));
     listen("ir", (p) => useHostStore.getState().applyIr(p as Record<string, unknown>));
     const onKey = (e: KeyboardEvent) => {

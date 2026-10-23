@@ -100,7 +100,6 @@ void PresetLibraryIndex::rebuild (PresetManager& mgr, FactoryPresetLibrary& fact
         e.sourceType = sourceType;
         e.origin = origin;
         e.filePath = file.getFullPathName();
-        e.contentHash = PresetIdentity::fileSha256 (file);
         e.formatVersion = info.formatVersion;
         e.minimumPluginVersion = info.minimumPluginVersion;
         items.push_back (std::move (e));

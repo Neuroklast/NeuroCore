@@ -453,57 +453,59 @@ juce::var presetStateVar (NeuroKoreAudioProcessor& proc)
     auto* root = new juce::DynamicObject();
     root->setProperty ("name", proc.getCurrentPresetName());
     root->setProperty ("id", proc.getCurrentPresetId());
-    juce::Array<juce::var> list;
     auto& lib = FactoryPresetLibrary::getInstance();
-    if (proc.presetLibraryDirty)
+    if (proc.presetLibraryDirty || ! proc.cachedPresetList.isArray())
     {
         proc.presetLibrary.rebuild (proc.presetManager, lib, PresetLibrary::userPresetRoot());
         proc.presetLibraryDirty = false;
-    }
-    juce::Array<juce::var> packs;
-    juce::StringArray packSeen;
-    for (const auto& e : proc.presetLibrary.entries())
-    {
-        auto* o = new juce::DynamicObject();
-        o->setProperty ("id", e.presetId);
-        o->setProperty ("packId", e.packId);
-        o->setProperty ("name", e.displayName);
-        o->setProperty ("category", e.category);
-        o->setProperty ("description", e.description);
-        o->setProperty ("author", e.author);
-        o->setProperty ("factory", e.sourceType == "factory");
-        o->setProperty ("sourceType", e.sourceType);
-        o->setProperty ("origin", e.origin);
-        juce::Array<juce::var> tags;
-        for (const auto& t : e.tags)
-            tags.add (t);
-        o->setProperty ("tags", tags);
-        juce::Array<juce::var> sources;
-        for (const auto& s : e.soundSources)
-            sources.add (s);
-        o->setProperty ("soundSources", sources);
-        juce::Array<juce::var> types;
-        for (const auto& t : e.processingTypes)
-            types.add (t);
-        o->setProperty ("processingTypes", types);
-        o->setProperty ("style", e.style);
-        o->setProperty ("role", e.role);
-        juce::Array<juce::var> required;
-        for (const auto& r : e.requiredInputs)
-            required.add (r);
-        o->setProperty ("requiredInputs", required);
-        list.add (juce::var (o));
-        if (e.sourceType == "pack" && e.packId.isNotEmpty() && ! packSeen.contains (e.packId))
+        juce::Array<juce::var> list;
+        juce::Array<juce::var> packs;
+        juce::StringArray packSeen;
+        for (const auto& e : proc.presetLibrary.entries())
         {
-            packSeen.add (e.packId);
-            auto* p = new juce::DynamicObject();
-            p->setProperty ("id", e.packId);
-            p->setProperty ("name", e.origin);
-            packs.add (juce::var (p));
+            auto* o = new juce::DynamicObject();
+            o->setProperty ("id", e.presetId);
+            o->setProperty ("packId", e.packId);
+            o->setProperty ("name", e.displayName);
+            o->setProperty ("category", e.category);
+            o->setProperty ("description", e.description);
+            o->setProperty ("author", e.author);
+            o->setProperty ("factory", e.sourceType == "factory");
+            o->setProperty ("sourceType", e.sourceType);
+            o->setProperty ("origin", e.origin);
+            juce::Array<juce::var> tags;
+            for (const auto& t : e.tags)
+                tags.add (t);
+            o->setProperty ("tags", tags);
+            juce::Array<juce::var> sources;
+            for (const auto& s : e.soundSources)
+                sources.add (s);
+            o->setProperty ("soundSources", sources);
+            juce::Array<juce::var> types;
+            for (const auto& t : e.processingTypes)
+                types.add (t);
+            o->setProperty ("processingTypes", types);
+            o->setProperty ("style", e.style);
+            o->setProperty ("role", e.role);
+            juce::Array<juce::var> required;
+            for (const auto& r : e.requiredInputs)
+                required.add (r);
+            o->setProperty ("requiredInputs", required);
+            list.add (juce::var (o));
+            if (e.sourceType == "pack" && e.packId.isNotEmpty() && ! packSeen.contains (e.packId))
+            {
+                packSeen.add (e.packId);
+                auto* p = new juce::DynamicObject();
+                p->setProperty ("id", e.packId);
+                p->setProperty ("name", e.origin);
+                packs.add (juce::var (p));
+            }
         }
+        proc.cachedPresetList = juce::var (list);
+        proc.cachedPacks = juce::var (packs);
     }
-    root->setProperty ("list", list);
-    root->setProperty ("packs", packs);
+    root->setProperty ("list", proc.cachedPresetList);
+    root->setProperty ("packs", proc.cachedPacks);
     return juce::var (root);
 }
 

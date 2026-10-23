@@ -1416,45 +1416,6 @@ juce::StringArray NeuroKoreAudioProcessor::getPresetNames() const
     return result;
 }
 
-void NeuroKoreAudioProcessor::loadPreset(int index)
-{
-    const auto& factory = FactoryPresetLibrary::getInstance().getEntries();
-    if (juce::isPositiveAndBelow(index, (int) factory.size()))
-    {
-        juce::String err;
-        if (! FactoryPresetLibrary::getInstance().applyPreset(*this, index, err))
-        {
-            logError("Factory preset load failed: " + err);
-            return;
-        }
-        currentPresetName = factory[(size_t) index].name;
-        // UI only exposes Gain + Mix — keep output at unity regardless of preset meta
-        if (auto* p = apvts.getParameter (EffectParameters::outputGain))
-            p->setValueNotifyingHost (p->getNormalisableRange().convertTo0to1 (1.0f));
-        dspEngine.getDiagnostics().setPresetName (currentPresetName);
-        dspEngine.getDiagnostics().setFormulaHead (getScript());
-        sendChangeMessage();
-        return;
-    }
-
-    index -= (int) factory.size();
-    auto base = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-                    .getChildFile(Config::kUserPresetFolder);
-    auto files = presetManager.getAvailablePresets(base);
-    if (juce::isPositiveAndBelow(index, (int) files.size()))
-    {
-        if (presetManager.loadPreset(files[(size_t) index]))
-        {
-            currentPresetName = files[(size_t) index].getFileNameWithoutExtension();
-            if (auto* p = apvts.getParameter (EffectParameters::outputGain))
-                p->setValueNotifyingHost (p->getNormalisableRange().convertTo0to1 (1.0f));
-            dspEngine.getDiagnostics().setPresetName (currentPresetName);
-            dspEngine.getDiagnostics().setFormulaHead (getScript());
-            sendChangeMessage();
-        }
-    }
-}
-
 void NeuroKoreAudioProcessor::stepPreset (int delta)
 {
     if (delta == 0)
@@ -1473,32 +1434,14 @@ void NeuroKoreAudioProcessor::stepPreset (int delta)
     std::vector<presetstep::Item> items;
     items.reserve (rows.size());
     for (const auto& r : rows)
-        items.push_back ({ r.displayName, r.category });
+        items.push_back ({ r.displayName, r.category, r.presetId });
     presetstep::sortItems (items);
 
-    std::vector<juce::String> ids (items.size());
-    for (size_t i = 0; i < items.size(); ++i)
-        for (const auto& r : rows)
-            if (r.displayName == items[i].name && r.category == items[i].category)
-            {
-                ids[i] = r.presetId;
-                break;
-            }
-
-    int cur = -1;
-    if (currentPresetId.isNotEmpty())
-        for (size_t i = 0; i < ids.size(); ++i)
-            if (ids[i] == currentPresetId)
-            {
-                cur = (int) i;
-                break;
-            }
-    const int next = cur >= 0
-        ? (int) (((size_t) cur + (size_t) delta + items.size()) % items.size())
-        : presetstep::indexAfterStep (items, currentPresetName, lastPresetBrowserCategory, delta);
-    if (next < 0 || ids[(size_t) next].isEmpty())
+    const int next = presetstep::indexAfterStep (items, currentPresetName,
+                                                 lastPresetBrowserCategory, delta, currentPresetId);
+    if (next < 0 || items[(size_t) next].id.isEmpty())
         return;
-    auto* hit = presetLibrary.findById (ids[(size_t) next]);
+    auto* hit = presetLibrary.findById (items[(size_t) next].id);
     if (hit == nullptr)
         return;
     juce::String err;

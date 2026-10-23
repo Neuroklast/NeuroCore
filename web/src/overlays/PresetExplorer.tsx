@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
-import { getNativeFunction, hasJuceBridge } from "../bridge/juce";
+import { getNativeFunction, hasJuceBridge, onNativeEvent } from "../bridge/juce";
 import { presetAction, requestPresetAction } from "../presets/presetActions";
 import { analyzeImport, installImport, libraryAction, type PackPreview } from "../presets/presetLibrary";
-import { migrateStarKeys, rowKey } from "../presets/presetIdentity";
+import { migrateStarKeys, rowKey, starKey } from "../presets/presetIdentity";
 import { findFactory } from "../presets/factoryCatalog";
 import { explorerScriptBlocks } from "./explorerDetail";
 import { useHostStore } from "../store/hostStore";
@@ -37,6 +37,7 @@ import { explorerKeyFlags, explorerKeyIntent, explorerKeyZone } from "./explorer
 export function PresetExplorer() {
   const presets = useHostStore((s) => s.presets);
   const packs = useHostStore((s) => s.packs);
+  const pendingImport = useHostStore((s) => s.pendingImport);
   const current = useHostStore((s) => s.presetName);
   const currentId = useHostStore((s) => s.presetId);
   const setOverlay = useHostStore((s) => s.setOverlay);
@@ -111,6 +112,25 @@ export function PresetExplorer() {
     return () => { loadGen.current += 1; };
   }, []);
 
+  useEffect(() => {
+    if (pendingImport.length === 0) {
+      return;
+    }
+    void analyzeImport(pendingImport).then((p) => {
+      setPreview(p);
+      setView("import");
+    });
+  }, [pendingImport]);
+
+  useEffect(() => {
+    return onNativeEvent("presetLibraryResult", (payload) => {
+      const rec = payload as { ok?: unknown; error?: unknown };
+      if (rec?.ok === false) {
+        setImportMsg(typeof rec.error === "string" && rec.error ? rec.error : "Could not export pack");
+      }
+    });
+  }, []);
+
   const libs = useMemo(() => libraryFolders(presets, packs), [packs, presets]);
   const catalog = useMemo(() => scopeRows(presets, scope), [presets, scope]);
   const facets = useMemo<ExplorerFacets>(() => ({ sources, types, styles }), [sources, styles, types]);
@@ -119,12 +139,12 @@ export function PresetExplorer() {
   const stylesList = useMemo(() => styleFolders(catalog, q, facets), [catalog, facets, q]);
   const filtered = useMemo(() => {
     const rows = filterExplorer(catalog, q, "", facets);
-    return favOnly ? rows.filter((p) => isPresetFavorite(p.name, stars)) : rows;
+    return favOnly ? rows.filter((p) => isPresetFavorite(starKey(p), stars)) : rows;
   }, [catalog, facets, favOnly, q, stars]);
   const chips = useMemo(() => activeFilterChips(facets), [facets]);
   const emptyCopy = emptyExplorerCopy(catalog.length, filtered.length, Boolean(q.trim()) || chips.length > 0 || favOnly);
   const row = resolveSelectedRow(filtered, selectedId, selectedName) ?? selectedRow(filtered, selectedName);
-  const favKey = row ? (row.id || row.name) : "";
+  const favKey = row ? starKey(row) : "";
   const fav = favKey ? isPresetFavorite(favKey, stars) : false;
   const blocks = useMemo(
     () => explorerScriptBlocks(findFactory(row?.name ?? "")?.script ?? ""),
@@ -218,7 +238,7 @@ export function PresetExplorer() {
     }
   };
 
-  const listed = (rows: typeof catalog) => favOnly ? rows.filter((p) => isPresetFavorite(p.name, stars)) : rows;
+  const listed = (rows: typeof catalog) => favOnly ? rows.filter((p) => isPresetFavorite(starKey(p), stars)) : rows;
   const pickSource = (name: string) => {
     const nextSources = name === "" ? [] : toggleFacet(sources, name);
     const nextFacets = { sources: nextSources, types, styles };
@@ -562,9 +582,11 @@ export function PresetExplorer() {
               className="nk-clip on"
               disabled={! preview.ok || ! preview.source}
               onClick={() => {
-                void installImport([preview.source]).then((r) => {
+                const paths = useHostStore.getState().pendingImport;
+                void installImport(paths.length ? paths : [preview.source]).then((r) => {
                   setImportMsg(r.ok ? `${r.imported} presets installed successfully.` : r.error);
                   if (r.ok) {
+                    useHostStore.setState({ pendingImport: [] });
                     setView("browse");
                     setPreview(null);
                   }
@@ -573,7 +595,11 @@ export function PresetExplorer() {
             >
               Install
             </button>
-            <button type="button" className="nk-clip" onClick={() => { setView("browse"); setPreview(null); }}>Cancel</button>
+            <button type="button" className="nk-clip" onClick={() => {
+              useHostStore.setState({ pendingImport: [] });
+              setView("browse");
+              setPreview(null);
+            }}>Cancel</button>
           </div>
         </div>
       ) : null}
@@ -624,16 +650,13 @@ export function PresetExplorer() {
         onDrop={(e) => {
           e.preventDefault();
           const files = [...e.dataTransfer.files].map((f) => (f as File & { path?: string }).path).filter(Boolean) as string[];
-          if (files.length === 0) {
-            return;
+          if (files.length > 0) {
+            useHostStore.getState().offerImport(files);
           }
-          void analyzeImport(files).then((p) => {
-            setPreview(p);
-            setView("import");
-          });
         }}
       >
         <span className="text-muted">{catalog.length} PRESETS AVAILABLE</span>
+        {importMsg && view !== "import" ? <span className="text-accent">{importMsg}</span> : null}
         <div className="flex flex-wrap gap-2">
           <button type="button" className="nk-clip" onClick={openSave}>Save As…</button>
           <button type="button" className="nk-clip" onClick={() => void requestPresetAction({ action: "new" })}>New Preset</button>

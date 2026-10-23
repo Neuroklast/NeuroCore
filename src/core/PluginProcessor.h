@@ -136,6 +136,8 @@ public:
     PresetManager    presetManager;
     PresetLibraryIndex presetLibrary;
     bool presetLibraryDirty { true };
+    juce::var cachedPresetList;
+    juce::var cachedPacks;
     MidiLearnManager midiLearnManager;
     juce::UndoManager undoManager;
 
@@ -162,9 +164,6 @@ public:
     /** Returns the names of all available user presets. */
     juce::StringArray getPresetNames() const;
 
-    /** Loads the preset at the given index from the user preset folder. */
-    void loadPreset(int index);
-
     /** Step through factory then user presets. Wraps. Empty name starts at 0 (next) or last (prev). */
     void stepPreset (int delta);
 
@@ -173,7 +172,12 @@ public:
     void setCurrentPresetName (const juce::String& name) { currentPresetName = name; }
     juce::String getCurrentPresetId() const { return currentPresetId; }
     void setCurrentPresetId (const juce::String& id) { currentPresetId = id; }
-    void invalidatePresetLibrary() { presetLibraryDirty = true; }
+    void invalidatePresetLibrary()
+    {
+        presetLibraryDirty = true;
+        cachedPresetList = juce::var();
+        cachedPacks = juce::var();
+    }
     /** If the live script is a factory preset and no name is set, adopt that name. */
     bool resolvePresetNameFromScript();
 

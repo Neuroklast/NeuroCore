@@ -65,6 +65,7 @@ export interface HostState {
   irSlots: Array<{ slot: string; name: string; loaded: boolean }>;
   overlay: string | null;
   overlayReturn: string | null;
+  pendingImport: string[];
   inspectId: string | null;
   /** Shared Circuit/Terminal caret. Does not open Inspect. */
   focusNodeId: string | null;
@@ -113,6 +114,7 @@ export interface HostState {
   applyLicense: (p: Record<string, unknown>) => void;
   applyIr: (p: Record<string, unknown>) => void;
   setOverlay: (name: string | null, inspectId?: string | null) => void;
+  offerImport: (paths: string[]) => void;
   setFocusNodeId: (id: string | null) => void;
   setTelemetryPath: (path: string) => void;
   setKnob: (id: string, value: number) => void;
@@ -314,6 +316,7 @@ export const useHostStore = create<HostState>((set) => ({
   irSlots: [],
   overlay: null,
   overlayReturn: null,
+  pendingImport: [],
   inspectId: null,
   focusNodeId: null,
   telemetryPath: "",
@@ -479,6 +482,13 @@ export const useHostStore = create<HostState>((set) => ({
     inspectId: inspectId ?? null,
     ...(inspectId ? { focusNodeId: inspectId } : {}),
   }),
+  offerImport: (paths) => {
+    const pendingImport = paths.map(String).filter(Boolean);
+    if (pendingImport.length === 0) {
+      return;
+    }
+    set({ pendingImport, overlay: "presets", overlayReturn: null });
+  },
   setFocusNodeId: (focusNodeId) => set({ focusNodeId }),
   setTelemetryPath: (telemetryPath: string) => set({ telemetryPath }),
   setKnob: (id, value) => set((s) => ({

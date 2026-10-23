@@ -11,7 +11,14 @@ describe("hostStore", () => {
       inspectId: null,
       focusNodeId: null,
       knobGestures: {},
+      pendingImport: [],
     });
+  });
+
+  it("offerImport opens the library with every path", () => {
+    useHostStore.getState().offerImport(["a.nrk", "", "b.nrk"]);
+    expect(useHostStore.getState().overlay).toBe("presets");
+    expect(useHostStore.getState().pendingImport).toEqual(["a.nrk", "b.nrk"]);
   });
 
   it("focusNodeId is independent of overlay inspect", () => {

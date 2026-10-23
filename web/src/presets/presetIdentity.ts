@@ -10,6 +10,10 @@ export function rowKey(row: { id?: string; name: string; packId?: string }): str
   return row.id || `${row.packId ?? ""}:${row.name}`;
 }
 
+export function starKey(row: { id?: string; name: string }): string {
+  return row.id || row.name;
+}
+
 export function migrateStarKeys(
   stars: Record<string, number>,
   rows: Array<{ id?: string; name: string }>,

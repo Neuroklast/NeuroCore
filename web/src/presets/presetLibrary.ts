@@ -44,9 +44,16 @@ export async function libraryAction(cmd: Record<string, unknown>): Promise<{ ok:
   }
 }
 
+export function importPreview(paths: string[], first: PackPreview): PackPreview {
+  if (paths.length <= 1) {
+    return first;
+  }
+  return { ...first, ok: true, error: "", name: `${paths.length} files`, presetCount: paths.length };
+}
+
 export async function analyzeImport(paths: string[]): Promise<PackPreview> {
   const result = await libraryAction({ action: "analyze", paths });
-  return asPreview(result.raw);
+  return importPreview(paths, asPreview(result.raw));
 }
 
 export async function installImport(paths: string[]): Promise<{ ok: boolean; error: string; imported: number }> {

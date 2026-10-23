@@ -88,7 +88,7 @@ Click the preset name. Library (All, Factory, My Presets, Favorites, installed p
 - **Your** sounds live in your user preset folder as `.nrk` files. If save fails, the dialog stays open with the reason and unsaved edits stay marked.
 - A star on the name means unsaved edits. Next / previous / load another will ask to discard, keep editing, or Save As... (turn that prompt off in Settings if you want).
 - Discard restores the last loaded or saved version.
-- Import a `.nrk`, a folder, a zip, or a `.nrkpack`. Import does not replace the sound that is playing. Drop files on the plugin window or use Import. Pack Manager uninstalls a pack without deleting your own copies. New Pack (Ctrl-click rows) writes a `.nrkpack` with checksums.
+- Import a `.nrk`, a folder, a zip, or a `.nrkpack`. Import does not replace the sound that is playing. Drop files on the plugin window or use Import; both open Install / Cancel so nothing overwrites until you confirm. Pack Manager uninstalls a pack without deleting your own copies. New Pack (Ctrl-click rows) writes a `.nrkpack` with checksums.
 - DAW projects keep the full processor state, including impulse responses. Removing a pack later does not silence a saved session.
 
 ---

@@ -314,6 +314,17 @@ public:
             juce::ignoreUnused (searched);
         }
 
+        beginTest ("export with no .nrk files fails");
+        {
+            juce::String err;
+            const auto dest = juce::File::getSpecialLocation (juce::File::tempDirectory)
+                                  .getChildFile ("nk-empty-" + juce::String (juce::Random::getSystemRandom().nextInt())
+                                                 + ".nrkpack");
+            expect (! PresetPack::exportNrkpack ({}, dest, {}, err));
+            expect (err.isNotEmpty());
+            dest.deleteFile();
+        }
+
         beginTest ("pluginVersionMeets reads numeric prefix");
         {
             expect (PresetPack::pluginVersionMeets ({}, "0.7.2-beta"));

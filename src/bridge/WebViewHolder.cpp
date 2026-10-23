@@ -881,6 +881,19 @@ struct WebViewHolder::Impl : private juce::Timer,
         browser->emitEventIfBrowserIsVisible ("catalog", catalogVar());
     }
 
+    void offerImport (const juce::StringArray& files)
+    {
+        juce::Array<juce::var> paths;
+        for (const auto& p : files)
+            if (p.isNotEmpty())
+                paths.add (p);
+        if (paths.isEmpty() || browser == nullptr)
+            return;
+        auto* o = new juce::DynamicObject();
+        o->setProperty ("paths", paths);
+        browser->emitEventIfBrowserIsVisible ("presetImportOffer", juce::var (o));
+    }
+
     void pickFile (const juce::String& kind, const juce::String& slot, const juce::var extra = {})
     {
         const bool lic = kind.equalsIgnoreCase ("license");
@@ -941,7 +954,13 @@ struct WebViewHolder::Impl : private juce::Timer,
                 m.name = extra.getProperty ("name", "Pack").toString();
                 m.author = extra.getProperty ("author", "").toString();
                 juce::String err;
-                PresetPack::exportNrkpack (files, f, m, err);
+                if (! PresetPack::exportNrkpack (files, f, m, err) && browser != nullptr)
+                {
+                    auto* o = new juce::DynamicObject();
+                    o->setProperty ("ok", false);
+                    o->setProperty ("error", err.isNotEmpty() ? err : juce::String ("Could not export pack"));
+                    browser->emitEventIfBrowserIsVisible ("presetLibraryResult", juce::var (o));
+                }
             }
             else if (preset)
             {
@@ -950,8 +969,7 @@ struct WebViewHolder::Impl : private juce::Timer,
                     paths.add (picked.getFullPathName());
                 if (paths.isEmpty() && f.existsAsFile())
                     paths.add (f.getFullPathName());
-                PresetLibrary::importPaths (paths);
-                proc.invalidatePresetLibrary();
+                offerImport (paths);
             }
             else
             {
@@ -1241,12 +1259,10 @@ void WebViewHolder::pushHost()
 
 void WebViewHolder::importDroppedFiles (const juce::StringArray& paths)
 {
-    if (paths.isEmpty())
-        return;
-    PresetLibrary::importPaths (paths);
-    impl->proc.invalidatePresetLibrary();
 #if defined(NEUROKORE_HAS_WEB_EDITOR) && JUCE_WEB_BROWSER
-    impl->pushHost();
+    impl->offerImport (paths);
+#else
+    juce::ignoreUnused (paths);
 #endif
 }
 
