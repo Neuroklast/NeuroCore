@@ -253,6 +253,61 @@ html[data-motion="off"] .nk-boot {
   cursor: default;
 }
 
+.nk-panes {
+  position: relative;
+  height: 100%;
+  min-height: 0;
+}
+.nk-pane {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+  transition: opacity 180ms ease-out;
+}
+.nk-pane.on {
+  opacity: 1;
+  pointer-events: auto;
+  visibility: visible;
+}
+
+.nk-board-terminal {
+  background: color-mix(in srgb, var(--nk-plate) 88%, #000);
+  border: 1px solid color-mix(in srgb, var(--nk-ink-soft) 35%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--nk-ink) 12%, transparent);
+  color: var(--nk-ink);
+  cursor: default;
+  overflow: visible;
+}
+.nk-board-terminal[data-terminal="midi"] {
+  border-color: color-mix(in srgb, #c4a574 55%, transparent);
+}
+.nk-board-terminal[data-terminal="midi"][data-signal="on"] {
+  border-color: color-mix(in srgb, #c4a574 90%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, #c4a574 28%, transparent);
+}
+.nk-board-terminal[data-terminal="sidechain"] {
+  border-color: color-mix(in srgb, var(--nk-ink-soft) 55%, transparent);
+}
+.nk-board-terminal[data-terminal="sidechain"][data-live="off"] {
+  opacity: 0.45;
+}
+.nk-terminal-name {
+  display: block;
+  padding: 8px 10px 0;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--nk-ink-soft);
+}
+.nk-terminal-lr {
+  display: block;
+  padding: 2px 10px 0;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  color: var(--nk-ink-soft);
+}
+
 .nk-chip-grip {
   width: 8px;
   height: 14px;
@@ -637,7 +692,8 @@ input, textarea, select, [contenteditable],
 }
 .nk-port-west,
 .nk-port-east,
-.nk-port-south {
+.nk-port-south,
+.nk-port-north {
   transform: translate(-50%, -50%);
   z-index: 10;
 }
@@ -650,7 +706,8 @@ input, textarea, select, [contenteditable],
   box-shadow: inset 0 1px 0 rgb(255 255 255 / .3), 0 2px 2px rgb(0 0 0 / .8);
   border-radius: 1px;
 }
-.nk-port-south .nk-port-contact {
+.nk-port-south .nk-port-contact,
+.nk-port-north .nk-port-contact {
   width: 6px;
   height: 16px;
   margin: 4px auto;
@@ -699,6 +756,15 @@ input, textarea, select, [contenteditable],
   bottom: 100%;
   left: 50%;
   transform: translate(-50%, -2px);
+  max-width: 40px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.nk-port-north .nk-port-cap {
+  top: 100%;
+  bottom: auto;
+  left: 50%;
+  transform: translate(-50%, 2px);
   max-width: 40px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -3836,6 +3902,7 @@ html[data-motion="reduced"] .nk-step-leds > [data-active="on"] { box-shadow: non
 .nk-inspect-identity { color: var(--nk-ink-soft); font-size: 11px; margin-top: 4px; overflow-wrap: anywhere; }
 .nk-inspect-description { color: var(--nk-ink-soft); font-size: 12px; line-height: 1.5; margin-top: 8px; }
 .nk-inspect-controls { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; }
+.nk-inspect-enums { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; }
 .nk-inspect-control {
   display: flex; flex-direction: column; align-items: center; min-width: 0;
   padding: 10px; gap: 6px; border: 1px solid var(--nk-line);
@@ -3862,4 +3929,6 @@ html[data-motion="reduced"] .nk-step-leds > [data-active="on"] { box-shadow: non
 .nk-inspect-tap { margin-top: 8px; }
 .nk-inspect-empty { max-width: 420px; font-size: 13px; line-height: 1.5; }
 .nk-inspect-empty p { color: var(--nk-ink-soft); margin-top: 8px; }
-@media (max-width: 540px) { .nk-inspect-controls { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media (max-width: 540px) {
+  .nk-inspect-controls, .nk-inspect-enums { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}

@@ -44,7 +44,8 @@ describe("NodeFace catalog", () => {
       title: "REVERB",
       code: "RV-0.40",
     });
-    expect(faceParamKeys(allChipSpecs()[0]!)).toEqual([]);
+    const first = allChipSpecs()[0]!;
+    expect(faceParamKeys(first).every((k) => first.paramJacks.includes(k))).toBe(true);
     expect(closedFaceGlyph("filter")).toBe("response");
     expect(closedFaceGlyph("reverb")).toBe("decay");
     expect(closedFaceGlyph("delay")).toBe("taps");

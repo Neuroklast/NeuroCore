@@ -120,7 +120,7 @@ describe("ChipSpec registry", () => {
     ];
     const args = chipSpec("filter").defaultArgs;
     expect(overlayParamKeys(chipSpec("filter"))).toEqual(["type", "cutoff", "resonance", "channel"]);
-    expect(faceParamKeys(chipSpec("filter"))).toEqual([]);
+    expect(faceParamKeys(chipSpec("filter"))).toEqual(["cutoff", "resonance"]);
     expect(chipBox("filter", jacks, true, args).h).toBe(chipBox("filter", jacks, false, args).h);
   });
 });
@@ -205,6 +205,6 @@ describe("chip overlay lists hidden params; box stays the closed face", () => {
     expect(essentialParamKeys(chipSpec("filter"))).toEqual(["type", "cutoff", "resonance"]);
     expect(advancedParamKeys(chipSpec("filter"))).toEqual(["channel"]);
     expect(overlayParamKeys(chipSpec("filter"))).toEqual(["type", "cutoff", "resonance", "channel"]);
-    expect(faceParamKeys(chipSpec("filter"))).toEqual([]);
+    expect(faceParamKeys(chipSpec("filter"))).toEqual(["cutoff", "resonance"]);
   });
 });

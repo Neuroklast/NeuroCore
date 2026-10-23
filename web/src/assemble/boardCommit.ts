@@ -5,7 +5,7 @@ import type { AstEdge } from "../bridge/ast";
 import { publishScript } from "./addBlock";
 import { camerasDiffer, fitBoardCamera, shouldFitCameraOnLateLayout } from "./boardCamera";
 import { circuitHasOverlay } from "../chrome/shortcuts";
-import { graphToLayout, type BoardPort } from "./boardModel";
+import { graphOpEndpoints, graphToLayout, portIsOutput, type BoardPort } from "./boardModel";
 import { parseRoutePath } from "./boardPath";
 import { edgesAfterCutPort } from "./boardConnect";
 import { scriptAfterConnect, scriptAfterDisconnect } from "./connectModel";
@@ -13,9 +13,10 @@ import { useBoardStore } from "./boardStore";
 import { requestGraphLayout } from "./layout/layoutClient";
 
 function astEdgesAfterCut(edges: AstEdge[], port: BoardPort): AstEdge[] {
+  const semantic = graphOpEndpoints(port);
   return edges.filter((e) => {
-    const from = e.from === port.nodeId && (e.fromJack || "out") === port.jackId && port.east;
-    const to = e.to === port.nodeId && (e.toJack || "in") === port.jackId && ! port.east;
+    const from = e.from === semantic.nodeId && (e.fromJack || "out") === semantic.jackId && portIsOutput(port);
+    const to = e.to === semantic.nodeId && (e.toJack || "in") === semantic.jackId && ! portIsOutput(port);
     return ! from && ! to;
   });
 }
@@ -134,12 +135,17 @@ async function nativeGraphOp(payload: Record<string, string>): Promise<boolean> 
 }
 
 export async function commitBoardConnect(src: BoardPort, dst: BoardPort): Promise<void> {
+  const from = graphOpEndpoints(src);
+  const to = graphOpEndpoints(dst);
+  if (from.nodeId === "MIDI" || to.nodeId === "MIDI") {
+    return;
+  }
   if (hasJuceBridge()) {
-    await nativeGraphOp({ op: "connect", from: src.nodeId, fromJack: src.jackId, to: dst.nodeId, toJack: dst.jackId });
+    await nativeGraphOp({ op: "connect", from: from.nodeId, fromJack: from.jackId, to: to.nodeId, toJack: to.jackId });
     return;
   }
   const cur = useAstStore.getState();
-  const next = scriptAfterConnect(cur.lastValidScript || cur.script, src.nodeId, dst.nodeId);
+  const next = scriptAfterConnect(cur.lastValidScript || cur.script, from.nodeId, to.nodeId);
   await publishScript(next, "canvas");
   rerouteBoard();
 }
@@ -149,9 +155,15 @@ export async function commitBoardCut(port: BoardPort): Promise<void> {
   const doomed = Object.values(g.edges).filter((e) => e.sourcePortId === port.id || e.targetPortId === port.id);
   if (hasJuceBridge()) {
     for (const e of doomed) {
-      if (!await nativeGraphOp({ op: "disconnect", from: e.sourceNodeId,
-        fromJack: g.ports[e.sourcePortId]?.jackId ?? "out", to: e.targetNodeId,
-        toJack: g.ports[e.targetPortId]?.jackId ?? "in" })) break;
+      const src = g.ports[e.sourcePortId];
+      const dst = g.ports[e.targetPortId];
+      if (! src || ! dst || graphOpEndpoints(src).nodeId === "MIDI") {
+        continue;
+      }
+      const from = graphOpEndpoints(src);
+      const to = graphOpEndpoints(dst);
+      if (!await nativeGraphOp({ op: "disconnect", from: from.nodeId,
+        fromJack: from.jackId, to: to.nodeId, toJack: to.jackId })) break;
     }
     return;
   }

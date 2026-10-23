@@ -2,12 +2,36 @@ import { isModulatorNode, isLfoNode } from "./modulatorKinds";
 export { isLfoNode, isEnvNode, isModulatorNode } from "./modulatorKinds";
 import { Position, type Edge, type Node } from "./flowTypes";
 import type { AstDocument, AstEdge, AstJack, AstNode } from "../bridge/ast";
+import { entryById } from "./blockCatalog";
 import { kindLabel } from "../theme/tokens";
 import { CHIP_GAP, chipBox } from "./chipLayout";
+import { chipSpec } from "./chipSpec";
 import { lettersInExpr } from "./bindLinks";
 import { handleId, tokenInExpr } from "./handles";
 import { canonicalIoJacks } from "./ioPaint";
 import { visualAudioEdges, visualJacksFor } from "./visualEdges";
+
+function modulatorOutJack(src: AstNode): string {
+  const tagged = src.jacks?.find((j) => j.output && j.kind === "mod");
+  if (tagged) {
+    return tagged.id;
+  }
+  const spec = chipSpec(src.type, src.args);
+  return entryById(spec.id)?.modOuts[0] ?? spec.audioOuts[0] ?? "out";
+}
+
+function destJackFor(dest: AstNode, src: AstNode): string {
+  const spec = chipSpec(dest.type, dest.args);
+  for (const [key, raw] of Object.entries(dest.args)) {
+    if (! tokenInExpr(raw, src.id)) {
+      continue;
+    }
+    if (spec.modIns.includes(key) || (spec.paramJacks.includes(key) && spec.ranges[key])) {
+      return key;
+    }
+  }
+  return dest.jacks?.find((j) => ! j.output && j.kind === "mod" && j.id === src.id)?.id ?? src.id;
+}
 
 export { CHIP_GAP, CHIP_H, CHIP_W, IO_W, chipHeight, ioHeight } from "./chipLayout";
 
@@ -67,10 +91,13 @@ export function inferModLinks(nodes: AstNode[]): AstEdge[] {
       if (! hit) {
         continue;
       }
-      const destJack = dest.jacks?.find((j) => ! j.output && j.kind === "mod" && j.id === src.id)?.id
-        ?? src.id;
-      const srcJack = src.jacks?.find((j) => j.output && j.kind === "mod")?.id ?? "mod";
-      push({ from: src.id, to: dest.id, kind: "mod", fromJack: srcJack, toJack: destJack });
+      push({
+        from: src.id,
+        to: dest.id,
+        kind: "mod",
+        fromJack: modulatorOutJack(src),
+        toJack: destJackFor(dest, src),
+      });
     }
   }
   return out;

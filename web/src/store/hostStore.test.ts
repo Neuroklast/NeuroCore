@@ -179,6 +179,15 @@ describe("hostStore", () => {
     expect(useHostStore.getState().sidechainOn).toBe(false);
   });
 
+  it("stores midiGate vel and mod from the host snapshot", () => {
+    useHostStore.getState().applyHost({ midiGate: 1, midiVel: 0.8, midiMod: 0.25 });
+    expect(useHostStore.getState().midiGate).toBe(1);
+    expect(useHostStore.getState().midiVel).toBeCloseTo(0.8);
+    expect(useHostStore.getState().midiMod).toBeCloseTo(0.25);
+    useHostStore.getState().applyHost({ midiGate: 0, midiVel: 0, midiMod: 0 });
+    expect(useHostStore.getState().midiGate).toBe(0);
+  });
+
   it("marks dirty until a preset load clears it", () => {
     useHostStore.setState({ presetDirty: false, originName: "", discardPrompt: true });
     useHostStore.getState().markDirty();

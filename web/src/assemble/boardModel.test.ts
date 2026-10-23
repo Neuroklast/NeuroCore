@@ -15,15 +15,14 @@ function emptyAst(): AstDocument {
 }
 
 describe("headless board model", () => {
-  it("gives IN two east ports and OUT one west port, never the reverse", () => {
+  it("gives IN one east audio port and OUT one west port, never the reverse", () => {
     const g = hydrateBoard(emptyAst());
     const inPorts = Object.values(g.ports).filter((p) => p.nodeId === "IN");
-    expect(inPorts.every((p) => p.east)).toBe(true);
-    expect(inPorts.map((p) => p.jackId).sort()).toEqual(["out", "sc"]);
-    expect(Object.values(g.ports).filter((p) => p.nodeId === "IN" && ! p.east)).toHaveLength(0);
-    const outPorts = Object.values(g.ports).filter((p) => p.nodeId === "OUT");
+    expect(inPorts.every((p) => p.face === "e")).toBe(true);
+    expect(inPorts.map((p) => p.jackId)).toEqual(["out"]);
+    expect(Object.values(g.ports).filter((p) => p.nodeId === "IN" && p.face !== "e")).toHaveLength(0);
+    const outPorts = Object.values(g.ports).filter((p) => p.nodeId === "OUT" && p.face === "w");
     expect(outPorts).toHaveLength(1);
-    expect(outPorts[0]?.east).toBe(false);
     expect(outPorts[0]?.jackId).toBe("in");
   });
 
@@ -100,7 +99,7 @@ describe("headless board model", () => {
       }],
       edges: [],
     };
-    expect(previewBoardIds(ast).sort()).toEqual(["IN", "OUT", "stage1"].sort());
+    expect(previewBoardIds(ast).sort()).toEqual(["IN", "MIDI", "OUT", "SC", "stage1"].sort());
     expect(previewBoardIds(null)).toEqual([]);
   });
 
@@ -120,8 +119,8 @@ describe("headless board model", () => {
       edges: [{ from: "IN", to: "ms1", kind: "audio", fromJack: "out", toJack: "in" }],
     };
     const g = hydrateBoard(ast);
-    const east = Object.values(g.ports).filter((p) => p.nodeId === "ms1" && p.east);
-    const west = Object.values(g.ports).filter((p) => p.nodeId === "ms1" && ! p.east);
+    const east = Object.values(g.ports).filter((p) => p.nodeId === "ms1" && p.face === "e");
+    const west = Object.values(g.ports).filter((p) => p.nodeId === "ms1" && p.face === "w");
     expect(east.map((p) => p.jackId).sort()).toEqual(["mid", "side"]);
     expect(west.map((p) => p.jackId)).toEqual(["in"]);
     expect(east.some((p) => p.jackId === "out")).toBe(false);
@@ -144,9 +143,9 @@ describe("headless board model", () => {
     };
     const g = hydrateBoard(ast);
     const node = g.nodes.octaver1!;
-    const west = Object.values(g.ports).filter((p) => p.nodeId === "octaver1" && ! p.east && ! p.south);
-    const east = Object.values(g.ports).filter((p) => p.nodeId === "octaver1" && p.east);
-    const south = Object.values(g.ports).filter((p) => p.nodeId === "octaver1" && p.south);
+    const west = Object.values(g.ports).filter((p) => p.nodeId === "octaver1" && p.face === "w");
+    const east = Object.values(g.ports).filter((p) => p.nodeId === "octaver1" && p.face === "e");
+    const south = Object.values(g.ports).filter((p) => p.nodeId === "octaver1" && p.face === "s");
     expect(west.map((p) => `${p.jackId}#${p.index}/${p.count}`)).toEqual(["in#0/1"]);
     expect(east.map((p) => `${p.jackId}#${p.index}/${p.count}`)).toEqual(["out#0/1"]);
     expect(south.map((p) => `${p.jackId}#${p.index}/${p.count}`)).toEqual([
@@ -158,8 +157,10 @@ describe("headless board model", () => {
     ]);
     expect(portLocal(node, west[0]!).y).toBe(portLocal(node, east[0]!).y);
     const layout = graphToLayout(g).nodes.find((n) => n.id === "octaver1")!;
-    expect(layout.ins.map((p) => p.id)).toEqual([portId("octaver1", "in", false)]);
-    expect(layout.ins[0]!.y).toBe(layout.outs[0]!.y);
+    const layoutWest = layout.ins.filter((p) => p.face === "w");
+    expect(layoutWest.map((p) => p.id)).toEqual([portId("octaver1", "in", false)]);
+    expect(layoutWest[0]!.y).toBe(layout.outs[0]!.y);
+    expect(layout.ins.some((p) => p.face === "s")).toBe(true);
   });
 
   it("keeps OTT audio in on the west face when a param reuses that jack id", () => {
@@ -178,18 +179,20 @@ describe("headless board model", () => {
       edges: [{ from: "IN", to: "ott1", kind: "audio", fromJack: "out", toJack: "in" }],
     };
     const g = hydrateBoard(ast);
-    const west = Object.values(g.ports).filter((p) => p.nodeId === "ott1" && ! p.east && ! p.south);
-    const south = Object.values(g.ports).filter((p) => p.nodeId === "ott1" && p.south);
+    const west = Object.values(g.ports).filter((p) => p.nodeId === "ott1" && p.face === "w");
+    const south = Object.values(g.ports).filter((p) => p.nodeId === "ott1" && p.face === "s");
     expect(west.map((p) => p.jackId)).toEqual(["in"]);
     expect(south.map((p) => p.jackId)).not.toContain("in");
-    expect(graphToLayout(g).nodes.find((n) => n.id === "ott1")!.ins.map((p) => p.id)).toEqual([
+    const layout = graphToLayout(g).nodes.find((n) => n.id === "ott1")!;
+    expect(layout.ins.filter((p) => p.face === "w").map((p) => p.id)).toEqual([
       portId("ott1", "in", false),
     ]);
+    expect(layout.ins.some((p) => p.face === "s")).toBe(true);
   });
 });
 
-it("allows moving the input terminal", () => {
-  expect(hydrateBoard(emptyAst()).nodes.IN?.locked).toBe(false);
+it("locks the input terminal", () => {
+  expect(hydrateBoard(emptyAst()).nodes.IN?.locked).toBe(true);
 });
 
 it("gives every fan-out and fan-in connection a distinct physical socket", async () => {
@@ -203,7 +206,7 @@ it("gives every fan-out and fan-in connection a distinct physical socket", async
   for (const node of Object.values(graph.nodes)) {
     for (const east of [false, true]) {
       const ps = Object.values(graph.ports).filter(
-        (p) => p.nodeId === node.id && p.east === east && ! p.south,
+        (p) => p.nodeId === node.id && p.face === (east ? "e" : "w"),
       );
       const ys = ps.map(p => portGlobal(node, p).y - node.y);
       expect(new Set(ys).size).toBe(ys.length);

@@ -3613,11 +3613,6 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
 
     if (! multi)
     {
-
-        for (int i = 0; i < nOsc; ++i)
-            if (! oscs[i]->modLane.empty() && oscs[i]->varPtr != nullptr)
-                if (oscs[i]->destSlot != nullptr)
-                    *oscs[i]->destSlot = oscs[i]->modLane[(size_t) numSamples - 1];
         processOn (buffer, -1);
     }
     else
@@ -3644,15 +3639,6 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
 
             processOn (busScratch[(size_t) bi], bi);
         }
-
-        for (int i = 0; i < nOsc; ++i)
-            if (! oscs[i]->modLane.empty() && oscs[i]->varPtr != nullptr)
-                if (oscs[i]->destSlot != nullptr)
-                    *oscs[i]->destSlot = oscs[i]->modLane[(size_t) numSamples - 1];
-        for (int i = 0; i < nEnv; ++i)
-            if (! envs[i]->modLane.empty() && envs[i]->varPtr != nullptr)
-                if (envs[i]->destSlot != nullptr)
-                    *envs[i]->destSlot = envs[i]->modLane[(size_t) numSamples - 1];
 
         writeMixdown (buffer, chUse, sm);
         writeNodeTap (kTapSlotOut, buffer);

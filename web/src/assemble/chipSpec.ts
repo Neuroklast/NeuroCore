@@ -106,8 +106,28 @@ export function advancedParamKeys(spec: { paramJacks: string[] }): string[] {
   return spec.paramJacks.filter((k) => ADVANCED_KEYS.has(k));
 }
 
-export function faceParamKeys(_spec: { paramJacks: string[] }): string[] {
-  return [];
+const FACE_PARAM: Record<string, string[]> = {
+  stepseq: ["rate", "gate", "glide", "probability"],
+  comp: ["threshold", "ratio", "attack", "release"],
+  ott: ["depth", "time", "low", "mid", "high"],
+  filter: ["cutoff", "resonance"],
+  eq: ["freq", "q", "gain"],
+  delay: ["time", "feedback", "mix"],
+  reverb: ["size", "decay", "mix"],
+  adsr: ["attack", "decay", "sustain", "release"],
+  random: ["rate", "min", "max", "smooth"],
+  modmix: ["levela", "levelb", "mix", "offset"],
+  samplehold: ["rate", "hold", "slew", "mix"],
+  modmath: ["mode", "amount", "mix", "slew"],
+  octaver: ["sub", "up", "mix", "tone", "thresh"],
+};
+
+export function faceParamKeys(spec: { id: string; paramJacks: string[]; ranges?: Record<string, unknown> }): string[] {
+  const listed = FACE_PARAM[spec.id];
+  if (listed) {
+    return listed.filter((k) => spec.paramJacks.includes(k));
+  }
+  return spec.paramJacks.filter((k) => spec.ranges?.[k]).slice(0, 4);
 }
 
 export function overlayParamKeys(spec: { paramJacks: string[] }): string[] {

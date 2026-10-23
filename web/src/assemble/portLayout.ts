@@ -37,6 +37,13 @@ export function southPortLocals(
   }));
 }
 
+export function northPortLocals(
+  count: number,
+  box: { w: number; h: number },
+): PortLocal[] {
+  return southPortLocals(count, box).map((p) => ({ x: p.x, y: 0 }));
+}
+
 export function sidePortLocals(
   count: number,
   box: { w: number; h: number },

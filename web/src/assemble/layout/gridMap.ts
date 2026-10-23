@@ -1,5 +1,5 @@
 import { BOARD_GRID } from "../grid";
-import type { Cell, LayoutNode, Pt } from "./types";
+import type { Cell, LayoutFace, LayoutNode, Pt } from "./types";
 
 export const H = 1;
 export const V = 2;
@@ -76,15 +76,16 @@ export class GridMap {
     this.exitStubs.add(this.key(c, r));
   }
 
-  /** Two cells east of an out (or west of an in) belong only to that net. */
-  reserveRunway(edgeId: string, cell: Cell, toward: 1 | -1, cells = 2): void {
+  /** Cells along the jack face normal belong only to that net. */
+  reserveRunway(edgeId: string, cell: Cell, dc: number, dr: number, cells = 2): void {
     for (let i = 0; i < cells; i += 1) {
-      const c = cell.c + toward * i;
-      const k = this.key(c, cell.r);
+      const c = cell.c + dc * i;
+      const r = cell.r + dr * i;
+      const k = this.key(c, r);
       if (! this.lane.has(k)) {
         this.lane.set(k, edgeId);
       }
-      this.expandTo(c, cell.r, 2);
+      this.expandTo(c, r, 2);
     }
   }
 
@@ -118,10 +119,22 @@ export class GridMap {
   }
 }
 
+export function portFaceCell(x: number, y: number, face: LayoutFace): Cell {
+  const c = Math.floor(x / BOARD_GRID);
+  const r = Math.floor(y / BOARD_GRID);
+  if (face === "w") {
+    return { c: c - 1, r };
+  }
+  if (face === "n") {
+    return { c, r: r - 1 };
+  }
+  return { c, r };
+}
+
 export function portOutCell(nodeX: number, nodeW: number, portY: number): Cell {
-  return { c: Math.floor((nodeX + nodeW) / BOARD_GRID), r: Math.floor(portY / BOARD_GRID) };
+  return portFaceCell(nodeX + nodeW, portY, "e");
 }
 
 export function portInCell(nodeX: number, portY: number): Cell {
-  return { c: Math.floor(nodeX / BOARD_GRID) - 1, r: Math.floor(portY / BOARD_GRID) };
+  return portFaceCell(nodeX, portY, "w");
 }

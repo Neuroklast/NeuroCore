@@ -1,6 +1,7 @@
 import { isModulatorNode, isEnvNode } from "./modulatorKinds";
 import type { AstEdge, AstJack, AstNode } from "../bridge/ast";
-import { bindableJackKeys, chipSpec } from "./chipSpec";
+import { entryById } from "./blockCatalog";
+import { bindableJackKeys, chipSpec, faceParamKeys } from "./chipSpec";
 
 function argOf(node: Pick<AstNode, "args">, key: string): string {
   return (node.args[key] ?? "").trim().toLowerCase();
@@ -206,7 +207,7 @@ function outMixJackIds(node: AstNode, nodes: AstNode[]): string[] {
 }
 
 /** Jacks the circuit actually draws — split is 1 in / 2 out, join is 2 in / 1 out. */
-export function visualJacksFor(node: AstNode, nodes: AstNode[] = []): AstJack[] {
+export function visualJacksFor(node: AstNode, nodes: AstNode[] = [], edges: AstEdge[] = []): AstJack[] {
   if (node.type.toLowerCase() === "out") {
     return outMixJackIds(node, nodes).map((id) => jack(id, false, "mix"));
   }
@@ -246,15 +247,25 @@ export function visualJacksFor(node: AstNode, nodes: AstNode[] = []): AstJack[] 
     ...spec.audioOuts.map((id) => jack(id, true, id === "mod" || isModulatorNode(node) ? "mod" : "audio")),
     ...spec.modIns.map((id) => jack(id, false, "mod")),
   ];
-  const extra = (node.jacks ?? []).filter((j) => ! fromSpec.some((s) => s.id === j.id && s.output === j.output));
+  const catalogOuts = (entryById(spec.id)?.modOuts ?? [])
+    .filter((id) => ! fromSpec.some((s) => s.id === id && s.output))
+    .map((id) => jack(id, true, "mod"));
+  const side = [...fromSpec, ...catalogOuts];
+  const extra = (node.jacks ?? []).filter((j) => ! side.some((s) => s.id === j.id && s.output === j.output));
   const sideExtra = extra.filter((j) => ! spec.paramJacks.includes(j.id));
+  const face = new Set(faceParamKeys(spec));
+  const connected = new Set(edges.filter((e) => e.to === node.id).map((e) => e.toJack));
   const params = bindableJackKeys(spec)
-    .filter((id) => ! fromSpec.some((s) => s.id === id))
+    .filter((id) => ! side.some((s) => s.id === id) && (face.has(id) || connected.has(id)))
     .map((id) => {
       const hit = extra.find((j) => j.id === id);
       return hit ? { ...hit, kind: "param" } : jack(id, false, "param");
     });
-  return fromSpec.length ? [...fromSpec, ...sideExtra, ...params] : (node.jacks ?? []);
+  const taken = new Set([...side, ...sideExtra, ...params].map((j) => j.id));
+  const inferredIns = [...connected]
+    .filter((id) => id && ! taken.has(id))
+    .map((id) => extra.find((j) => j.id === id) ?? jack(id, false, "mod"));
+  return side.length ? [...side, ...sideExtra, ...params, ...inferredIns] : (node.jacks ?? []);
 }
 
 function keyOf(e: AstEdge): string {

@@ -402,6 +402,9 @@ juce::var hostVar (NeuroKoreAudioProcessor& proc)
     if (auto* scBus = proc.getBus (true, 1))
         sidechainOn = scBus->isEnabled();
     root->setProperty ("sidechainOn", sidechainOn);
+    root->setProperty ("midiGate", proc.getMidiGate());
+    root->setProperty ("midiVel", proc.getMidiVel());
+    root->setProperty ("midiMod", proc.getMidiMod());
     juce::Array<juce::var> mods;
     for (const auto& id : proc.getModNames())
     {

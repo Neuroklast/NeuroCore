@@ -145,8 +145,8 @@ describe("octaver ports", () => {
       inJacks: [{ id: "out", label: "out", output: true, kind: "audio" }],
     });
     const ports = Object.values(useBoardStore.getState().ports).filter((p) => p.nodeId === "octaver1");
-    const west = ports.filter((p) => ! p.east && ! p.south);
+    const west = ports.filter((p) => p.face === "w");
     expect(west.map((p) => p.jackId)).toEqual(["in"]);
-    expect(ports.filter((p) => p.south).map((p) => p.jackId)).toEqual(["sub", "up", "mix", "tone", "thresh"]);
+    expect(ports.filter((p) => p.face === "s").map((p) => p.jackId)).toEqual(["sub", "up", "mix", "tone", "thresh"]);
   });
 });

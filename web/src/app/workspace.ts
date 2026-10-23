@@ -46,6 +46,11 @@ export function circuitPaintActive(w: Workspace, paneW: number, paneH: number): 
   return w === "assemble" && paneW > 40 && paneH > 40;
 }
 
+/** Circuit stays mounted; opacity/pointer-events, not display:none. */
+export function workspacePaneClass(on: boolean): string {
+  return on ? "nk-pane on" : "nk-pane";
+}
+
 export type TerminalAction = "edit" | "validate" | "optimize";
 
 /** Script tools that live on the Terminal chrome, not only the header. */

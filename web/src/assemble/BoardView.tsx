@@ -12,6 +12,7 @@ import { chipOverlay } from "../presets/irSlots";
 import { addCircuitBlock, copyCircuitBlock, cutCircuitBlock, duplicateCircuitBlock, insertCircuitBlockAfter, insertCircuitBlockOnEdge, parkCircuitBlock, pasteCircuitBlockAfter, removeCircuitBlock } from "./addBlock";
 import { BoardNavigator } from "./BoardNavigator";
 import { BoardChip } from "./BoardChip";
+import { BoardTerminal } from "./BoardTerminal";
 import { ADD_PICKER_BOX, CHIP_MENU_BOX, clientToPane, placeOverlay, placeOverlayPane } from "../theme/fit";
 import { wheelOwnsZoom } from "./boardWheel";
 import { applyCameraTransform, cameraMatrix, fitCamera, fitBoardCamera, panCamera, shouldFitCameraOnLateLayout, shouldFitCameraOnPaneSize, screenFromWorld, worldFromScreen, zoomCamera } from "./boardCamera";
@@ -19,7 +20,7 @@ import { applyBoardZoom } from "./nodeFace/semanticZoom";
 import { commitBoardConnect, commitBoardCut, layoutBoard, rerouteBoard } from "./boardCommit";
 import { connectDragRef, magnetPort } from "./boardConnect";
 import { boardContextHit, canDeleteChip, chipAtWorld, circuitAllowsTextSelect, edgeRoute } from "./boardEdit";
-import { graphToLayout, portGlobal, previewBoardIds, type BoardPort } from "./boardModel";
+import { graphToLayout, portGlobal, portIsOutput, previewBoardIds, type BoardPort } from "./boardModel";
 import { applyChipDragStyle, chipDragGroupRef, chipDragRef, type ChipDrag } from "./boardDrag";
 import { useBoardStore } from "./boardStore";
 import { keepBoardXy } from "./boardSync";
@@ -562,7 +563,7 @@ const lassoRef = useRef<SelectionRect | null>(null);
     if (drag?.snapPortId) {
       const dst = useBoardStore.getState().ports[drag.snapPortId];
       if (dst) {
-        void (drag.fromPort.east ? commitBoardConnect(drag.fromPort, dst) : commitBoardConnect(dst, drag.fromPort));
+        void (portIsOutput(drag.fromPort) ? commitBoardConnect(drag.fromPort, dst) : commitBoardConnect(dst, drag.fromPort));
       }
     }
     connectDragRef.current = null;
@@ -831,15 +832,25 @@ const lassoRef = useRef<SelectionRect | null>(null);
         style={{ transform: cameraMatrix(camLive.current) }}
       >
         {Object.values(nodes).map((n) => (
-          <BoardChip
-            key={n.id}
-            node={n}
-            ports={portsByNode[n.id] ?? []}
-            selected={selection.includes(n.id)}
-            bindOver={bindAim?.id === n.id}
-            bindLocal={bindAim?.id === n.id ? bindAim.local : { x: 0, y: 0 }}
-            onInspect={() => inspectChip(n.id, n.type)}
-          />
+          n.role === "io" ? (
+            <BoardTerminal
+              key={n.id}
+              node={n}
+              ports={portsByNode[n.id] ?? []}
+              selected={selection.includes(n.id)}
+              onInspect={() => inspectChip(n.id, n.type)}
+            />
+          ) : (
+            <BoardChip
+              key={n.id}
+              node={n}
+              ports={portsByNode[n.id] ?? []}
+              selected={selection.includes(n.id)}
+              bindOver={bindAim?.id === n.id}
+              bindLocal={bindAim?.id === n.id ? bindAim.local : { x: 0, y: 0 }}
+              onInspect={() => inspectChip(n.id, n.type)}
+            />
+          )
         ))}
       </div>
       {lasso ? (() => {

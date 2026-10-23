@@ -1,5 +1,10 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { circuitPaintActive, isOpenBoard, knobBindEnabled, knobRail, telemetryIntervalMs, telemetryWaitMs, terminalActions, terminalMounted, WORKSPACES } from "./workspace";
+import { circuitPaintActive, isOpenBoard, knobBindEnabled, knobRail, telemetryIntervalMs, telemetryWaitMs, terminalActions, terminalMounted, workspacePaneClass, WORKSPACES } from "./workspace";
+
+const css = readFileSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../theme/tailwind.css"), "utf8");
 
 describe("workspace modes", () => {
   it("has a sealed unit plus circuit and terminal", () => {
@@ -37,6 +42,13 @@ describe("workspace modes", () => {
     expect(terminalMounted("face")).toBe(false);
     expect(terminalMounted("assemble")).toBe(false);
     expect(terminalMounted("hack")).toBe(true);
+  });
+
+  it("crossfades Unit/Circuit panes without display:none on Circuit", () => {
+    expect(workspacePaneClass(true)).toBe("nk-pane on");
+    expect(workspacePaneClass(false)).toBe("nk-pane");
+    expect(css).toMatch(/\.nk-pane\s*\{[^}]*visibility:\s*hidden/s);
+    expect(css).toMatch(/\.nk-pane\.on\s*\{[^}]*visibility:\s*visible/s);
   });
 
   it("paints Circuit cables only on that tab with a real pane", () => {

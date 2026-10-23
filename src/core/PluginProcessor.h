@@ -280,6 +280,10 @@ public:
         return scriptManager.signalChain.copyMeterReading (id, destDb);
     }
 
+    float getMidiGate() const noexcept { return midiVariableMapper.getMidiGate(); }
+    float getMidiVel()  const noexcept { return midiVariableMapper.getMidiVel(); }
+    float getMidiMod()  const noexcept { return midiVariableMapper.getMidiMod(); }
+
     bool isLiveMode() const noexcept;
     void setLiveMode (bool enabled);
     void uiSettingsChanged() override;

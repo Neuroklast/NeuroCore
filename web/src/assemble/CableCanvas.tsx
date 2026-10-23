@@ -447,7 +447,7 @@ export function CableCanvas({
         const { c1, c2 } = bezierPreview(
           drag.from,
           drag.to,
-          drag.fromPort.east,
+          drag.fromPort.face,
         );
         const col = palette[colorForKind(drag.kind)];
         ctx.save();

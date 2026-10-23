@@ -31,6 +31,7 @@ export interface BlockParam {
   def: string | number; // Standardwert (als String für DSL/Serialisierung)
   automatable: boolean; // Host-Automation / Makro-Ziel
   modulatable: boolean; // Echtzeit-Modulationsziel
+  integer?: boolean;    // Ganze Zahl (steps, bits, voices)
 }
 
 export interface BlockCatalogEntry {
@@ -132,7 +133,7 @@ export const BLOCK_CATALOG: BlockCatalogEntry[] = [
     dspType: "bitcrush",
     audioIns: ["in"], audioOuts: ["out"], modIns: [], modOuts: [],
     params: [
-      { key: "bits", min: 1, max: 16, scale: "linear", def: "8", automatable: true, modulatable: false },
+      { key: "bits", min: 1, max: 16, scale: "linear", def: "8", automatable: true, modulatable: false, integer: true },
       { ...percent(0, 1, 1), key: "mix", label: "Mix", automatable: true, modulatable: true },
       { ...Hz(800, 16000, 8000), key: "tone", label: "Tone", automatable: true, modulatable: true },
     ],
@@ -197,7 +198,7 @@ export const BLOCK_CATALOG: BlockCatalogEntry[] = [
     audioIns: ["in"], audioOuts: ["out"], modIns: [], modOuts: [],
     params: [
       { key: "rate", min: 0, max: 1, scale: "linear", def: "0.5", automatable: true, modulatable: true },
-      { key: "bits", min: 1, max: 16, scale: "linear", def: "8", automatable: true, modulatable: false },
+      { key: "bits", min: 1, max: 16, scale: "linear", def: "8", automatable: true, modulatable: false, integer: true },
       { key: "jitter", min: 0, max: 1, scale: "linear", def: "0", automatable: true, modulatable: true },
       { key: "hold", min: 0, max: 1, scale: "linear", def: "0", automatable: true, modulatable: true },
       { key: "recon", min: 0, max: 1, scale: "linear", def: "0.5", automatable: true, modulatable: true },
@@ -298,7 +299,7 @@ export const BLOCK_CATALOG: BlockCatalogEntry[] = [
     dspType: "stepseq",
     audioIns: [], audioOuts: ["out"], modIns: [], modOuts: ["out"],
     params: [
-      { key: "steps", min: 1, max: 64, scale: "linear", def: "4", automatable: false, modulatable: false },
+      { key: "steps", min: 1, max: 64, scale: "linear", def: "4", automatable: false, modulatable: false, integer: true },
       { key: "rate", min: 0, max: 100, scale: "linear", def: "1", automatable: true, modulatable: false },
       { key: "sync", min: 0, max: NOTES.length - 1, scale: "linear", enum: NOTES, def: "off", automatable: false, modulatable: false },
       { ...percent(0, 1, 1), key: "gate", label: "Gate", automatable: true, modulatable: false },
@@ -620,7 +621,7 @@ export const BLOCK_CATALOG: BlockCatalogEntry[] = [
     dspType: "phaser",
     audioIns: ["in"], audioOuts: ["out"], modIns: [], modOuts: [],
     params: [
-      { key: "stages", min: 2, max: 12, scale: "linear", def: "6", automatable: true, modulatable: false },
+      { key: "stages", min: 2, max: 12, scale: "linear", def: "6", automatable: true, modulatable: false, integer: true },
       { ...Hz(0.05, 8, 0.4), key: "rate", label: "Rate", automatable: true, modulatable: false },
       { key: "depth", min: 0, max: 1.5, scale: "linear", def: "0.7", automatable: true, modulatable: true },
       { ...Hz(80, 4000, 800), key: "center", label: "Center", automatable: true, modulatable: true },
@@ -655,7 +656,7 @@ export const BLOCK_CATALOG: BlockCatalogEntry[] = [
       { ...Hz(0, 5, 0.6), key: "rate", label: "Rate", automatable: true, modulatable: false },
       { key: "depth", min: 0, max: 1, scale: "linear", def: "0.5", automatable: true, modulatable: true },
       { ...ms(5, 40, 18), key: "delay", label: "Delay", automatable: true, modulatable: true },
-      { key: "voices", min: 2, max: 4, scale: "linear", def: "3", automatable: true, modulatable: false },
+      { key: "voices", min: 2, max: 4, scale: "linear", def: "3", automatable: true, modulatable: false, integer: true },
       { ...percent(0, 1, 0.5), key: "mix", label: "Mix", automatable: true, modulatable: true },
       { key: "width", min: 0, max: 1, scale: "linear", def: "0.7", automatable: true, modulatable: true },
     ],

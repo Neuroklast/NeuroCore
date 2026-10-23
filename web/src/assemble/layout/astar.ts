@@ -115,15 +115,16 @@ export function astarRoute(
     }
     for (let nd = 0 as Dir; nd < 4; nd = (nd + 1) as Dir) {
       if (cur.c === start.c && cur.r === start.r) {
-        const eastC = start.c + DC[startDir]!;
-        const eastR = start.r + DR[startDir]!;
-        const eastKey = map.key(eastC, eastR);
-        const eastOpen = ! map.solid.has(eastKey)
-          && !(edgeId && map.foreignLane(eastC, eastR, edgeId));
-        if (eastOpen && nd !== startDir) {
+        const leaveC = start.c + DC[startDir]!;
+        const leaveR = start.r + DR[startDir]!;
+        const leaveKey = map.key(leaveC, leaveR);
+        const leaveOpen = ! map.solid.has(leaveKey)
+          && !(edgeId && map.foreignLane(leaveC, leaveR, edgeId));
+        if (leaveOpen && nd !== startDir) {
           continue;
         }
-        if (! eastOpen && nd === DIR_W) {
+        const reverse = ((startDir + 2) % 4) as Dir;
+        if (! leaveOpen && nd === reverse) {
           continue;
         }
       }

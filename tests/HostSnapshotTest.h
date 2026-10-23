@@ -299,6 +299,22 @@ public:
                 expect (! on);
         }
 
+        beginTest ("hostVar reports midiGate from the MIDI mapper");
+        {
+            NeuroKoreAudioProcessor proc;
+            proc.setPlayConfigDetails (2, 2, 48000.0, 32);
+            proc.prepareToPlay (48000.0, 32);
+            juce::AudioBuffer<float> buf (2, 32);
+            buf.clear();
+            juce::MidiBuffer midi;
+            midi.addEvent (juce::MidiMessage::noteOn (1, 60, (juce::uint8) 100), 0);
+            proc.processBlock (buf, midi);
+            const auto host = bridge::hostVar (proc);
+            expect (host.hasProperty ("midiGate"));
+            expect ((float) host.getProperty ("midiGate", 0.0) > 0.5f);
+            expect ((float) host.getProperty ("midiVel", 0.0) > 0.0f);
+        }
+
         beginTest ("save lists and reloads a user preset");
         {
             NeuroKoreAudioProcessor proc;

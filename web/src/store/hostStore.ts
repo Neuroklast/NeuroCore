@@ -74,8 +74,12 @@ export interface HostState {
   scopeY: "linear" | "db";
   scopeGrid: boolean;
   scopeInvertY: boolean;
-  /** Host sidechain bus enabled — Sidechain IN chip is visible only when true. */
+  /** Host sidechain bus enabled — Sidechain IN plate dims when false. */
   sidechainOn: boolean;
+  /** MIDI mapper atomics from the host snapshot. Circuit lamps only. */
+  midiGate: number;
+  midiVel: number;
+  midiMod: number;
   /** Live osc/env tap peaks from the host, keyed by chip id (`env1`, `osc1`). */
   mods: Record<string, number>;
   /** Post-chip peak, keyed by node id (`stage1`, `IN`, `OUT`). */
@@ -317,6 +321,9 @@ export const useHostStore = create<HostState>((set) => ({
   scopeGrid: true,
   scopeInvertY: false,
   sidechainOn: false,
+  midiGate: 0,
+  midiVel: 0,
+  midiMod: 0,
   mods: {},
   clips: {},
   clipsL: {},
@@ -382,6 +389,9 @@ export const useHostStore = create<HostState>((set) => ({
     scopeInvertY: prefs.scopeInvertY ?? s.scopeInvertY,
     scopeDelta: prefs.scopeDelta ?? s.scopeDelta,
     sidechainOn: p.sidechainOn != null ? Boolean(p.sidechainOn) : s.sidechainOn,
+    midiGate: p.midiGate != null ? Number(p.midiGate) : s.midiGate,
+    midiVel: p.midiVel != null ? Number(p.midiVel) : s.midiVel,
+    midiMod: p.midiMod != null ? Number(p.midiMod) : s.midiMod,
     mods: Array.isArray(p.mods)
       ? Object.fromEntries(
         (p.mods as Array<Record<string, unknown>>).map((m) => [
