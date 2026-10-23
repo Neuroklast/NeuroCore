@@ -11,4 +11,4 @@ Reproduce native reports with NeuroKoreDspContracts --factory, --factory-profile
 
 Final catalog: 353 active (25 new), including three initial MSEG examples. The final engine re-rendered every entry on five profiles with zero parse/nonfinite failures; 33 complete original versions remain archived. Source and decision counts in the individual review are authoritative. Windows/pluginval is tracked separately in the validation evidence.
 
-The 2026-10-23 library pass starts from this catalog. Inventory and use-case classification: [2026-10-23-review.md](2026-10-23-review.md) and [2026-10-23-inventory.json](2026-10-23-inventory.json). Listening, latency and CPU remain open.
+The 2026-10-23 library pass starts from this catalog. Inventory and use-case classification: [2026-10-23-review.md](2026-10-23-review.md) and [2026-10-23-inventory.json](2026-10-23-inventory.json). Result report: [2026-10-23-report.md](2026-10-23-report.md). Listening, latency and CPU remain open.
