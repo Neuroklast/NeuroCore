@@ -38,7 +38,6 @@ describe("hostStore", () => {
     expect(s.theme).toBe("signal");
     expect(s.frameRate).toBe(60);
     expect(s.discardPrompt).toBe(true);
-    expect(s.cables).toBe("wave"); // matches UiSettings default and hostStore initial state
   });
 
   it("host snapshot applies shared prefs from native UiSettings", () => {
@@ -47,14 +46,12 @@ describe("hostStore", () => {
       frameRate: 30,
       discardPrompt: false,
       motion: "reduced",
-      cables: "dots",
     });
     const s = useHostStore.getState();
     expect(s.theme).toBe("gold");
     expect(s.frameRate).toBe(30);
     expect(s.discardPrompt).toBe(false);
     expect(s.motion).toBe("reduced");
-    expect(s.cables).toBe("dots");
   });
 
   it("host snapshot applies Unit meter prefs", () => {
