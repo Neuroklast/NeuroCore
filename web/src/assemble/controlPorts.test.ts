@@ -75,3 +75,13 @@ it.each(['mseg','stepseq','adsr','samplehold','random','modmath','modmix'])('off
  expect(doc.edges.filter(e=>e.kind==='audio').some(e=>e.from===`${type}1`||e.to===`${type}1`)).toBe(false);
  expect(doc.nodes.find(n=>n.id===`${type}1`)!.jacks?.some(j=>j.output&&j.kind==='mod')).toBe(true);
 });
+
+
+it("keeps every parameter dependency from one modulation source", () => {
+ const graph = hydrateBoard({version:1, leadingComments:[], params:[], nodes:[
+  {id:"random1",type:"random",args:{min:"0",max:"1"},busName:"",trailingComment:""},
+  {id:"filter1",type:"filter",args:{cutoff:"random1",resonance:"1 + random1"},busName:"",trailingComment:""}
+ ],edges:[]});
+ const targets = Object.values(graph.edges).filter(e => e.sourceNodeId === "random1").map(e => e.targetPortId);
+ expect(targets.sort()).toEqual([portId("filter1","cutoff",false),portId("filter1","resonance",false)].sort());
+});

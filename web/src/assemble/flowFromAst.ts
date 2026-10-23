@@ -20,17 +20,18 @@ function modulatorOutJack(src: AstNode): string {
   return entryById(spec.id)?.modOuts[0] ?? spec.audioOuts[0] ?? "out";
 }
 
-function destJackFor(dest: AstNode, src: AstNode): string {
+function destJacksFor(dest: AstNode, src: AstNode): string[] {
+  const targets: string[] = [];
   const spec = chipSpec(dest.type, dest.args);
   for (const [key, raw] of Object.entries(dest.args)) {
     if (! tokenInExpr(raw, src.id)) {
       continue;
     }
     if (spec.modIns.includes(key) || (spec.paramJacks.includes(key) && spec.ranges[key])) {
-      return key;
+      targets.push(key);
     }
   }
-  return dest.jacks?.find((j) => ! j.output && j.kind === "mod" && j.id === src.id)?.id ?? src.id;
+  return targets.length ? targets : [dest.jacks?.find((j) => ! j.output && j.kind === "mod" && j.id === src.id)?.id ?? src.id];
 }
 
 export { CHIP_GAP, CHIP_H, CHIP_W, IO_W, chipHeight, ioHeight } from "./chipLayout";
@@ -91,13 +92,15 @@ export function inferModLinks(nodes: AstNode[]): AstEdge[] {
       if (! hit) {
         continue;
       }
-      push({
-        from: src.id,
-        to: dest.id,
-        kind: "mod",
-        fromJack: modulatorOutJack(src),
-        toJack: destJackFor(dest, src),
-      });
+      for (const toJack of destJacksFor(dest, src)) {
+        push({
+          from: src.id,
+          to: dest.id,
+          kind: "mod",
+          fromJack: modulatorOutJack(src),
+          toJack,
+        });
+      }
     }
   }
   return out;

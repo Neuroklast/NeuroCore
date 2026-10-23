@@ -4,6 +4,10 @@
 **Version:** 0.7.2-beta  
 **Branch:** `feat/circuit-board-architecture-v2`
 
+## Circuit connection integrity follow-up (2026-10-23)
+
+One modulation source now produces a separate edge for every referenced supported destination parameter. Reproduced missing resonance edge alongside cutoff; control-port and board-architecture contracts pass (33 tests). Remaining graph diagnostics, terminal rerouting, MIDI dependencies and routing validation are still open.
+
 ## Inspect integers and control cables (2026-10-23)
 
 Inspect step/bit/stage/voice fields snap to whole numbers; dials use a 44×44 centre, not the footer knob origin. Enums sit in a separate row. `inferModLinks` targets the arg key (`cutoff = random1` → cutoff jack); hydrate builds those jacks before dropping edges. Catalog `modOuts` are painted when `audioOuts` is empty.
