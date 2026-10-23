@@ -75,6 +75,38 @@ describe("factory catalog", () => {
     expect(empty, empty.join(", ")).toEqual([]);
   });
 
+  it("ships the 2026-10-23 gap templates", () => {
+    const names = [
+      "Poly Synth Motion", "Velocity Driven Drive", "Hybrid Dynamic Wah",
+      "Subsafe Groove Bass", "Resonant Drum Body", "Dynamic Hat Tamer",
+      "Triggered Room Send", "Patterned Delay Throws", "Vocal Presence Duck",
+      "Metered Drive Template",
+    ];
+    for (const name of names) {
+      expect(findFactory(name)?.script.length, name).toBeGreaterThan(40);
+    }
+    expect(findFactory("Metered Drive Template")?.script).toMatch(/meter1:/);
+    expect(findFactory("Metered Drive Template")?.script).toMatch(/meter2:/);
+    expect(findFactory("Vocal Presence Duck")?.requiredInputs).toContain("sidechain");
+    expect(findFactory("Velocity Driven Drive")?.requiredInputs).toContain("midi");
+    expect(factoryRows().some((r) => /meter\d+:/.test(r.script))).toBe(true);
+  });
+
+  it("keeps explicit source and type metadata off Mesa High Gain", () => {
+    const mesa = findFactory("Mesa High Gain");
+    expect(mesa?.soundSources ?? []).toEqual([]);
+    expect(mesa?.processingTypes ?? []).toEqual([]);
+    const duck = findFactory("Sidechain Duck Bass");
+    expect(duck?.soundSources.length).toBeGreaterThan(0);
+    expect(duck?.processingTypes.length).toBeGreaterThan(0);
+    expect(duck?.requiredInputs).toContain("sidechain");
+    const midi = findFactory("MIDI Pluck Filter");
+    expect(midi?.requiredInputs).toContain("midi");
+    expect(findFactory("Tight Lead Stack")?.soundSources).toEqual(["Guitar"]);
+    expect(findFactory("Tight Gate Lead")?.soundSources).toEqual(["Guitar"]);
+    expect(findFactory("CTZ Kick Master")?.soundSources).not.toContain("Full Mix");
+  });
+
   it("keeps factory IR and gain fields that native applyPreset reads", () => {
     const cab = findFactory("Mesa High Gain");
     expect(cab?.irs?.ir1).toMatch(/\.wav$/i);

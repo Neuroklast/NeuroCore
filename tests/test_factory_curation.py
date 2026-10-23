@@ -4,7 +4,11 @@ from pathlib import Path
 import re
 import unittest
 
-CATALOG = Path(__file__).resolve().parents[1] / 'resources' / 'factory_presets.json'
+ROOT = Path(__file__).resolve().parents[1]
+CATALOG = ROOT / 'resources' / 'factory_presets.json'
+FACETS = json.loads((ROOT / 'web' / 'src' / 'presets' / 'presetFacets.json').read_text(encoding='utf-8'))
+SOURCES = set(FACETS['soundSources'])
+TYPES = set(FACETS['processingTypes'])
 
 class FactoryCuration(unittest.TestCase):
     def test_names_controls_and_expressions(self):
@@ -25,6 +29,22 @@ class FactoryCuration(unittest.TestCase):
                 text = (preset['name'] + ' ' + preset['description'] + ' ' + script).casefold()
                 for artist in ('zatox', 'holypriest', 'holy priest', 'sub zero project', 'rekkt', 'zerosum', 'koren stack', 'priest split', 'sub zero pummel'):
                     self.assertNotIn(artist, text)
+
+    def test_metadata_vocab_except_protected_mesa(self):
+        presets = json.loads(CATALOG.read_text(encoding='utf-8'))
+        for preset in presets:
+            with self.subTest(preset=preset['name']):
+                if preset['name'] == 'Mesa High Gain':
+                    self.assertNotIn('soundSources', preset)
+                    continue
+                sources = preset.get('soundSources') or []
+                types = preset.get('processingTypes') or []
+                self.assertTrue(sources)
+                self.assertTrue(types)
+                self.assertTrue(set(sources) <= SOURCES)
+                self.assertTrue(set(types) <= TYPES)
+                for item in preset.get('requiredInputs') or []:
+                    self.assertIn(item, ('midi', 'sidechain'))
 
 if __name__ == '__main__':
     unittest.main()

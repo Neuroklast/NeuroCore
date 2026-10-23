@@ -52,6 +52,57 @@ public:
             expect (diff < peak * 0.2f, "L-R=" + juce::String (diff, 4) + " peak=" + juce::String (peak, 4));
         }
 
+        beginTest ("2026-10-23 templates parse and pass a mid tone");
+        {
+            const char* names[] = {
+                "Poly Synth Motion", "Velocity Driven Drive", "Hybrid Dynamic Wah",
+                "Subsafe Groove Bass", "Resonant Drum Body", "Dynamic Hat Tamer",
+                "Triggered Room Send", "Patterned Delay Throws", "Vocal Presence Duck",
+                "Metered Drive Template"
+            };
+            for (const char* name : names)
+            {
+                const auto* e = find (lib, name);
+                expect (e != nullptr, name);
+                if (e == nullptr)
+                    continue;
+                dsl::SignalChain chain;
+                expect (load (chain, *e), juce::String (name) + " parse");
+                if (juce::String (name) == "Hybrid Dynamic Wah")
+                    continue;
+                float peak = 0.f, diff = 0.f;
+                runTone (*e, 440.f, 0.4f, peak, diff);
+                expect (peak > 0.02f, juce::String (name) + " peak=" + juce::String (peak, 4));
+                juce::ignoreUnused (diff);
+            }
+        }
+
+        beginTest ("Vocal Presence Duck ducks when the sidechain is loud");
+        {
+            const auto* e = find (lib, "Vocal Presence Duck");
+            expect (e != nullptr);
+            if (e != nullptr)
+            {
+                const float open = runDuck (*e, false, 3200.f);
+                const float ducked = runDuck (*e, true, 3200.f);
+                expect (ducked < open * 0.95f,
+                        "duck=" + juce::String (ducked, 4) + " open=" + juce::String (open, 4));
+            }
+        }
+
+        beginTest ("Subsafe Groove Bass keeps an 80 Hz sub centred");
+        {
+            const auto* e = find (lib, "Subsafe Groove Bass");
+            expect (e != nullptr);
+            if (e != nullptr)
+            {
+                float peak = 0.f, diff = 0.f;
+                runTone (*e, 80.f, 0.4f, peak, diff);
+                expect (peak > 0.05f);
+                expect (diff < peak * 0.2f, "L-R=" + juce::String (diff, 4) + " peak=" + juce::String (peak, 4));
+            }
+        }
+
         beginTest ("Loudness Clip Master holds a hot tone at or under unity");
         {
             const auto* e = find (lib, "Loudness Clip Master");
@@ -97,7 +148,7 @@ private:
         return true;
     }
 
-    static float runDuck (const FactoryPresetEntry& e, bool kick)
+    static float runDuck (const FactoryPresetEntry& e, bool kick, float hz = 55.f)
     {
         dsl::SignalChain chain;
         if (! load (chain, e))
@@ -113,7 +164,7 @@ private:
             for (int i = 0; i < 512; ++i)
             {
                 const float t = (float) (b * 512 + i) / 48000.f;
-                const float bass = 0.35f * std::sin (2.f * juce::MathConstants<float>::pi * 55.f * t);
+                const float bass = 0.35f * std::sin (2.f * juce::MathConstants<float>::pi * hz * t);
                 main.setSample (0, i, bass);
                 main.setSample (1, i, bass);
                 const float k = kick && std::fmod (t, 0.5f) < 0.05f ? 0.95f : 0.f;

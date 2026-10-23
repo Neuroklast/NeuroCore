@@ -37,3 +37,9 @@ test('curation is idempotent and retains every unretired name',()=>{
  assert.deepEqual(curateFactory(presets),presets);
  for(const p of inventory.presets)assert.ok(presets.some(x=>x.name===p.name)||archived.some(x=>x.name===p.name),p.name);
 });
+import {applyOverhaul} from './curation-2026-10-23.mjs';
+test('metadata overhaul is idempotent and does not rewrite Mesa High Gain',()=>{
+ assert.deepEqual(applyOverhaul(presets),presets);
+ const mesa=presets.find(p=>p.name==='Mesa High Gain');
+ assert.equal(mesa.soundSources,undefined);
+});

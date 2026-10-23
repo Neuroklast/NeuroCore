@@ -2466,10 +2466,17 @@ html[data-motion="reduced"] .nk-lfo-lamp {
 .nk-preset-body { display: flex; min-height: 0; flex: 1; gap: 12px; }
 .nk-preset-folders { display: flex; width: 208px; flex-shrink: 0; flex-direction: column; min-height: 0; }
 .nk-preset-folder-list { min-height: 0; flex: 1; overflow: auto; border: 1px solid var(--nk-panel); }
+.nk-preset-facet-list { flex: 1; }
+.nk-preset-chip-row { display: flex; flex-shrink: 0; flex-wrap: wrap; gap: 4px; max-height: 72px; overflow: auto; }
+.nk-preset-facet-chip { min-height: 26px; padding: 0 8px; border: 1px solid var(--nk-line); color: var(--nk-ink-muted); font: 11px "JetBrains Mono", monospace; }
+.nk-preset-facet-chip[aria-pressed="true"] { border-color: var(--nk-accent); color: var(--nk-ink); }
 .nk-preset-browser aside { border-top: 2px solid var(--nk-accent); padding-top: 8px; }
-.nk-preset-browser [data-folder] { min-height: 32px; border-left: 2px solid transparent; transition: background-color 120ms, border-color 120ms; }
-.nk-preset-browser [data-folder]:hover { background: rgba(var(--nk-accent-rgb), .07); }
-.nk-preset-browser [data-folder][aria-pressed="true"] { border-left-color: var(--nk-accent); background: rgba(var(--nk-accent-rgb), .12); color: var(--nk-ink); }
+.nk-preset-browser [data-folder],
+.nk-preset-browser [data-type] { min-height: 32px; border-left: 2px solid transparent; transition: background-color 120ms, border-color 120ms; }
+.nk-preset-browser [data-folder]:hover,
+.nk-preset-browser [data-type]:hover { background: rgba(var(--nk-accent-rgb), .07); }
+.nk-preset-browser [data-folder][aria-pressed="true"],
+.nk-preset-browser [data-type][aria-pressed="true"] { border-left-color: var(--nk-accent); background: rgba(var(--nk-accent-rgb), .12); color: var(--nk-ink); }
 .nk-preset-results { display: flex; min-width: 0; min-height: 0; flex: 1; flex-direction: column; border: 1px solid var(--nk-panel); }
 .nk-archive-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; height: 32px; flex-shrink: 0; padding: 0 12px; background: var(--nk-bg); border-bottom: 1px solid var(--nk-line); font: 10px "JetBrains Mono", monospace; color: var(--nk-ink-muted); }
 .nk-preset-list { min-height: 0; flex: 1; overflow: auto; }

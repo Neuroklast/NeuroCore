@@ -33,17 +33,23 @@ const slim = raw.map((p) => {
   const irs = (p.irs && typeof p.irs === "object" && ! Array.isArray(p.irs))
     ? Object.fromEntries(Object.entries(p.irs).map(([k, v]) => [String(k), String(v)]))
     : {};
+  const strings = (v) => Array.isArray(v) ? v.map(String).filter(Boolean) : [];
   return {
     name: String(p.name ?? ""),
     category: String(p.category ?? "Factory"),
     description: String(p.description ?? ""),
-    tags: inferTags(String(p.script ?? ""), String(p.name ?? ""), String(p.description ?? ""), String(p.category ?? "Factory")),
+    tags: inferTags(String(p.script ?? ""), String(p.name ?? ""), String(p.description ?? ""), String(p.category ?? "Factory"), p.tags),
     script: String(p.script ?? ""),
     mix: Number(p.mix ?? 1),
     inputGain: Number(p.inputGain ?? 0),
     outputGain: Number(p.outputGain ?? 0),
     irs,
     knobs,
+    soundSources: strings(p.soundSources),
+    processingTypes: strings(p.processingTypes),
+    style: String(p.style ?? ""),
+    role: String(p.role ?? ""),
+    requiredInputs: strings(p.requiredInputs),
   };
 });
 fs.mkdirSync(path.dirname(dest), { recursive: true });

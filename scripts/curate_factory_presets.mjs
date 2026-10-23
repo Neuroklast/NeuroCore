@@ -1,16 +1,19 @@
 import fs from "node:fs";
 import { curateFactory, retired, revisions, dcCleanupNames } from "./factory/curation-2026-10-22.mjs";
+import { applyOverhaul } from "./factory/curation-2026-10-23.mjs";
+import { META_KEYS } from "./factory/metadata.mjs";
 const file="resources/factory_presets.json";
 const original=JSON.parse(fs.readFileSync(file,"utf8"));
-const curated=curateFactory(original);
+const curated=applyOverhaul(curateFactory(original));
 const targetByName=new Map(curated.map(p=>[p.name,p]));
+const sonic=(p)=>{const o={...p};for(const k of META_KEYS)delete o[k];return JSON.stringify(o);};
 fs.mkdirSync("resources/deprecated",{recursive:true});
 const archiveFile="resources/deprecated/factory-2026-10-22.json";
 const archived=fs.existsSync(archiveFile)?JSON.parse(fs.readFileSync(archiveFile,"utf8")):[];
 const saved=new Set(archived.map(p=>p.name));
 for(const p of original) {
   const next=targetByName.get(p.name);
-  if((!next || JSON.stringify(next)!==JSON.stringify(p))&&!saved.has(p.name)) {
+  if((!next || retired[p.name] || sonic(next)!==sonic(p))&&!saved.has(p.name)) {
     archived.push(p);saved.add(p.name);
   }
 }

@@ -33,7 +33,7 @@ export function inferTags(script, name, description, category, extra = []) {
   addIf(/eq\d*\s*:/, "eq", "equalizer");
   addIf(/lowpass|highcut/, "lowpass");
   addIf(/highpass|lowcut/, "highpass");
-  addIf(/vocoder\d*\s*:/, "vocoder", "sidechain");
+  addIf(/vocoder\d*\s*:/, "vocoder");
   addIf(/sidechain|source\s*=\s*sidechain/, "sidechain");
   addIf(/octav|subharmonic/, "octaver", "pitch");
   addIf(/octaver\d*\s*:/, "octaver", "pitch");

@@ -36,7 +36,19 @@
       "min": 0.55,
       "max": 1.45,
       "default": 1.1
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "EQ",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Plexi Crunch",
@@ -75,7 +87,19 @@
       "min": 0.38,
       "max": 1.15,
       "default": 0.72
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "EQ",
+      "Filter"
+    ],
+    "style": "Rock",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Mesa High Gain",
@@ -159,7 +183,20 @@
       "min": 0.45,
       "max": 1.25,
       "default": 0.92
-    }
+    },
+    "soundSources": [
+      "Guitar",
+      "Bass Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "EQ",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Mid Boost OD",
@@ -203,7 +240,19 @@
       "min": 0.28,
       "max": 1.15,
       "default": 0.7
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "EQ",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Transparent Blend",
@@ -243,7 +292,19 @@
       "min": 0.4,
       "max": 1.3,
       "default": 0.9
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "EQ",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Filter Dist",
@@ -278,7 +339,17 @@
       "min": 0.25,
       "max": 1,
       "default": 0.58
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Germanium Fuzz",
@@ -322,7 +393,19 @@
       "min": 0.15,
       "max": 0.85,
       "default": 0.42
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "Dynamics",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Cyberpunk Drive",
@@ -387,7 +470,20 @@
       "min": 0.85,
       "max": 1.5,
       "default": 1.15
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "EQ",
+      "Filter",
+      "Delay"
+    ],
+    "style": "Metal",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Classic Tremolo",
@@ -419,7 +515,16 @@
       "min": 0.2,
       "max": 0.7,
       "default": 0.4
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Modulation"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Chopper",
@@ -451,7 +556,16 @@
       "min": 0.03,
       "max": 0.5,
       "default": 0.12
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Modulation"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Optical Vibe",
@@ -484,7 +598,17 @@
       "min": 1,
       "max": 3,
       "default": 1.6
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Modulation"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Chorus Delay",
@@ -525,7 +649,18 @@
       "min": 0.18,
       "max": 0.55,
       "default": 0.34
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Modulation",
+      "Delay"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Low Pass Sweep",
@@ -565,7 +700,18 @@
       "min": 0.4,
       "max": 3,
       "default": 1.4
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Filter",
+      "Modulation"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Bandpass Vocal",
@@ -600,7 +746,18 @@
       "min": 0.9,
       "max": 2.8,
       "default": 1.5
-    }
+    },
+    "soundSources": [
+      "Synth",
+      "Vocals"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Filter"
+    ],
+    "style": "Electronic",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Transient Bite",
@@ -641,7 +798,17 @@
       "min": 0.25,
       "max": 0.95,
       "default": 0.65
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Modulation"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Metal Gate",
@@ -695,7 +862,20 @@
       "min": 0,
       "max": 1.2,
       "default": 0.55
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "Dynamics",
+      "Filter",
+      "Stereo"
+    ],
+    "style": "Metal",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Vocal Grit",
@@ -738,7 +918,17 @@
       "min": 0.5,
       "max": 1.25,
       "default": 0.92
-    }
+    },
+    "soundSources": [
+      "Vocals"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Whisper Edge",
@@ -772,7 +962,17 @@
       "min": 0.55,
       "max": 1.35,
       "default": 1
-    }
+    },
+    "soundSources": [
+      "Vocals"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Doubler AM",
@@ -816,7 +1016,19 @@
       "min": 0.2,
       "max": 4,
       "default": 1.4
-    }
+    },
+    "soundSources": [
+      "Vocals"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Filter",
+      "Modulation",
+      "Delay"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Acid Line",
@@ -858,7 +1070,18 @@
       "min": 1.1,
       "max": 4,
       "default": 2
-    }
+    },
+    "soundSources": [
+      "Synth"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Filter",
+      "Modulation"
+    ],
+    "style": "Electronic",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Shimmer Drive",
@@ -921,7 +1144,19 @@
       "min": 0.15,
       "max": 0.65,
       "default": 0.38
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Filter",
+      "Modulation",
+      "Reverb"
+    ],
+    "style": "Ambient",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Wide Motion",
@@ -963,7 +1198,17 @@
       "min": 1,
       "max": 2.6,
       "default": 1.45
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Modulation"
+    ],
+    "style": "Ambient",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Formant Crush",
@@ -999,7 +1244,16 @@
       "min": 1.3,
       "max": 4.5,
       "default": 2.4
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Filter"
+    ],
+    "style": "",
+    "role": "Creative",
+    "requiredInputs": []
   },
   {
     "name": "Comb Taste",
@@ -1040,7 +1294,18 @@
       "min": 1,
       "max": 2.8,
       "default": 1.5
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Filter",
+      "Delay"
+    ],
+    "style": "",
+    "role": "Creative",
+    "requiredInputs": []
   },
   {
     "name": "Preamp Regen Stack",
@@ -1082,7 +1347,18 @@
       "min": 0.35,
       "max": 1.15,
       "default": 0.8
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Slapback Drive",
@@ -1126,7 +1402,19 @@
       "min": 0.4,
       "max": 1.2,
       "default": 0.88
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "Filter",
+      "Delay"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Cascade Loop Dirt",
@@ -1169,7 +1457,18 @@
       "min": 0.3,
       "max": 1.05,
       "default": 0.7
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Bass Regen Growl",
@@ -1211,7 +1510,17 @@
       "min": 0.5,
       "max": 1.25,
       "default": 0.95
-    }
+    },
+    "soundSources": [
+      "Bass Guitar"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Vocal Warm Loop",
@@ -1256,7 +1565,17 @@
       "min": 0.55,
       "max": 1.25,
       "default": 0.95
-    }
+    },
+    "soundSources": [
+      "Vocals"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Drum Bus Regen",
@@ -1302,7 +1621,17 @@
       "min": 0.4,
       "max": 1.1,
       "default": 0.78
-    }
+    },
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Bus",
+    "requiredInputs": []
   },
   {
     "name": "Synth Feedback Lead",
@@ -1344,7 +1673,17 @@
       "min": 0.3,
       "max": 1,
       "default": 0.7
-    }
+    },
+    "soundSources": [
+      "Synth"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Filter"
+    ],
+    "style": "Electronic",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Tight Metal Regen",
@@ -1387,7 +1726,18 @@
       "min": 0.2,
       "max": 0.85,
       "default": 0.48
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "Filter"
+    ],
+    "style": "Metal",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Stereo Guitar Wall",
@@ -1454,7 +1804,20 @@
       "min": 0.28,
       "max": 0.95,
       "default": 0.52
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "Dynamics",
+      "EQ",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Tape Echo Dirt",
@@ -1503,7 +1866,18 @@
       "min": 0,
       "max": 1,
       "default": 0.35
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Filter",
+      "Delay"
+    ],
+    "style": "Lo-Fi",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Dark Ambient Verb",
@@ -1545,7 +1919,18 @@
       "min": 0.45,
       "max": 0.9,
       "default": 0.65
-    }
+    },
+    "soundSources": [
+      "Synth"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Filter",
+      "Reverb"
+    ],
+    "style": "Ambient",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "MS Side Air",
@@ -1585,7 +1970,17 @@
       "min": 0.8,
       "max": 1.15,
       "default": 1
-    }
+    },
+    "soundSources": [
+      "Full Mix"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Stereo"
+    ],
+    "style": "",
+    "role": "Master",
+    "requiredInputs": []
   },
   {
     "name": "Studio Channel Strip",
@@ -1643,7 +2038,18 @@
       "min": -28,
       "max": -6,
       "default": -16
-    }
+    },
+    "soundSources": [
+      "Full Mix"
+    ],
+    "processingTypes": [
+      "Dynamics",
+      "EQ",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Master",
+    "requiredInputs": []
   },
   {
     "name": "Cinematic Space",
@@ -1708,7 +2114,19 @@
       "min": 0.4,
       "max": 1.6,
       "default": 1
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Delay",
+      "Reverb",
+      "Stereo"
+    ],
+    "style": "Cinematic",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Phaser Lab",
@@ -1757,7 +2175,16 @@
       "min": 2,
       "max": 12,
       "default": 6
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Modulation"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Analog Flanger",
@@ -1806,7 +2233,16 @@
       "min": 0,
       "max": 1,
       "default": 1
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Modulation"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Vocal Chain Pro",
@@ -1866,7 +2302,20 @@
       "min": 4000,
       "max": 12000,
       "default": 8000
-    }
+    },
+    "soundSources": [
+      "Vocals"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Dynamics",
+      "Restoration",
+      "EQ",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Bass Architect",
@@ -1924,7 +2373,20 @@
       "min": 0.5,
       "max": 1.3,
       "default": 0.95
-    }
+    },
+    "soundSources": [
+      "Bass Guitar",
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Dynamics",
+      "EQ",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Glitch Laboratory",
@@ -1984,7 +2446,18 @@
       "min": 0.85,
       "max": 1.4,
       "default": 1.12
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Filter",
+      "Delay"
+    ],
+    "style": "Lo-Fi",
+    "role": "Creative",
+    "requiredInputs": []
   },
   {
     "name": "Neon Clip",
@@ -2044,7 +2517,20 @@
       "min": 0.75,
       "max": 1.4,
       "default": 1.08
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "EQ",
+      "Filter",
+      "Delay"
+    ],
+    "style": "Metal",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Chrome Fold",
@@ -2093,7 +2579,18 @@
       "min": 0.55,
       "max": 1.25,
       "default": 0.92
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Data Mosher",
@@ -2139,7 +2636,18 @@
       "min": 0.55,
       "max": 1.3,
       "default": 0.95
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "Filter"
+    ],
+    "style": "Lo-Fi",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Kick Rumble",
@@ -2207,7 +2715,21 @@
       "min": 1.05,
       "max": 1.5,
       "default": 1.26
-    }
+    },
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "EQ",
+      "Filter",
+      "Modulation",
+      "Pitch",
+      "Delay"
+    ],
+    "style": "Techno",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Warehouse Rumble",
@@ -2271,7 +2793,20 @@
       "min": 0.9,
       "max": 1.3,
       "default": 1.05
-    }
+    },
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Filter",
+      "Modulation",
+      "Pitch",
+      "Delay"
+    ],
+    "style": "Techno",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Techno Kick Clipping Core",
@@ -2326,7 +2861,17 @@
       "min": 0,
       "max": 1,
       "default": 0.55
-    }
+    },
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "EQ",
+      "Filter"
+    ],
+    "style": "Techno",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Techno Serrated Front",
@@ -2380,7 +2925,19 @@
       "min": 0.22,
       "max": 0.8,
       "default": 0.43
-    }
+    },
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Transient",
+      "EQ",
+      "Filter"
+    ],
+    "style": "Industrial",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Techno Acid Fracture",
@@ -2436,7 +2993,20 @@
       "min": 2500,
       "max": 12000,
       "default": 7200
-    }
+    },
+    "soundSources": [
+      "Drums",
+      "Synth"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "EQ",
+      "Filter",
+      "Modulation"
+    ],
+    "style": "Techno",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Sub Zero Pummel",
@@ -2483,7 +3053,19 @@
       "min": 0.2,
       "max": 0.8,
       "default": 0.45
-    }
+    },
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Dynamics",
+      "EQ",
+      "Filter"
+    ],
+    "style": "Hard Dance",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Hardcore Clip",
@@ -2551,7 +3133,21 @@
       "min": 1.05,
       "max": 1.5,
       "default": 1.26
-    }
+    },
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "EQ",
+      "Filter",
+      "Modulation",
+      "Pitch",
+      "Delay"
+    ],
+    "style": "Hard Dance",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Gabber Drive",
@@ -2618,7 +3214,21 @@
       "min": 1,
       "max": 1.5,
       "default": 1.22
-    }
+    },
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "EQ",
+      "Filter",
+      "Modulation",
+      "Pitch",
+      "Delay"
+    ],
+    "style": "Hard Dance",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Acid Hash",
@@ -2662,7 +3272,17 @@
       "min": 0.95,
       "max": 1.5,
       "default": 1.24
-    }
+    },
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Filter"
+    ],
+    "style": "Techno",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Tekno Comb",
@@ -2713,7 +3333,18 @@
       "min": 0.95,
       "max": 1.5,
       "default": 1.22
-    }
+    },
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Filter",
+      "Delay"
+    ],
+    "style": "Metal",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Industrial Gate",
@@ -2764,7 +3395,18 @@
       "min": 1,
       "max": 1.5,
       "default": 1.26
-    }
+    },
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Dynamics",
+      "Filter"
+    ],
+    "style": "Industrial",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Hoover Dirt",
@@ -2818,7 +3460,18 @@
       "min": 0.85,
       "max": 1.4,
       "default": 1.16
-    }
+    },
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Filter",
+      "Delay"
+    ],
+    "style": "Techno",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Side Delay",
@@ -2875,7 +3528,18 @@
       "min": 0.75,
       "max": 1.15,
       "default": 1
-    }
+    },
+    "soundSources": [
+      "Drums",
+      "Vocals"
+    ],
+    "processingTypes": [
+      "Delay",
+      "Stereo"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Side Hall",
@@ -2938,7 +3602,18 @@
       "min": 0.75,
       "max": 1.15,
       "default": 1
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Reverb",
+      "Stereo"
+    ],
+    "style": "",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Vocal Send",
@@ -2998,7 +3673,18 @@
       "min": 3000,
       "max": 10000,
       "default": 6800
-    }
+    },
+    "soundSources": [
+      "Vocals"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Delay",
+      "Reverb"
+    ],
+    "style": "",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "NY Drum Bus",
@@ -3056,7 +3742,18 @@
       "min": 0.55,
       "max": 1.2,
       "default": 0.95
-    }
+    },
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Dynamics",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "MS Mix Desk",
@@ -3118,7 +3815,18 @@
       "min": 0.75,
       "max": 1.2,
       "default": 1
-    }
+    },
+    "soundSources": [
+      "Full Mix"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Filter",
+      "Stereo"
+    ],
+    "style": "",
+    "role": "Master",
+    "requiredInputs": []
   },
   {
     "name": "Mono Below",
@@ -3164,7 +3872,17 @@
       "min": 0.8,
       "max": 1.15,
       "default": 1
-    }
+    },
+    "soundSources": [
+      "Full Mix"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Stereo"
+    ],
+    "style": "",
+    "role": "Master",
+    "requiredInputs": []
   },
   {
     "name": "Slap Double",
@@ -3222,7 +3940,17 @@
       "min": 0.75,
       "max": 1.15,
       "default": 1
-    }
+    },
+    "soundSources": [
+      "Vocals"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Delay"
+    ],
+    "style": "",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "MS Guitar Spread",
@@ -3281,7 +4009,20 @@
       "min": 0.55,
       "max": 1.15,
       "default": 0.9
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "Filter",
+      "Delay",
+      "Stereo"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "MS Imager",
@@ -3327,7 +4068,17 @@
       "min": 0.75,
       "max": 1.2,
       "default": 1
-    }
+    },
+    "soundSources": [
+      "Full Mix"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Stereo"
+    ],
+    "style": "",
+    "role": "Master",
+    "requiredInputs": []
   },
   {
     "name": "Plate Send",
@@ -3385,7 +4136,18 @@
       "min": 2800,
       "max": 9500,
       "default": 6200
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Delay",
+      "Reverb"
+    ],
+    "style": "",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "MS Kit Punch",
@@ -3443,7 +4205,18 @@
       "min": 0.6,
       "max": 1.2,
       "default": 0.95
-    }
+    },
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Filter",
+      "Stereo"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "MS Presence",
@@ -3508,7 +4281,18 @@
       "min": 0.75,
       "max": 1.15,
       "default": 1
-    }
+    },
+    "soundSources": [
+      "Vocals"
+    ],
+    "processingTypes": [
+      "EQ",
+      "Filter",
+      "Stereo"
+    ],
+    "style": "",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Width Delay",
@@ -3566,7 +4350,17 @@
       "min": 0.75,
       "max": 1.15,
       "default": 1
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Delay"
+    ],
+    "style": "",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Haas Width",
@@ -3609,7 +4403,17 @@
       "min": 0.75,
       "max": 1.15,
       "default": 1
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Delay"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Speech Band",
@@ -3662,7 +4466,17 @@
       "min": 0.75,
       "max": 1.15,
       "default": 1
-    }
+    },
+    "soundSources": [
+      "Speech",
+      "Full Mix"
+    ],
+    "processingTypes": [
+      "Filter"
+    ],
+    "style": "",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Trailer Impact",
@@ -3724,7 +4538,19 @@
       "min": 2500,
       "max": 8000,
       "default": 4800
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Filter",
+      "Delay",
+      "Reverb"
+    ],
+    "style": "Cinematic",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Score Hall",
@@ -3789,7 +4615,19 @@
       "min": 0.65,
       "max": 1.5,
       "default": 1.05
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Delay",
+      "Reverb",
+      "Stereo"
+    ],
+    "style": "Cinematic",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Dialogue Seat",
@@ -3852,7 +4690,18 @@
       "min": 6000,
       "max": 12000,
       "default": 9500
-    }
+    },
+    "soundSources": [
+      "Speech"
+    ],
+    "processingTypes": [
+      "Dynamics",
+      "Filter",
+      "Reverb"
+    ],
+    "style": "Cinematic",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Far Plane",
@@ -3912,7 +4761,18 @@
       "min": 0.6,
       "max": 1.1,
       "default": 0.92
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Delay",
+      "Reverb"
+    ],
+    "style": "Cinematic",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Boom Tail",
@@ -3973,7 +4833,18 @@
       "min": 1800,
       "max": 6500,
       "default": 3800
-    }
+    },
+    "soundSources": [
+      "FX / Field Recording"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Filter",
+      "Reverb"
+    ],
+    "style": "Ambient",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Wide Canvas",
@@ -4036,7 +4907,18 @@
       "min": 2200,
       "max": 8500,
       "default": 4200
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Reverb",
+      "Stereo"
+    ],
+    "style": "Cinematic",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Tension Bed",
@@ -4095,7 +4977,19 @@
       "min": 2500,
       "max": 8000,
       "default": 4800
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Filter",
+      "Modulation",
+      "Reverb"
+    ],
+    "style": "Cinematic",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Hot British Lead",
@@ -4147,7 +5041,20 @@
       "min": 0.28,
       "max": 0.95,
       "default": 0.52
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "Dynamics",
+      "EQ",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "American Crunch",
@@ -4193,7 +5100,19 @@
       "min": 0.22,
       "max": 0.85,
       "default": 0.4
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "EQ",
+      "Filter"
+    ],
+    "style": "Rock",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "British Mid Grind",
@@ -4232,7 +5151,19 @@
       "min": 0.4,
       "max": 1.2,
       "default": 0.78
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "EQ",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Foldback Bass",
@@ -4278,7 +5209,19 @@
       "min": 0.45,
       "max": 1.2,
       "default": 0.88
-    }
+    },
+    "soundSources": [
+      "Bass Guitar",
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "EQ",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Vocoder Bank",
@@ -4334,7 +5277,17 @@
       "min": 0.7,
       "max": 1.35,
       "default": 1.08
-    }
+    },
+    "soundSources": [
+      "Vocals",
+      "Synth"
+    ],
+    "processingTypes": [
+      "Filter"
+    ],
+    "style": "Electronic",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Vocoder Lite",
@@ -4381,7 +5334,16 @@
       "min": 0.55,
       "max": 1.2,
       "default": 1.12
-    }
+    },
+    "soundSources": [
+      "Vocals"
+    ],
+    "processingTypes": [
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Chime Combo",
@@ -4431,7 +5393,19 @@
       "min": 0.4,
       "max": 1.15,
       "default": 0.82
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "EQ",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Tight Lead Stack",
@@ -4484,7 +5458,20 @@
       "min": 0.2,
       "max": 0.8,
       "default": 0.38
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "Dynamics",
+      "EQ",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Deluxe Sparkle",
@@ -4522,7 +5509,19 @@
       "min": 0.55,
       "max": 1.35,
       "default": 1.05
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "EQ",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Tweed Bass Grind",
@@ -4567,7 +5566,19 @@
       "min": 0.5,
       "max": 1.25,
       "default": 0.92
-    }
+    },
+    "soundSources": [
+      "Bass Guitar",
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "EQ",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Flip-Top Bass",
@@ -4611,7 +5622,19 @@
       "min": 0.6,
       "max": 1.3,
       "default": 1.02
-    }
+    },
+    "soundSources": [
+      "Bass Guitar",
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "EQ",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Envelope Bass Filter",
@@ -4655,7 +5678,19 @@
       "min": 0.55,
       "max": 1.25,
       "default": 0.98
-    }
+    },
+    "soundSources": [
+      "Bass Guitar",
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "EQ",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Multiband Glue",
@@ -4714,7 +5749,17 @@
       "min": 0.35,
       "max": 1,
       "default": 0.72
-    }
+    },
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "Dynamics",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Envelope Shaper",
@@ -4765,7 +5810,17 @@
       "min": 0.6,
       "max": 1.25,
       "default": 1.18
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Modulation"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "FET Peak Comp",
@@ -4813,7 +5868,18 @@
       "min": 0.45,
       "max": 1.35,
       "default": 0.92
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Dynamics",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "All Buttons Comp",
@@ -4852,7 +5918,19 @@
       "min": 0.35,
       "max": 1.15,
       "default": 0.95
-    }
+    },
+    "soundSources": [
+      "Drums",
+      "Vocals"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Dynamics",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Optical Leveler Comp",
@@ -4886,7 +5964,18 @@
       "min": 2,
       "max": 12,
       "default": 3.2
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Dynamics",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "VCA Bus Glue",
@@ -4935,7 +6024,17 @@
       "min": 0.85,
       "max": 1.8,
       "default": 1.15
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Dynamics",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Bus",
+    "requiredInputs": []
   },
   {
     "name": "Vari-Mu Bus",
@@ -4983,7 +6082,19 @@
       "min": 0.85,
       "max": 1.6,
       "default": 1.12
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Dynamics",
+      "Filter",
+      "Stereo"
+    ],
+    "style": "",
+    "role": "Bus",
+    "requiredInputs": []
   },
   {
     "name": "VCA Punch Comp",
@@ -5015,7 +6126,16 @@
       "min": 0.7,
       "max": 1.6,
       "default": 1.1
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Dynamics"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Tube Opto Vocal",
@@ -5056,7 +6176,18 @@
       "min": 0.8,
       "max": 1.7,
       "default": 1.2
-    }
+    },
+    "soundSources": [
+      "Vocals"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Dynamics",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Diode Bridge Bus",
@@ -5100,7 +6231,18 @@
       "min": 0.85,
       "max": 1.55,
       "default": 1.12
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Dynamics",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Bus",
+    "requiredInputs": []
   },
   {
     "name": "Punch Comp",
@@ -5142,7 +6284,18 @@
       "min": 0.5,
       "max": 1.25,
       "default": 0.9
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Dynamics",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Tape Echo Heads",
@@ -5199,7 +6352,18 @@
       "min": 0,
       "max": 0.32,
       "default": 0.12
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Delay",
+      "Reverb"
+    ],
+    "style": "",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Analog Bucket Echo",
@@ -5248,7 +6412,19 @@
       "min": 0,
       "max": 1,
       "default": 0.4
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Filter",
+      "Modulation",
+      "Delay"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Tape Slap Echo",
@@ -5298,7 +6474,18 @@
       "min": 1600,
       "max": 4200,
       "default": 2800
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Filter",
+      "Delay"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Digital Grid Delay",
@@ -5345,7 +6532,17 @@
       "min": 7000,
       "max": 14000,
       "default": 11000
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Modulation",
+      "Delay"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Foil Plate",
@@ -5397,7 +6594,19 @@
       "min": 0.42,
       "max": 0.58,
       "default": 0.5
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "EQ",
+      "Filter",
+      "Delay",
+      "Reverb"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Large Hall",
@@ -5447,7 +6656,18 @@
       "min": 0.12,
       "max": 0.5,
       "default": 0.3
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Delay",
+      "Reverb"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Nonlinear Snap",
@@ -5496,7 +6716,19 @@
       "min": 0.18,
       "max": 0.62,
       "default": 0.4
-    }
+    },
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "EQ",
+      "Filter",
+      "Delay",
+      "Reverb"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Spring Tank",
@@ -5552,7 +6784,20 @@
       "min": 0.9,
       "max": 2.2,
       "default": 1.25
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "EQ",
+      "Filter",
+      "Delay",
+      "Reverb"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "FET Peak Catch",
@@ -5590,7 +6835,18 @@
       "min": 0.04,
       "max": 0.28,
       "default": 0.09
-    }
+    },
+    "soundSources": [
+      "Vocals"
+    ],
+    "processingTypes": [
+      "Dynamics",
+      "EQ",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Opto Leveler",
@@ -5625,7 +6881,18 @@
       "min": 0,
       "max": 5,
       "default": 2.2
-    }
+    },
+    "soundSources": [
+      "Vocals"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Dynamics",
+      "EQ"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Serial Vocal Stack",
@@ -5663,7 +6930,18 @@
       "min": 0,
       "max": 4,
       "default": 1.6
-    }
+    },
+    "soundSources": [
+      "Vocals"
+    ],
+    "processingTypes": [
+      "Dynamics",
+      "EQ",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Rap Punch Chain",
@@ -5700,7 +6978,19 @@
       "min": 0,
       "max": 5,
       "default": 2
-    }
+    },
+    "soundSources": [
+      "Vocals"
+    ],
+    "processingTypes": [
+      "Dynamics",
+      "Restoration",
+      "EQ",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "De-Ess Shelf",
@@ -5733,7 +7023,17 @@
       "min": 0,
       "max": 3,
       "default": 0.8
-    }
+    },
+    "soundSources": [
+      "Vocals"
+    ],
+    "processingTypes": [
+      "Restoration",
+      "EQ"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Slap And Booth",
@@ -5773,7 +7073,17 @@
       "min": 0.15,
       "max": 0.7,
       "default": 0.32
-    }
+    },
+    "soundSources": [
+      "Vocals"
+    ],
+    "processingTypes": [
+      "Delay",
+      "Reverb"
+    ],
+    "style": "",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Dotted Eighth Throw",
@@ -5810,7 +7120,17 @@
       "min": 0.12,
       "max": 0.55,
       "default": 0.28
-    }
+    },
+    "soundSources": [
+      "Vocals"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Delay"
+    ],
+    "style": "",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Quarter Note Halo",
@@ -5848,7 +7168,17 @@
       "min": 0.15,
       "max": 0.6,
       "default": 0.3
-    }
+    },
+    "soundSources": [
+      "Vocals"
+    ],
+    "processingTypes": [
+      "Delay",
+      "Reverb"
+    ],
+    "style": "",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Dual Throw Lattice",
@@ -5883,7 +7213,16 @@
       "min": 0.15,
       "max": 0.55,
       "default": 0.3
-    }
+    },
+    "soundSources": [
+      "Vocals"
+    ],
+    "processingTypes": [
+      "Delay"
+    ],
+    "style": "",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Radio Band Vocal",
@@ -5927,7 +7266,17 @@
       "min": 1,
       "max": 4,
       "default": 1.4
-    }
+    },
+    "soundSources": [
+      "Vocals",
+      "Speech"
+    ],
+    "processingTypes": [
+      "Filter"
+    ],
+    "style": "Lo-Fi",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Telephone Cup",
@@ -5968,7 +7317,18 @@
       "min": 0.25,
       "max": 1.2,
       "default": 0.4
-    }
+    },
+    "soundSources": [
+      "Vocals",
+      "Speech"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Haas Vocal Double",
@@ -6008,7 +7368,18 @@
       "min": 4000,
       "max": 10000,
       "default": 7500
-    }
+    },
+    "soundSources": [
+      "Vocals",
+      "Bass Guitar"
+    ],
+    "processingTypes": [
+      "EQ",
+      "Stereo"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Air Only Vocal",
@@ -6045,7 +7416,18 @@
       "min": 40,
       "max": 140,
       "default": 70
-    }
+    },
+    "soundSources": [
+      "Vocals"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "EQ",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Presence Pocket",
@@ -6079,7 +7461,17 @@
       "min": 200,
       "max": 500,
       "default": 320
-    }
+    },
+    "soundSources": [
+      "Vocals"
+    ],
+    "processingTypes": [
+      "Dynamics",
+      "EQ"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Breath Gate",
@@ -6115,7 +7507,18 @@
       "min": -70,
       "max": -20,
       "default": -48
-    }
+    },
+    "soundSources": [
+      "Vocals"
+    ],
+    "processingTypes": [
+      "Dynamics",
+      "EQ",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Choir Widen Hall",
@@ -6155,7 +7558,18 @@
       "min": 0.12,
       "max": 0.5,
       "default": 0.24
-    }
+    },
+    "soundSources": [
+      "Vocals"
+    ],
+    "processingTypes": [
+      "Reverb",
+      "Stereo",
+      "Spatial"
+    ],
+    "style": "",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Shout Clip Vocal",
@@ -6192,7 +7606,16 @@
       "min": 2500,
       "max": 7000,
       "default": 4800
-    }
+    },
+    "soundSources": [
+      "Vocals"
+    ],
+    "processingTypes": [
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Narration Seat",
@@ -6226,7 +7649,17 @@
       "min": -3,
       "max": -0.2,
       "default": -0.8
-    }
+    },
+    "soundSources": [
+      "Vocals"
+    ],
+    "processingTypes": [
+      "Dynamics",
+      "EQ"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Mid Word Side Bloom",
@@ -6265,7 +7698,17 @@
       "min": 0.4,
       "max": 1,
       "default": 0.7
-    }
+    },
+    "soundSources": [
+      "Vocals"
+    ],
+    "processingTypes": [
+      "Reverb",
+      "Stereo"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Vocal Plate Throw",
@@ -6306,7 +7749,17 @@
       "min": 0.12,
       "max": 0.5,
       "default": 0.26
-    }
+    },
+    "soundSources": [
+      "Vocals"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Reverb"
+    ],
+    "style": "",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Side Air Only",
@@ -6344,7 +7797,17 @@
       "min": 0.7,
       "max": 1.3,
       "default": 1
-    }
+    },
+    "soundSources": [
+      "Vocals"
+    ],
+    "processingTypes": [
+      "EQ",
+      "Stereo"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Parallel Vocal Smash",
@@ -6383,7 +7846,18 @@
       "min": 0.12,
       "max": 0.55,
       "default": 0.28
-    }
+    },
+    "soundSources": [
+      "Vocals"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Dynamics",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Track Then Slap",
@@ -6424,7 +7898,19 @@
       "min": 0.08,
       "max": 0.4,
       "default": 0.18
-    }
+    },
+    "soundSources": [
+      "Vocals"
+    ],
+    "processingTypes": [
+      "Dynamics",
+      "EQ",
+      "Filter",
+      "Delay"
+    ],
+    "style": "",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Talk Formant",
@@ -6460,7 +7946,17 @@
       "min": 0.2,
       "max": 1,
       "default": 0.55
-    }
+    },
+    "soundSources": [
+      "Vocals"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Modulation"
+    ],
+    "style": "",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Widen Then Slap",
@@ -6495,7 +7991,17 @@
       "min": 0.15,
       "max": 0.55,
       "default": 0.22
-    }
+    },
+    "soundSources": [
+      "Vocals"
+    ],
+    "processingTypes": [
+      "Delay",
+      "Stereo"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Air Band Polish",
@@ -6531,7 +8037,18 @@
       "min": 6000,
       "max": 11000,
       "default": 8000
-    }
+    },
+    "soundSources": [
+      "Vocals"
+    ],
+    "processingTypes": [
+      "Dynamics",
+      "EQ",
+      "Multi-Band"
+    ],
+    "style": "",
+    "role": "Parallel",
+    "requiredInputs": []
   },
   {
     "name": "Pop Lead Desk",
@@ -6570,7 +8087,19 @@
       "min": 0.08,
       "max": 0.35,
       "default": 0.16
-    }
+    },
+    "soundSources": [
+      "Vocals"
+    ],
+    "processingTypes": [
+      "Dynamics",
+      "Restoration",
+      "Filter",
+      "Delay"
+    ],
+    "style": "",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Intimate Whisper",
@@ -6608,7 +8137,19 @@
       "min": 0,
       "max": 4,
       "default": 1.8
-    }
+    },
+    "soundSources": [
+      "Vocals"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Dynamics",
+      "EQ",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Green Mid Into Amp",
@@ -6652,7 +8193,19 @@
       "min": 1200,
       "max": 5500,
       "default": 2800
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "EQ",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Tall Stack Fuzz",
@@ -6695,7 +8248,18 @@
       "min": 1800,
       "max": 5000,
       "default": 3200
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "EQ",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Scooped Rhythm Wall",
@@ -6737,7 +8301,20 @@
       "min": -8,
       "max": -2,
       "default": -4.5
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "Dynamics",
+      "EQ",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Tight Gate Lead",
@@ -6780,7 +8357,20 @@
       "min": -50,
       "max": -28,
       "default": -38
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "Dynamics",
+      "EQ",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Edge Of Breakup",
@@ -6817,7 +8407,19 @@
       "min": 4500,
       "max": 9000,
       "default": 6800
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "EQ",
+      "Filter"
+    ],
+    "style": "Rock",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Vibe Rotary Guitar",
@@ -6852,7 +8454,18 @@
       "min": 0.15,
       "max": 0.7,
       "default": 0.35
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Filter",
+      "Modulation"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Country Slap Guitar",
@@ -6894,7 +8507,19 @@
       "min": 0.08,
       "max": 0.35,
       "default": 0.16
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "Delay",
+      "Reverb"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Surf Spring Crash",
@@ -6932,7 +8557,19 @@
       "min": 0.2,
       "max": 0.65,
       "default": 0.38
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "Filter",
+      "Reverb"
+    ],
+    "style": "",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Jazz Box Warm",
@@ -6968,7 +8605,19 @@
       "min": 0,
       "max": 4,
       "default": 1.8
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "EQ",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Metal Scoop Cab",
@@ -7013,7 +8662,20 @@
       "min": 0.3,
       "max": 0.7,
       "default": 0.5
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "Dynamics",
+      "EQ",
+      "Filter"
+    ],
+    "style": "Metal",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "British Crunch Stack",
@@ -7056,7 +8718,19 @@
       "min": 0.25,
       "max": 0.65,
       "default": 0.42
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "EQ",
+      "Filter"
+    ],
+    "style": "Rock",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "American Clean Cab",
@@ -7098,7 +8772,19 @@
       "min": 0.2,
       "max": 0.6,
       "default": 0.38
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "EQ",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Lead Presence Stack",
@@ -7141,7 +8827,20 @@
       "min": 0.02,
       "max": 0.12,
       "default": 0.05
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "Dynamics",
+      "EQ",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Rhythm Mid Scoop",
@@ -7182,7 +8881,20 @@
       "min": 1,
       "max": 5,
       "default": 2.6
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "Dynamics",
+      "EQ",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Single Coil Bright",
@@ -7223,7 +8935,19 @@
       "min": 0.4,
       "max": 1.8,
       "default": 0.8
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "EQ",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Humbucker Thick",
@@ -7265,7 +8989,19 @@
       "min": 3200,
       "max": 6500,
       "default": 4800
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "EQ",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Acoustic Sim Box",
@@ -7303,7 +9039,20 @@
       "min": 0.08,
       "max": 0.3,
       "default": 0.16
-    }
+    },
+    "soundSources": [
+      "Guitar",
+      "Acoustic Instruments"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "EQ",
+      "Filter",
+      "Reverb"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Twelve String Chorus",
@@ -7340,7 +9089,19 @@
       "min": 1,
       "max": 5,
       "default": 2.4
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "EQ",
+      "Modulation",
+      "Delay"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Slide Dirt Bed",
@@ -7378,7 +9139,19 @@
       "min": 0.1,
       "max": 0.4,
       "default": 0.2
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "Filter",
+      "Reverb"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Ambient Swell Guitar",
@@ -7414,7 +9187,19 @@
       "min": 0.25,
       "max": 0.75,
       "default": 0.48
-    }
+    },
+    "soundSources": [
+      "Guitar",
+      "Synth"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Modulation",
+      "Reverb"
+    ],
+    "style": "Ambient",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Volume Bloom Lead",
@@ -7458,7 +9243,19 @@
       "min": 0.15,
       "max": 0.5,
       "default": 0.28
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "Modulation",
+      "Reverb"
+    ],
+    "style": "Cinematic",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Pick Attack Bass",
@@ -7493,7 +9290,18 @@
       "min": 40,
       "max": 100,
       "default": 50
-    }
+    },
+    "soundSources": [
+      "Bass Guitar"
+    ],
+    "processingTypes": [
+      "EQ",
+      "Filter",
+      "Modulation"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Fretless Warm Bass",
@@ -7529,7 +9337,20 @@
       "min": 0.4,
       "max": 1.8,
       "default": 0.9
-    }
+    },
+    "soundSources": [
+      "Bass Guitar",
+      "Synth Bass",
+      "Synth"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Dynamics",
+      "Filter"
+    ],
+    "style": "Electronic",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Synth Sub Round",
@@ -7566,7 +9387,19 @@
       "min": 0.4,
       "max": 0.95,
       "default": 0.72
-    }
+    },
+    "soundSources": [
+      "Bass Guitar",
+      "Synth Bass",
+      "Synth"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Filter"
+    ],
+    "style": "Electronic",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Slap Bass Pop",
@@ -7602,7 +9435,18 @@
       "min": 60,
       "max": 140,
       "default": 90
-    }
+    },
+    "soundSources": [
+      "Bass Guitar"
+    ],
+    "processingTypes": [
+      "Dynamics",
+      "EQ",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Bass Amp Cab Only",
@@ -7641,7 +9485,18 @@
       "min": 2500,
       "max": 6000,
       "default": 4000
-    }
+    },
+    "soundSources": [
+      "Bass Guitar",
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Sidechain Duck Bass",
@@ -7676,7 +9531,20 @@
       "min": 25,
       "max": 50,
       "default": 32
-    }
+    },
+    "soundSources": [
+      "Bass Guitar",
+      "Drums"
+    ],
+    "processingTypes": [
+      "Dynamics",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": [
+      "sidechain"
+    ]
   },
   {
     "name": "Octave Dirt Bass",
@@ -7712,7 +9580,18 @@
       "min": 30,
       "max": 70,
       "default": 42
-    }
+    },
+    "soundSources": [
+      "Bass Guitar"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Filter",
+      "Pitch"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Mute Click Bass",
@@ -7747,7 +9626,19 @@
       "min": 50,
       "max": 120,
       "default": 75
-    }
+    },
+    "soundSources": [
+      "Bass Guitar",
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Dynamics",
+      "EQ",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Motown Bass Round",
@@ -7787,7 +9678,19 @@
       "min": 0.15,
       "max": 0.5,
       "default": 0.28
-    }
+    },
+    "soundSources": [
+      "Bass Guitar",
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Dynamics",
+      "EQ"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Foldback Bass Dark",
@@ -7830,7 +9733,20 @@
       "min": 0.3,
       "max": 0.7,
       "default": 0.48
-    }
+    },
+    "soundSources": [
+      "Bass Guitar",
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "EQ",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Sub Only Octave",
@@ -7866,7 +9782,17 @@
       "min": 30,
       "max": 80,
       "default": 45
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Pitch"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Octave Into Dirt",
@@ -7902,7 +9828,19 @@
       "min": 900,
       "max": 4000,
       "default": 2200
-    }
+    },
+    "soundSources": [
+      "Bass Guitar",
+      "Synth"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Filter",
+      "Pitch"
+    ],
+    "style": "Electronic",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Vocoder Formant Shift",
@@ -7935,7 +9873,17 @@
       "min": 0.8,
       "max": 3.5,
       "default": 1.6
-    }
+    },
+    "soundSources": [
+      "Synth",
+      "Vocals"
+    ],
+    "processingTypes": [
+      "Utility"
+    ],
+    "style": "Electronic",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Vocoder Talk Box",
@@ -7969,7 +9917,16 @@
       "min": 2000,
       "max": 7000,
       "default": 4500
-    }
+    },
+    "soundSources": [
+      "Vocals"
+    ],
+    "processingTypes": [
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Bass Synth Stack",
@@ -8006,7 +9963,19 @@
       "min": 400,
       "max": 2200,
       "default": 1100
-    }
+    },
+    "soundSources": [
+      "Bass Guitar",
+      "Synth Bass",
+      "Synth"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Pitch"
+    ],
+    "style": "Drum & Bass",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Dub Feedback Cave",
@@ -8043,7 +10012,18 @@
       "min": 0.15,
       "max": 0.5,
       "default": 0.3
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Delay",
+      "Reverb"
+    ],
+    "style": "",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Vocal Plate Short",
@@ -8081,7 +10061,17 @@
       "min": 0.1,
       "max": 0.45,
       "default": 0.22
-    }
+    },
+    "soundSources": [
+      "Vocals"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Reverb"
+    ],
+    "style": "",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "De-Ess Wide",
@@ -8111,7 +10101,16 @@
       "min": 0.2,
       "max": 1,
       "default": 0.6
-    }
+    },
+    "soundSources": [
+      "Speech"
+    ],
+    "processingTypes": [
+      "Restoration"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "FET Then Opto",
@@ -8142,7 +10141,16 @@
       "min": 0,
       "max": 5,
       "default": 1.5
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Dynamics"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Formant Vowel",
@@ -8177,7 +10185,17 @@
       "min": 0.3,
       "max": 1,
       "default": 0.65
-    }
+    },
+    "soundSources": [
+      "Synth",
+      "Vocals"
+    ],
+    "processingTypes": [
+      "Filter"
+    ],
+    "style": "Electronic",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Loudness Clip Master",
@@ -8214,7 +10232,17 @@
       "min": 8000,
       "max": 16000,
       "default": 11000
-    }
+    },
+    "soundSources": [
+      "Full Mix"
+    ],
+    "processingTypes": [
+      "Dynamics",
+      "EQ"
+    ],
+    "style": "",
+    "role": "Master",
+    "requiredInputs": []
   },
   {
     "name": "British Plexi Bark",
@@ -8255,7 +10283,19 @@
       "min": 0.25,
       "max": 0.6,
       "default": 0.4
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "EQ",
+      "Filter"
+    ],
+    "style": "Rock",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Tweed Edge",
@@ -8295,7 +10335,19 @@
       "min": 0.2,
       "max": 0.55,
       "default": 0.35
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "EQ",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Filter Dist Amp",
@@ -8337,7 +10389,18 @@
       "min": 0.8,
       "max": 3,
       "default": 1.6
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Fuzz Into Amp",
@@ -8380,7 +10443,18 @@
       "min": 0.3,
       "max": 0.7,
       "default": 0.45
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "EQ",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Crunch Rhythm Pedal",
@@ -8418,7 +10492,19 @@
       "min": 2500,
       "max": 6500,
       "default": 4200
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "EQ",
+      "Filter"
+    ],
+    "style": "Rock",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Lead Satin Clip",
@@ -8456,7 +10542,18 @@
       "min": 0.4,
       "max": 1.1,
       "default": 0.75
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "EQ",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Vocal Tube Desk",
@@ -8493,7 +10590,20 @@
       "min": 50,
       "max": 140,
       "default": 80
-    }
+    },
+    "soundSources": [
+      "Guitar",
+      "Vocals"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "EQ",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Lo-Fi Amp Sim",
@@ -8531,7 +10641,17 @@
       "min": 2500,
       "max": 5000,
       "default": 3500
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Filter"
+    ],
+    "style": "Lo-Fi",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Gabber Mid Bark",
@@ -8574,7 +10694,18 @@
       "min": 2,
       "max": 8,
       "default": 4.5
-    }
+    },
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "EQ",
+      "Filter"
+    ],
+    "style": "Hard Dance",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Acid Soft Slide",
@@ -8609,7 +10740,18 @@
       "min": 200,
       "max": 2000,
       "default": 800
-    }
+    },
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Filter",
+      "Modulation"
+    ],
+    "style": "Techno",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Industrial Chop",
@@ -8647,7 +10789,17 @@
       "min": 0.01,
       "max": 0.08,
       "default": 0.03
-    }
+    },
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "Dynamics",
+      "Filter"
+    ],
+    "style": "Industrial",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Hoover Fold Club",
@@ -8682,7 +10834,17 @@
       "min": 0.2,
       "max": 0.6,
       "default": 0.32
-    }
+    },
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "Modulation",
+      "Delay"
+    ],
+    "style": "Techno",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Rave Stab Desk",
@@ -8717,7 +10879,17 @@
       "min": 0.05,
       "max": 0.25,
       "default": 0.12
-    }
+    },
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Modulation"
+    ],
+    "style": "Techno",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Club Mono Kick",
@@ -8758,7 +10930,18 @@
       "min": 0,
       "max": 3,
       "default": 1.2
-    }
+    },
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "EQ",
+      "Stereo",
+      "Multi-Band"
+    ],
+    "style": "Techno",
+    "role": "Parallel",
+    "requiredInputs": []
   },
   {
     "name": "Supersaw Glue",
@@ -8799,7 +10982,17 @@
       "min": 0.8,
       "max": 2.2,
       "default": 1.2
-    }
+    },
+    "soundSources": [
+      "Bass Guitar"
+    ],
+    "processingTypes": [
+      "Dynamics",
+      "Stereo"
+    ],
+    "style": "Electronic",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Drop Impact FX",
@@ -8839,7 +11032,17 @@
       "min": 0,
       "max": 5,
       "default": 2
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "EQ",
+      "Reverb"
+    ],
+    "style": "Electronic",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Sidechain Pad EDM",
@@ -8872,7 +11075,18 @@
       "min": -24,
       "max": -8,
       "default": -14
-    }
+    },
+    "soundSources": [
+      "Synth"
+    ],
+    "processingTypes": [
+      "Dynamics"
+    ],
+    "style": "Electronic",
+    "role": "Insert",
+    "requiredInputs": [
+      "sidechain"
+    ]
   },
   {
     "name": "Reese Mid Growl",
@@ -8910,7 +11124,20 @@
       "min": 120,
       "max": 280,
       "default": 180
-    }
+    },
+    "soundSources": [
+      "Bass Guitar",
+      "Synth Bass"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Modulation",
+      "Delay",
+      "Multi-Band"
+    ],
+    "style": "Drum & Bass",
+    "role": "Parallel",
+    "requiredInputs": []
   },
   {
     "name": "Festival Group Vocal",
@@ -8950,7 +11177,19 @@
       "min": 70,
       "max": 130,
       "default": 95
-    }
+    },
+    "soundSources": [
+      "Bass Guitar",
+      "Vocals"
+    ],
+    "processingTypes": [
+      "Dynamics",
+      "Delay",
+      "Stereo"
+    ],
+    "style": "Electronic",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Festival Lead Clip",
@@ -8990,7 +11229,17 @@
       "min": 0.2,
       "max": 0.8,
       "default": 0.45
-    }
+    },
+    "soundSources": [
+      "Bass Guitar"
+    ],
+    "processingTypes": [
+      "EQ",
+      "Stereo"
+    ],
+    "style": "Electronic",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Festival Drum Bus",
@@ -9032,7 +11281,17 @@
       "min": 30,
       "max": 80,
       "default": 45
-    }
+    },
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "Dynamics",
+      "Filter"
+    ],
+    "style": "Electronic",
+    "role": "Bus",
+    "requiredInputs": []
   },
   {
     "name": "Tape Hiss Bed",
@@ -9070,7 +11329,19 @@
       "min": 0.6,
       "max": 2,
       "default": 1.1
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Filter",
+      "Modulation",
+      "Delay"
+    ],
+    "style": "Lo-Fi",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "VHS Tracking",
@@ -9104,7 +11375,17 @@
       "min": 2000,
       "max": 5500,
       "default": 3400
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Delay",
+      "Glitch"
+    ],
+    "style": "Lo-Fi",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Broken Speaker",
@@ -9138,7 +11419,16 @@
       "min": 1800,
       "max": 3500,
       "default": 2500
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Filter"
+    ],
+    "style": "Lo-Fi",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Dusty Vinyl Bed",
@@ -9173,7 +11463,18 @@
       "min": 0.6,
       "max": 1.8,
       "default": 1.05
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "EQ",
+      "Filter"
+    ],
+    "style": "Lo-Fi",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Pocket Recorder",
@@ -9209,7 +11510,16 @@
       "min": 80,
       "max": 200,
       "default": 120
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Filter"
+    ],
+    "style": "Lo-Fi",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Telephone Then Room",
@@ -9246,7 +11556,17 @@
       "min": 0.1,
       "max": 0.35,
       "default": 0.2
-    }
+    },
+    "soundSources": [
+      "Speech"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Reverb"
+    ],
+    "style": "Lo-Fi",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Pad Cloud Hall",
@@ -9285,7 +11605,18 @@
       "min": 0.2,
       "max": 0.6,
       "default": 0.36
-    }
+    },
+    "soundSources": [
+      "Synth"
+    ],
+    "processingTypes": [
+      "Modulation",
+      "Delay",
+      "Reverb"
+    ],
+    "style": "Ambient",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Drone Low Bed",
@@ -9323,7 +11654,18 @@
       "min": 0.4,
       "max": 0.85,
       "default": 0.62
-    }
+    },
+    "soundSources": [
+      "FX / Field Recording"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Pitch",
+      "Reverb"
+    ],
+    "style": "Ambient",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Distant Radio Amb",
@@ -9357,7 +11699,17 @@
       "min": 0.2,
       "max": 0.6,
       "default": 0.35
-    }
+    },
+    "soundSources": [
+      "Speech"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Reverb"
+    ],
+    "style": "Ambient",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Impact Body Boom",
@@ -9398,7 +11750,17 @@
       "min": 0.1,
       "max": 0.35,
       "default": 0.2
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "EQ",
+      "Reverb"
+    ],
+    "style": "Cinematic",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Tension Pulse",
@@ -9434,7 +11796,17 @@
       "min": 0.2,
       "max": 0.7,
       "default": 0.4
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Modulation",
+      "Reverb"
+    ],
+    "style": "Cinematic",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Score String Hall",
@@ -9473,7 +11845,17 @@
       "min": 0.18,
       "max": 0.5,
       "default": 0.3
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Reverb"
+    ],
+    "style": "Cinematic",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Trailer Whoosh",
@@ -9512,7 +11894,17 @@
       "min": 0.6,
       "max": 2.2,
       "default": 1.1
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Reverb"
+    ],
+    "style": "Cinematic",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Horror Low Drone",
@@ -9550,7 +11942,18 @@
       "min": 0.4,
       "max": 0.85,
       "default": 0.62
-    }
+    },
+    "soundSources": [
+      "FX / Field Recording"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Pitch",
+      "Reverb"
+    ],
+    "style": "Ambient",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Dialogue Air Seat",
@@ -9589,7 +11992,18 @@
       "min": 0.08,
       "max": 0.25,
       "default": 0.14
-    }
+    },
+    "soundSources": [
+      "Speech"
+    ],
+    "processingTypes": [
+      "EQ",
+      "Filter",
+      "Reverb"
+    ],
+    "style": "Cinematic",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Glitch Hold Gate",
@@ -9621,7 +12035,17 @@
       "min": 0.3,
       "max": 1,
       "default": 0.8
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Dynamics",
+      "Modulation"
+    ],
+    "style": "",
+    "role": "Creative",
+    "requiredInputs": []
   },
   {
     "name": "Alien Formant",
@@ -9658,7 +12082,17 @@
       "min": 0.25,
       "max": 0.9,
       "default": 0.55
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Modulation"
+    ],
+    "style": "",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Ring Then Verb",
@@ -9696,7 +12130,18 @@
       "min": 0.2,
       "max": 0.7,
       "default": 0.35
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Modulation",
+      "Reverb"
+    ],
+    "style": "",
+    "role": "Creative",
+    "requiredInputs": []
   },
   {
     "name": "Cascade Taps",
@@ -9727,7 +12172,16 @@
       "min": 2500,
       "max": 7000,
       "default": 4200
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Delay"
+    ],
+    "style": "",
+    "role": "Creative",
+    "requiredInputs": []
   },
   {
     "name": "Impact Designer",
@@ -9767,7 +12221,17 @@
       "min": 0.08,
       "max": 0.32,
       "default": 0.16
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "EQ",
+      "Reverb"
+    ],
+    "style": "",
+    "role": "Creative",
+    "requiredInputs": []
   },
   {
     "name": "Texture Crush",
@@ -9804,7 +12268,16 @@
       "min": 200,
       "max": 1200,
       "default": 500
-    }
+    },
+    "soundSources": [
+      "FX / Field Recording"
+    ],
+    "processingTypes": [
+      "Filter"
+    ],
+    "style": "Lo-Fi",
+    "role": "Creative",
+    "requiredInputs": []
   },
   {
     "name": "Sub Drop FX",
@@ -9841,7 +12314,17 @@
       "min": 80,
       "max": 200,
       "default": 130
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Pitch"
+    ],
+    "style": "",
+    "role": "Creative",
+    "requiredInputs": []
   },
   {
     "name": "Glitch Buffer",
@@ -9875,7 +12358,17 @@
       "min": 0.25,
       "max": 0.85,
       "default": 0.5
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Modulation",
+      "Delay"
+    ],
+    "style": "",
+    "role": "Creative",
+    "requiredInputs": []
   },
   {
     "name": "Acoustic Body",
@@ -9910,7 +12403,20 @@
       "min": 0,
       "max": 1,
       "default": 0.2
-    }
+    },
+    "soundSources": [
+      "Guitar",
+      "Acoustic Instruments"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Transient",
+      "EQ",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Arp Shimmer",
@@ -9943,7 +12449,18 @@
       "min": 0.08,
       "max": 0.55,
       "default": 0.25
-    }
+    },
+    "soundSources": [
+      "Synth"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Pitch",
+      "Delay"
+    ],
+    "style": "Electronic",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Bitcrush Glitch",
@@ -9972,7 +12489,17 @@
       "min": 0.05,
       "max": 0.75,
       "default": 0.35
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Modulation",
+      "Glitch"
+    ],
+    "style": "Lo-Fi",
+    "role": "Creative",
+    "requiredInputs": []
   },
   {
     "name": "Blues Break OD",
@@ -10000,7 +12527,18 @@
       "min": 400,
       "max": 8000,
       "default": 2800
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Chug Palm Mute",
@@ -10037,7 +12575,18 @@
       "min": 0.02,
       "max": 0.4,
       "default": 0.1
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "EQ",
+      "Filter"
+    ],
+    "style": "Metal",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Dark Atmosphere",
@@ -10070,7 +12619,17 @@
       "min": 0,
       "max": 1,
       "default": 0.3
-    }
+    },
+    "soundSources": [
+      "FX / Field Recording"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Modulation"
+    ],
+    "style": "Ambient",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Drum Bus Glue",
@@ -10099,7 +12658,16 @@
       "min": 1.5,
       "max": 6,
       "default": 2.5
-    }
+    },
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "Dynamics"
+    ],
+    "style": "",
+    "role": "Bus",
+    "requiredInputs": []
   },
   {
     "name": "Harmonic Exciter",
@@ -10133,7 +12701,17 @@
       "min": 0,
       "max": 1,
       "default": 0.55
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Creative",
+    "requiredInputs": []
   },
   {
     "name": "Low End Control",
@@ -10156,7 +12734,19 @@
       "min": 30,
       "max": 150,
       "default": 65
-    }
+    },
+    "soundSources": [
+      "Full Mix"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Dynamics",
+      "EQ",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Master",
+    "requiredInputs": []
   },
   {
     "name": "Metal Scoop",
@@ -10192,7 +12782,17 @@
       "min": 0.01,
       "max": 0.35,
       "default": 0.07
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Filter"
+    ],
+    "style": "Metal",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Pick Attack",
@@ -10211,7 +12811,16 @@
       "min": 0.0005,
       "max": 0.006,
       "default": 0.0022
-    }
+    },
+    "soundSources": [
+      "Bass Guitar"
+    ],
+    "processingTypes": [
+      "Modulation"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Pluck Bite",
@@ -10232,7 +12841,17 @@
       "min": 0.5,
       "max": 5,
       "default": 2.2
-    }
+    },
+    "soundSources": [
+      "Synth"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Modulation"
+    ],
+    "style": "Electronic",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Podcast Voice",
@@ -10259,7 +12878,19 @@
       "min": 60,
       "max": 250,
       "default": 120
-    }
+    },
+    "soundSources": [
+      "Vocals",
+      "Speech"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Dynamics",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Riff Sustain",
@@ -10286,7 +12917,19 @@
       "min": 1.5,
       "max": 8,
       "default": 3
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "Dynamics",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Sub Weight",
@@ -10316,7 +12959,19 @@
       "min": 0.5,
       "max": 4,
       "default": 1.6
-    }
+    },
+    "soundSources": [
+      "Bass Guitar"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Dynamics",
+      "EQ",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Tape Wobble",
@@ -10351,7 +13006,19 @@
       "min": 0.1,
       "max": 3,
       "default": 0.6
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Filter",
+      "Modulation",
+      "Delay"
+    ],
+    "style": "Lo-Fi",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Vocal De-Ess",
@@ -10376,7 +13043,16 @@
       "min": 0,
       "max": 1,
       "default": 0.6
-    }
+    },
+    "soundSources": [
+      "Vocals"
+    ],
+    "processingTypes": [
+      "Restoration"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Vocal Double",
@@ -10413,7 +13089,18 @@
       "min": 0.08,
       "max": 0.5,
       "default": 0.22
-    }
+    },
+    "soundSources": [
+      "Vocals"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Pitch",
+      "Delay"
+    ],
+    "style": "",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Vocal Presence",
@@ -10441,7 +13128,17 @@
       "min": 0,
       "max": 1,
       "default": 0.55
-    }
+    },
+    "soundSources": [
+      "Vocals"
+    ],
+    "processingTypes": [
+      "Dynamics",
+      "EQ"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Vocal Warmth",
@@ -10469,7 +13166,17 @@
       "min": 0,
       "max": 1,
       "default": 0.5
-    }
+    },
+    "soundSources": [
+      "Vocals"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "EQ"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Vowel Filter",
@@ -10503,7 +13210,16 @@
       "min": 0.5,
       "max": 3,
       "default": 1.5
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Filter"
+    ],
+    "style": "",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "909 Newstyle",
@@ -10573,7 +13289,20 @@
       "min": 0.95,
       "max": 1.45,
       "default": 1.22
-    }
+    },
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "EQ",
+      "Filter",
+      "Modulation",
+      "Stereo"
+    ],
+    "style": "Hard Dance",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Crisp Brick",
@@ -10632,7 +13361,19 @@
       "min": 0.95,
       "max": 1.45,
       "default": 1.2
-    }
+    },
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "EQ",
+      "Filter",
+      "Modulation"
+    ],
+    "style": "Techno",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Techno Snap",
@@ -10690,7 +13431,18 @@
       "min": 0.85,
       "max": 1.35,
       "default": 1.08
-    }
+    },
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "EQ",
+      "Filter",
+      "Modulation"
+    ],
+    "style": "Techno",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Side Scream",
@@ -10757,7 +13509,20 @@
       "min": 0.9,
       "max": 1.4,
       "default": 1.16
-    }
+    },
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "EQ",
+      "Filter",
+      "Modulation",
+      "Stereo"
+    ],
+    "style": "Techno",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Offbeat Gallop",
@@ -10826,7 +13591,21 @@
       "min": 0.85,
       "max": 1.35,
       "default": 1.08
-    }
+    },
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "EQ",
+      "Filter",
+      "Modulation",
+      "Delay",
+      "Reverb"
+    ],
+    "style": "Techno",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Schranz Multiband",
@@ -10901,7 +13680,21 @@
       "min": 0.9,
       "max": 1.4,
       "default": 1.16
-    }
+    },
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "EQ",
+      "Filter",
+      "Modulation",
+      "Stereo",
+      "Multi-Band"
+    ],
+    "style": "Hard Dance",
+    "role": "Parallel",
+    "requiredInputs": []
   },
   {
     "name": "Downtuned Stack Cab",
@@ -10966,7 +13759,20 @@
     },
     "irs": {
       "ir1": "American IR 01.wav"
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "Dynamics",
+      "EQ",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Streaming Ceiling",
@@ -11027,7 +13833,19 @@
       "min": 0.7,
       "max": 1.15,
       "default": 0.95
-    }
+    },
+    "soundSources": [
+      "Full Mix"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Dynamics",
+      "EQ",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Master",
+    "requiredInputs": []
   },
   {
     "name": "FET All In",
@@ -11085,7 +13903,19 @@
       "min": 0.45,
       "max": 1,
       "default": 0.92
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Dynamics",
+      "EQ",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Precision Multiband",
@@ -11144,7 +13974,19 @@
       "min": 0.75,
       "max": 1.2,
       "default": 0.98
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Dynamics",
+      "EQ",
+      "Filter",
+      "Multi-Band"
+    ],
+    "style": "",
+    "role": "Parallel",
+    "requiredInputs": []
   },
   {
     "name": "British Desk EQ",
@@ -11200,7 +14042,18 @@
       "min": 0.7,
       "max": 1.2,
       "default": 0.98
-    }
+    },
+    "soundSources": [
+      "Full Mix"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "EQ",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Master",
+    "requiredInputs": []
   },
   {
     "name": "Passive Low Trick",
@@ -11255,7 +14108,18 @@
       "min": 0.75,
       "max": 1.2,
       "default": 0.98
-    }
+    },
+    "soundSources": [
+      "Full Mix"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "EQ",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Master",
+    "requiredInputs": []
   },
   {
     "name": "Ladder Sweep",
@@ -11309,7 +14173,18 @@
       "min": 0.7,
       "max": 1.2,
       "default": 0.96
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Filter",
+      "Modulation"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Octave Cloud",
@@ -11370,7 +14245,19 @@
       "min": 2500,
       "max": 9000,
       "default": 6200
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Pitch",
+      "Delay",
+      "Reverb"
+    ],
+    "style": "",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Blackwall Space",
@@ -11431,7 +14318,19 @@
       "min": 0.55,
       "max": 1.15,
       "default": 0.88
-    }
+    },
+    "soundSources": [
+      "FX / Field Recording"
+    ],
+    "processingTypes": [
+      "Dynamics",
+      "Filter",
+      "Modulation",
+      "Reverb"
+    ],
+    "style": "Cinematic",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Click Sustain",
@@ -11487,7 +14386,19 @@
       "min": 0.8,
       "max": 1.3,
       "default": 1.05
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Transient",
+      "EQ",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Resonant Lead Screamer",
@@ -11548,7 +14459,20 @@
       "min": 0.5,
       "max": 1,
       "default": 0.85
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Dynamics",
+      "EQ",
+      "Filter",
+      "Modulation"
+    ],
+    "style": "Hard Dance",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Peak Screamer",
@@ -11595,7 +14519,19 @@
       "min": 2800,
       "max": 7200,
       "default": 4800
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Dynamics",
+      "EQ",
+      "Filter"
+    ],
+    "style": "Electronic",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Hyper Cyberpunk Sweep",
@@ -11658,7 +14594,21 @@
       "min": 0.7,
       "max": 1.3,
       "default": 0.95
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "EQ",
+      "Filter",
+      "Modulation",
+      "Delay"
+    ],
+    "style": "Lo-Fi",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Speaking Bass",
@@ -11718,7 +14668,19 @@
       "min": 0.6,
       "max": 1,
       "default": 0.85
-    }
+    },
+    "soundSources": [
+      "Bass Guitar"
+    ],
+    "processingTypes": [
+      "EQ",
+      "Filter",
+      "Modulation",
+      "Multi-Band"
+    ],
+    "style": "",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Hardstyle Tail Screech",
@@ -11776,7 +14738,20 @@
       "min": 0.5,
       "max": 1.2,
       "default": 0.8
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Dynamics",
+      "EQ",
+      "Filter",
+      "Modulation"
+    ],
+    "style": "Hard Dance",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Acid Morph 303",
@@ -11836,7 +14811,19 @@
       "min": 3,
       "max": 12,
       "default": 7
-    }
+    },
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Dynamics",
+      "Filter",
+      "Modulation"
+    ],
+    "style": "Techno",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Frequency Assassin",
@@ -11901,7 +14888,21 @@
       "min": 0.5,
       "max": 1,
       "default": 0.8
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Dynamics",
+      "EQ",
+      "Filter",
+      "Modulation",
+      "Delay"
+    ],
+    "style": "Industrial",
+    "role": "Creative",
+    "requiredInputs": []
   },
   {
     "name": "CTZ Kick Master",
@@ -11961,7 +14962,18 @@
       "min": 0.8,
       "max": 1.2,
       "default": 1
-    }
+    },
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "Dynamics",
+      "Filter",
+      "Multi-Band"
+    ],
+    "style": "Hard Dance",
+    "role": "Master",
+    "requiredInputs": []
   },
   {
     "name": "Loudness Wall",
@@ -12021,7 +15033,19 @@
       "min": 0.9,
       "max": 1.2,
       "default": 1
-    }
+    },
+    "soundSources": [
+      "Full Mix"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Dynamics",
+      "Filter",
+      "Multi-Band"
+    ],
+    "style": "",
+    "role": "Master",
+    "requiredInputs": []
   },
   {
     "name": "Brickwall Techno",
@@ -12081,7 +15105,19 @@
       "min": 0.85,
       "max": 1.15,
       "default": 1
-    }
+    },
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Dynamics",
+      "Filter",
+      "Multi-Band"
+    ],
+    "style": "Hard Dance",
+    "role": "Parallel",
+    "requiredInputs": []
   },
   {
     "name": "Master Bus Destroyer",
@@ -12150,7 +15186,20 @@
       "min": 0.9,
       "max": 1.15,
       "default": 1
-    }
+    },
+    "soundSources": [
+      "Full Mix",
+      "Bass Guitar"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Dynamics",
+      "Filter",
+      "Stereo"
+    ],
+    "style": "Industrial",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Midtempo Pressure Pump",
@@ -12209,7 +15258,19 @@
       "min": 2,
       "max": 8,
       "default": 4
-    }
+    },
+    "soundSources": [
+      "Synth"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Dynamics",
+      "Filter",
+      "Modulation"
+    ],
+    "style": "Electronic",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Midtempo Pump",
@@ -12244,7 +15305,18 @@
       "min": -1.2,
       "max": -0.2,
       "default": -0.4
-    }
+    },
+    "soundSources": [
+      "Synth"
+    ],
+    "processingTypes": [
+      "Dynamics",
+      "Filter",
+      "Modulation"
+    ],
+    "style": "Electronic",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Broken Grid Chaos",
@@ -12302,7 +15374,19 @@
       "min": 0.5,
       "max": 1,
       "default": 0.8
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Dynamics",
+      "Filter",
+      "Modulation",
+      "Delay"
+    ],
+    "style": "Lo-Fi",
+    "role": "Creative",
+    "requiredInputs": []
   },
   {
     "name": "Chaos Grid",
@@ -12343,7 +15427,17 @@
       "min": 2200,
       "max": 7000,
       "default": 4200
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Delay",
+      "Glitch"
+    ],
+    "style": "",
+    "role": "Creative",
+    "requiredInputs": []
   },
   {
     "name": "Pulsing Electro",
@@ -12403,7 +15497,19 @@
       "min": 2,
       "max": 5,
       "default": 3
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Dynamics",
+      "Filter",
+      "Modulation"
+    ],
+    "style": "Electronic",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Vital Saw Morph",
@@ -12466,7 +15572,23 @@
       "min": 0.7,
       "max": 1.2,
       "default": 0.95
-    }
+    },
+    "soundSources": [
+      "Synth",
+      "Bass Guitar"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Dynamics",
+      "EQ",
+      "Filter",
+      "Modulation",
+      "Delay",
+      "Stereo"
+    ],
+    "style": "Electronic",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Hard Groove Machine",
@@ -12525,7 +15647,20 @@
       "min": 0,
       "max": 6,
       "default": 3
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Dynamics",
+      "Filter",
+      "Modulation",
+      "Reverb"
+    ],
+    "style": "Hard Dance",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Resonant Sweep Stab",
@@ -12589,7 +15724,19 @@
       "min": 0.6,
       "max": 1,
       "default": 0.85
-    }
+    },
+    "soundSources": [
+      "Bass Guitar"
+    ],
+    "processingTypes": [
+      "Dynamics",
+      "Filter",
+      "Modulation",
+      "Stereo"
+    ],
+    "style": "Electronic",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Kick Surgery",
@@ -12653,7 +15800,20 @@
       "min": 0.7,
       "max": 1,
       "default": 0.9
-    }
+    },
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Dynamics",
+      "EQ",
+      "Filter",
+      "Modulation"
+    ],
+    "style": "Hard Dance",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Hardstyle Sub Pummel",
@@ -12715,7 +15875,21 @@
       "min": 0.5,
       "max": 1.2,
       "default": 0.85
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Dynamics",
+      "Filter",
+      "Delay"
+    ],
+    "style": "Hard Dance",
+    "role": "Send / Return",
+    "requiredInputs": [
+      "sidechain"
+    ]
   },
   {
     "name": "Industrial Split Authority",
@@ -12782,7 +15956,21 @@
       "min": 0.8,
       "max": 1.2,
       "default": 1
-    }
+    },
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Dynamics",
+      "Filter",
+      "Modulation",
+      "Delay",
+      "Reverb"
+    ],
+    "style": "Industrial",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Split Authority",
@@ -12831,7 +16019,18 @@
       "min": 0.2,
       "max": 0.9,
       "default": 0.55
-    }
+    },
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Filter",
+      "Multi-Band"
+    ],
+    "style": "Industrial",
+    "role": "Parallel",
+    "requiredInputs": []
   },
   {
     "name": "Multiband Phase Lock",
@@ -12891,7 +16090,17 @@
       "min": 0.9,
       "max": 1.2,
       "default": 1
-    }
+    },
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "Dynamics",
+      "Filter"
+    ],
+    "style": "Techno",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Reese Razor Mid",
@@ -12945,7 +16154,20 @@
       "min": 0,
       "max": 0.8,
       "default": 0.38
-    }
+    },
+    "soundSources": [
+      "Bass Guitar",
+      "Synth Bass",
+      "Drums"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "EQ",
+      "Filter"
+    ],
+    "style": "Drum & Bass",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Reese Formant Strike",
@@ -12998,7 +16220,20 @@
       "min": 0,
       "max": 0.8,
       "default": 0.38
-    }
+    },
+    "soundSources": [
+      "Bass Guitar",
+      "Synth Bass"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "EQ",
+      "Filter",
+      "Modulation"
+    ],
+    "style": "Drum & Bass",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Reese Knife Edge",
@@ -13051,7 +16286,19 @@
       "min": 0,
       "max": 0.75,
       "default": 0.3
-    }
+    },
+    "soundSources": [
+      "Bass Guitar",
+      "Synth Bass",
+      "FX / Field Recording"
+    ],
+    "processingTypes": [
+      "EQ",
+      "Filter"
+    ],
+    "style": "Drum & Bass",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Bass Fractionator",
@@ -13116,7 +16363,20 @@
       "min": 0.6,
       "max": 1,
       "default": 0.85
-    }
+    },
+    "soundSources": [
+      "Bass Guitar"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Dynamics",
+      "EQ",
+      "Filter",
+      "Modulation"
+    ],
+    "style": "Drum & Bass",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "DnB Snare Needle",
@@ -13161,7 +16421,20 @@
       "min": 0,
       "max": 0.55,
       "default": 0.2
-    }
+    },
+    "soundSources": [
+      "Drums",
+      "Bass Guitar"
+    ],
+    "processingTypes": [
+      "Dynamics",
+      "Transient",
+      "EQ",
+      "Filter"
+    ],
+    "style": "Drum & Bass",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "DnB Break Snap Bus",
@@ -13208,7 +16481,19 @@
       "min": 0,
       "max": 0.6,
       "default": 0.23
-    }
+    },
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "Dynamics",
+      "Transient",
+      "EQ",
+      "Filter"
+    ],
+    "style": "Drum & Bass",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Surgical Snare Designer",
@@ -13269,7 +16554,20 @@
       "min": 0.8,
       "max": 1.2,
       "default": 1
-    }
+    },
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "Dynamics",
+      "EQ",
+      "Filter",
+      "Modulation",
+      "Multi-Band"
+    ],
+    "style": "",
+    "role": "Parallel",
+    "requiredInputs": []
   },
   {
     "name": "Depth Sculptor",
@@ -13331,7 +16629,23 @@
       "min": 0.6,
       "max": 1,
       "default": 0.85
-    }
+    },
+    "soundSources": [
+      "Synth",
+      "Bass Guitar"
+    ],
+    "processingTypes": [
+      "Dynamics",
+      "Filter",
+      "Delay",
+      "Reverb",
+      "Stereo",
+      "Spatial",
+      "Multi-Band"
+    ],
+    "style": "Electronic",
+    "role": "Parallel",
+    "requiredInputs": []
   },
   {
     "name": "Multiband Punch Enhancer",
@@ -13391,7 +16705,20 @@
       "min": 0.9,
       "max": 1.1,
       "default": 1
-    }
+    },
+    "soundSources": [
+      "Full Mix",
+      "Bass Guitar"
+    ],
+    "processingTypes": [
+      "Dynamics",
+      "Filter",
+      "Modulation",
+      "Multi-Band"
+    ],
+    "style": "",
+    "role": "Master",
+    "requiredInputs": []
   },
   {
     "name": "Dynamic Space Former",
@@ -13454,7 +16781,22 @@
       "min": 0.7,
       "max": 1,
       "default": 0.9
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Dynamics",
+      "EQ",
+      "Filter",
+      "Modulation",
+      "Delay",
+      "Reverb",
+      "Multi-Band"
+    ],
+    "style": "Ambient",
+    "role": "Parallel",
+    "requiredInputs": []
   },
   {
     "name": "Metal Percussion",
@@ -13515,7 +16857,20 @@
       "min": 0.8,
       "max": 1.2,
       "default": 1
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Dynamics",
+      "EQ",
+      "Filter",
+      "Modulation",
+      "Delay"
+    ],
+    "style": "Metal",
+    "role": "Creative",
+    "requiredInputs": []
   },
   {
     "name": "Field Recording Glitch",
@@ -13574,7 +16929,20 @@
       "min": 0.5,
       "max": 1,
       "default": 0.75
-    }
+    },
+    "soundSources": [
+      "FX / Field Recording"
+    ],
+    "processingTypes": [
+      "Dynamics",
+      "Filter",
+      "Pitch",
+      "Delay",
+      "Reverb"
+    ],
+    "style": "",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Downtuned Guitar Industrial",
@@ -13634,7 +17002,20 @@
       "min": 0.8,
       "max": 1.2,
       "default": 1
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "Dynamics",
+      "EQ",
+      "Filter"
+    ],
+    "style": "Industrial",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Chaotic Stab Generator",
@@ -13693,7 +17074,19 @@
       "min": 0.6,
       "max": 1,
       "default": 0.8
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Dynamics",
+      "Filter",
+      "Modulation",
+      "Pitch"
+    ],
+    "style": "Techno",
+    "role": "Creative",
+    "requiredInputs": []
   },
   {
     "name": "Granular Smear",
@@ -13754,7 +17147,21 @@
       "min": 0.5,
       "max": 1,
       "default": 0.75
-    }
+    },
+    "soundSources": [
+      "FX / Field Recording"
+    ],
+    "processingTypes": [
+      "Dynamics",
+      "Filter",
+      "Modulation",
+      "Pitch",
+      "Delay",
+      "Reverb"
+    ],
+    "style": "Ambient",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Metal Kick Beater",
@@ -13798,7 +17205,21 @@
       "min": 0,
       "max": 0.8,
       "default": 0.3
-    }
+    },
+    "soundSources": [
+      "Guitar",
+      "Drums"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Dynamics",
+      "Transient",
+      "EQ",
+      "Filter"
+    ],
+    "style": "Metal",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Metal Snare Crack",
@@ -13842,7 +17263,21 @@
       "min": 0.05,
       "max": 0.35,
       "default": 0.16
-    }
+    },
+    "soundSources": [
+      "Guitar",
+      "Drums"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Dynamics",
+      "Transient",
+      "EQ",
+      "Filter"
+    ],
+    "style": "Metal",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Metal Toms Controlled",
@@ -13884,7 +17319,21 @@
       "min": 0.12,
       "max": 0.6,
       "default": 0.29
-    }
+    },
+    "soundSources": [
+      "Guitar",
+      "Percussion"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Dynamics",
+      "Transient",
+      "EQ",
+      "Filter"
+    ],
+    "style": "Metal",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Metal Drum Bus Impact",
@@ -13932,7 +17381,20 @@
       "min": 0.06,
       "max": 0.3,
       "default": 0.13
-    }
+    },
+    "soundSources": [
+      "Guitar",
+      "Drums"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Dynamics",
+      "EQ",
+      "Filter"
+    ],
+    "style": "Metal",
+    "role": "Bus",
+    "requiredInputs": []
   },
   {
     "name": "Metal Cymbal Tamer",
@@ -13973,7 +17435,20 @@
       "min": 0,
       "max": 3,
       "default": 0.5
-    }
+    },
+    "soundSources": [
+      "Guitar",
+      "Drums"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Dynamics",
+      "EQ",
+      "Filter"
+    ],
+    "style": "Metal",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Blastbeat Front Edge",
@@ -14013,7 +17488,21 @@
       "max": 1.2,
       "default": 1
     },
-    "script": "# Blastbeat Front Edge\n# Fast/slow envelope contrast emphasizes stick attack while the Sustain control reduces the space between hits. Short detector recovery suits blastbeats; set Gate for the actual recording. Insert on close drums, not cymbal overheads.\nparam a = Attack [0, 3]\nparam b = Sustain [0, 0.75]\nparam c = Gate [-65, -25]\nparam d = Level [0.4, 1.2]\ngate1: threshold = c; attack = 0.0003; hold = 0.008; release = 0.035; range = -36\ntransient1: attack = a / 3; sustain = -b; fast = 0.001; slow = 0.055; mix = 1\neq1: type = peak; freq = 3400; q = 0.8; gain = 2\nstage2: y = tanh(x * 1.8) * d\nlimit1: ceiling = -1; release = 0.025\n"
+    "script": "# Blastbeat Front Edge\n# Fast/slow envelope contrast emphasizes stick attack while the Sustain control reduces the space between hits. Short detector recovery suits blastbeats; set Gate for the actual recording. Insert on close drums, not cymbal overheads.\nparam a = Attack [0, 3]\nparam b = Sustain [0, 0.75]\nparam c = Gate [-65, -25]\nparam d = Level [0.4, 1.2]\ngate1: threshold = c; attack = 0.0003; hold = 0.008; release = 0.035; range = -36\ntransient1: attack = a / 3; sustain = -b; fast = 0.001; slow = 0.055; mix = 1\neq1: type = peak; freq = 3400; q = 0.8; gain = 2\nstage2: y = tanh(x * 1.8) * d\nlimit1: ceiling = -1; release = 0.025\n",
+    "soundSources": [
+      "Guitar",
+      "Drums"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "Dynamics",
+      "Transient",
+      "EQ"
+    ],
+    "style": "Metal",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Snare Steel Crack",
@@ -14055,7 +17544,21 @@
       "max": 6500,
       "default": 3800
     },
-    "script": "# Snare Steel Crack\n# Parallel high-mid saturation adds a metallic crack without distorting the entire drum body. Crack controls the parallel amount; Snap sets its upper bite. Keep the return below the dry snare on dense blastbeats.\nparam a = Crack [0, 0.65]\nparam b = Drive [3, 18]\nparam c = Snap [1800, 6500]\nstage1: y = x\nbus crack:\n send: in = 1\n filter1: type = highpass; cutoff = 700; resonance = 0.707\n eq1: type = peak; freq = c; q = 1.1; gain = 6\n stage2: y = tanh(x * b) * 0.55\n filter2: type = lowpass; cutoff = 8500; resonance = 0.707\n comp1: threshold = -18; ratio = 6; attack = 0.008; release = 0.045; makeup = 2\nout: main = 1; crack = a\n"
+    "script": "# Snare Steel Crack\n# Parallel high-mid saturation adds a metallic crack without distorting the entire drum body. Crack controls the parallel amount; Snap sets its upper bite. Keep the return below the dry snare on dense blastbeats.\nparam a = Crack [0, 0.65]\nparam b = Drive [3, 18]\nparam c = Snap [1800, 6500]\nstage1: y = x\nbus crack:\n send: in = 1\n filter1: type = highpass; cutoff = 700; resonance = 0.707\n eq1: type = peak; freq = c; q = 1.1; gain = 6\n stage2: y = tanh(x * b) * 0.55\n filter2: type = lowpass; cutoff = 8500; resonance = 0.707\n comp1: threshold = -18; ratio = 6; attack = 0.008; release = 0.045; makeup = 2\nout: main = 1; crack = a\n",
+    "soundSources": [
+      "Guitar",
+      "Drums"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "Dynamics",
+      "EQ",
+      "Filter"
+    ],
+    "style": "Metal",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Growl Iron Throat",
@@ -14101,7 +17604,21 @@
       "max": -25,
       "default": -52
     },
-    "script": "# Growl Iron Throat\n# Parallel chest and formant grit for recorded growls. The dry voice remains intelligible; the distorted band avoids subsonic breath noise and high-frequency fizz. Adjust Gate before increasing Rage.\nparam a = Rage [4, 28]\nparam b = Throat [450, 1500]\nparam c = Grind [0, 0.85]\nparam d = Gate [-65, -25]\ngate1: threshold = d; attack = 0.001; hold = 0.04; release = 0.07; range = -30\nfilter1: type = highpass; cutoff = 65; resonance = 0.707\ncomp1: threshold = -22; ratio = 4; attack = 0.008; release = 0.09; knee = 5; makeup = 3\nbus throat:\n send: main = 1\n filter2: type = highpass; cutoff = 190; resonance = 0.707\n eq1: type = peak; freq = b; q = 1.4; gain = 7\n stage1: y = tanh(x * a) * 0.48\n filter3: type = lowpass; cutoff = 4800; resonance = 0.707\nout: main = 1 - c * 0.3; throat = c\n"
+    "script": "# Growl Iron Throat\n# Parallel chest and formant grit for recorded growls. The dry voice remains intelligible; the distorted band avoids subsonic breath noise and high-frequency fizz. Adjust Gate before increasing Rage.\nparam a = Rage [4, 28]\nparam b = Throat [450, 1500]\nparam c = Grind [0, 0.85]\nparam d = Gate [-65, -25]\ngate1: threshold = d; attack = 0.001; hold = 0.04; release = 0.07; range = -30\nfilter1: type = highpass; cutoff = 65; resonance = 0.707\ncomp1: threshold = -22; ratio = 4; attack = 0.008; release = 0.09; knee = 5; makeup = 3\nbus throat:\n send: main = 1\n filter2: type = highpass; cutoff = 190; resonance = 0.707\n eq1: type = peak; freq = b; q = 1.4; gain = 7\n stage1: y = tanh(x * a) * 0.48\n filter3: type = lowpass; cutoff = 4800; resonance = 0.707\nout: main = 1 - c * 0.3; throat = c\n",
+    "soundSources": [
+      "Guitar",
+      "Vocals"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "Dynamics",
+      "EQ",
+      "Filter"
+    ],
+    "style": "Metal",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Deathwall Tight Stack",
@@ -14164,7 +17681,20 @@
     "script": "# Deathwall Tight Stack\n# High-gain DI rhythm amp: tight pre-distortion bass, two saturation stages, focused pick mids and a full cabinet IR. Gate tracks palm-mute gaps; Tone controls post-cab fizz. Start from a clean guitar DI.\nparam a = Gain [6, 32]\nparam b = Tight [65, 180]\nparam c = Bite [0, 8]\nparam d = Tone [3500, 9000]\nparam e = Gate [-65, -25]\nparam f = Level [0.25, 1]\ngate1: threshold = e; attack = 0.0004; hold = 0.012; release = 0.035; range = -72\nfilter1: type = highpass; cutoff = b; resonance = 0.707\neq1: type = peak; freq = 1200; q = 0.85; gain = 5\nstage1: y = tanh(x * a) * 0.65\nfilter2: type = highpass; cutoff = 70; resonance = 0.707\neq2: type = peak; freq = 3100; q = 0.9; gain = c\nstage2: y = tanh(x * 4.5) * 0.8\nir1: mix = 1; gain = 0\neq3: type = peak; freq = 350; q = 1.2; gain = -3\nfilter3: type = lowpass; cutoff = d; resonance = 0.707\nstage3: y = x * f\nlimit1: ceiling = -1; release = 0.06\n",
     "irs": {
       "ir1": "American IR 01.wav"
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "Dynamics",
+      "EQ",
+      "Filter"
+    ],
+    "style": "Metal",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Baritone Serrated Stack",
@@ -14220,7 +17750,20 @@
     "script": "# Baritone Serrated Stack\n# A raspier baritone DI amp with asymmetric diode saturation, lean low mids and a British cabinet. Distinct from the tight rhythm stack: stronger upper harmonics and a coarse edge. Increase Body only after tuning the gate.\nparam a = Gain [5, 24]\nparam b = Body [-6, 5]\nparam c = Edge [1500, 4500]\nparam d = Gate [-65, -25]\nparam e = Level [0.25, 1.1]\ngate1: threshold = d; attack = 0.0005; hold = 0.02; release = 0.045; range = -66\nfilter1: type = highpass; cutoff = 78; resonance = 0.707\nstage1: y = clamp(diode(x * a, 1.6), -0.7, 0.7)\nfilter2: type = highpass; cutoff = 35; resonance = 0.707\neq1: type = peak; freq = 260; q = 0.8; gain = b\neq2: type = peak; freq = c; q = 1.25; gain = 5\nstage2: y = tanh(x * 3) * 0.8\nir1: mix = 1; gain = 0\nfilter3: type = lowpass; cutoff = 7200; resonance = 0.707\nstage3: y = x * e\nlimit1: ceiling = -1; release = 0.06\n",
     "irs": {
       "ir1": "British IR 01.wav"
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "Dynamics",
+      "EQ",
+      "Filter"
+    ],
+    "style": "Metal",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Ironclad Split Bass",
@@ -14276,7 +17819,21 @@
     "script": "# Ironclad Split Bass\n# Clean compressed fundamentals below the crossover, aggressive cabinet-filtered mids above it. Grind drives only the upper band, keeping the bass weight distinct from guitar distortion. Crossover changes the clean/dirty boundary.\nparam a = Grind [3, 25]\nparam b = Crossover [100, 280]\nparam c = Clank [0, 7]\nparam d = Body [0.7, 1.3]\nparam e = Dirt [0.2, 1]\nfilter1: type = highpass; cutoff = 28; resonance = 0.707\nxover1: f1 = b\nbus low:\n comp1: threshold = -22; ratio = 3; attack = 0.018; release = 0.12; knee = 6; makeup = 2\n stage1: y = x * d\nbus high:\n eq1: type = peak; freq = 1800; q = 0.9; gain = c\n stage2: y = tanh(x * a) * 0.65\n ir1: mix = 1; gain = 0\n filter2: type = highpass; cutoff = b; resonance = 0.707\nout: low = 1; high = e\n",
     "irs": {
       "ir1": "Medium IR 01.wav"
-    }
+    },
+    "soundSources": [
+      "Guitar"
+    ],
+    "processingTypes": [
+      "Distortion",
+      "Saturation",
+      "Dynamics",
+      "EQ",
+      "Filter",
+      "Multi-Band"
+    ],
+    "style": "Metal",
+    "role": "Parallel",
+    "requiredInputs": []
   },
   {
     "name": "Forge Kick Overdrive",
@@ -14331,7 +17888,21 @@
       "max": 1,
       "default": 0.65
     },
-    "script": "# Forge Kick Overdrive\n# Focused hard-techno kick distortion with a protected low band and a dense, biting upper body. Impact boosts the attack before saturation; Weight balances the clean fundamental. Tune the crossover to the kick.\nparam a = Drive [4, 30]\nparam b = Split [65, 160]\nparam c = Impact [0, 2]\nparam d = Weight [0.65, 1.3]\nparam e = Bite [0.2, 1]\nfilter1: type = highpass; cutoff = 25; resonance = 0.707\nenv1: type = peak; attack = 0.0003; release = 0.018\nenv2: type = peak; attack = 0.018; release = 0.08\nstage1: y = x * (1 + c * max(0, env1 - env2) / (env1 + 0.04))\nxover1: f1 = b\nbus low:\n stage2: y = tanh(x * 1.4) * d * 0.85\nbus high:\n eq1: type = peak; freq = 1600; q = 0.9; gain = 4\n stage3: y = tanh(x * a) * 0.6\n filter2: type = lowpass; cutoff = 8500; resonance = 0.707\nout: low = 1; high = e\n"
+    "script": "# Forge Kick Overdrive\n# Focused hard-techno kick distortion with a protected low band and a dense, biting upper body. Impact boosts the attack before saturation; Weight balances the clean fundamental. Tune the crossover to the kick.\nparam a = Drive [4, 30]\nparam b = Split [65, 160]\nparam c = Impact [0, 2]\nparam d = Weight [0.65, 1.3]\nparam e = Bite [0.2, 1]\nfilter1: type = highpass; cutoff = 25; resonance = 0.707\nenv1: type = peak; attack = 0.0003; release = 0.018\nenv2: type = peak; attack = 0.018; release = 0.08\nstage1: y = x * (1 + c * max(0, env1 - env2) / (env1 + 0.04))\nxover1: f1 = b\nbus low:\n stage2: y = tanh(x * 1.4) * d * 0.85\nbus high:\n eq1: type = peak; freq = 1600; q = 0.9; gain = 4\n stage3: y = tanh(x * a) * 0.6\n filter2: type = lowpass; cutoff = 8500; resonance = 0.707\nout: low = 1; high = e\n",
+    "soundSources": [
+      "Guitar",
+      "Drums"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "EQ",
+      "Filter",
+      "Modulation",
+      "Multi-Band"
+    ],
+    "style": "Industrial",
+    "role": "Parallel",
+    "requiredInputs": []
   },
   {
     "name": "Concrete Kick Fracture",
@@ -14370,7 +17941,18 @@
       "max": 8500,
       "default": 4600
     },
-    "script": "# Concrete Kick Fracture\n# Full-band wavefolding creates a crushed, tearing kick body. A dry parallel path preserves the first hit; the wet path has its own DC and fizz filters. More Fold deliberately changes pitch and timbre, so check against the bass line.\nparam a = Fold [2, 14]\nparam b = Damage [0, 0.85]\nparam c = Tone [2200, 8500]\nstage1: y = x\nbus fracture:\n send: in = 1\n filter1: type = highpass; cutoff = 32; resonance = 0.707\n stage2: y = sin(x * a) * 0.62\n stage3: y = tanh(x * 3.5) * 0.7\n filter2: type = highpass; cutoff = 30; resonance = 0.707\n filter3: type = lowpass; cutoff = c; resonance = 0.707\nout: main = 1 - b * 0.65; fracture = b\n"
+    "script": "# Concrete Kick Fracture\n# Full-band wavefolding creates a crushed, tearing kick body. A dry parallel path preserves the first hit; the wet path has its own DC and fizz filters. More Fold deliberately changes pitch and timbre, so check against the bass line.\nparam a = Fold [2, 14]\nparam b = Damage [0, 0.85]\nparam c = Tone [2200, 8500]\nstage1: y = x\nbus fracture:\n send: in = 1\n filter1: type = highpass; cutoff = 32; resonance = 0.707\n stage2: y = sin(x * a) * 0.62\n stage3: y = tanh(x * 3.5) * 0.7\n filter2: type = highpass; cutoff = 30; resonance = 0.707\n filter3: type = lowpass; cutoff = c; resonance = 0.707\nout: main = 1 - b * 0.65; fracture = b\n",
+    "soundSources": [
+      "Bass Guitar",
+      "Drums"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Filter"
+    ],
+    "style": "Industrial",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Schranz Percussion Furnace",
@@ -14415,7 +17997,19 @@
       "max": 11000,
       "default": 7200
     },
-    "script": "# Schranz Percussion Furnace\n# Dense upper-band percussion grind with the sub band retained. Slow compressor attack keeps the front edge; short release brings up the abrasive sustain. Best on percussion loops and drum buses, with a separate kick/sub balance.\nparam a = Heat [3, 22]\nparam b = Split [100, 400]\nparam c = Crush [8, 24]\nparam d = Air [3500, 11000]\nxover1: f1 = b\nbus high:\n comp1: threshold = -c; ratio = 8; attack = 0.012; release = 0.045; knee = 2; makeup = 5\n stage1: y = tanh(x * a) * 0.58\n filter1: type = lowpass; cutoff = d; resonance = 0.707\nout: low = 1; high = 0.85\n"
+    "script": "# Schranz Percussion Furnace\n# Dense upper-band percussion grind with the sub band retained. Slow compressor attack keeps the front edge; short release brings up the abrasive sustain. Best on percussion loops and drum buses, with a separate kick/sub balance.\nparam a = Heat [3, 22]\nparam b = Split [100, 400]\nparam c = Crush [8, 24]\nparam d = Air [3500, 11000]\nxover1: f1 = b\nbus high:\n comp1: threshold = -c; ratio = 8; attack = 0.012; release = 0.045; knee = 2; makeup = 5\n stage1: y = tanh(x * a) * 0.58\n filter1: type = lowpass; cutoff = d; resonance = 0.707\nout: low = 1; high = 0.85\n",
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Dynamics",
+      "Filter",
+      "Multi-Band"
+    ],
+    "style": "Industrial",
+    "role": "Parallel",
+    "requiredInputs": []
   },
   {
     "name": "Industrial Bass Excision",
@@ -14472,7 +18066,20 @@
       "max": 1,
       "default": 0.65
     },
-    "script": "# Industrial Bass Excision\n# A clean sub underneath a moving, folded mid band. Motion changes the distortion emphasis rather than modulating the sub level. Mono input remains mono; use stereo source material when width is wanted.\nparam a = Drive [2, 16]\nparam b = Motion [0, 1]\nparam c = Rate [0.1, 4]\nparam d = Split [70, 180]\nparam e = Grind [0.2, 1]\nosc1: shape = triangle; freq = c; depth = 1\nxover1: f1 = d\nbus high:\n filter1: type = highpass; cutoff = 120; resonance = 0.707\n eq1: type = peak; freq = 900 + osc1 * b * 500; q = 1.4; gain = 6\n stage1: y = sin(x * a) * 0.6\n stage2: y = tanh(x * 2.5) * 0.65\n filter2: type = highpass; cutoff = 100; resonance = 0.707\n filter3: type = lowpass; cutoff = 5200; resonance = 0.707\nout: low = 1; high = e\n"
+    "script": "# Industrial Bass Excision\n# A clean sub underneath a moving, folded mid band. Motion changes the distortion emphasis rather than modulating the sub level. Mono input remains mono; use stereo source material when width is wanted.\nparam a = Drive [2, 16]\nparam b = Motion [0, 1]\nparam c = Rate [0.1, 4]\nparam d = Split [70, 180]\nparam e = Grind [0.2, 1]\nosc1: shape = triangle; freq = c; depth = 1\nxover1: f1 = d\nbus high:\n filter1: type = highpass; cutoff = 120; resonance = 0.707\n eq1: type = peak; freq = 900 + osc1 * b * 500; q = 1.4; gain = 6\n stage1: y = sin(x * a) * 0.6\n stage2: y = tanh(x * 2.5) * 0.65\n filter2: type = highpass; cutoff = 100; resonance = 0.707\n filter3: type = lowpass; cutoff = 5200; resonance = 0.707\nout: low = 1; high = e\n",
+    "soundSources": [
+      "Bass Guitar"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "EQ",
+      "Filter",
+      "Modulation",
+      "Multi-Band"
+    ],
+    "style": "Industrial",
+    "role": "Parallel",
+    "requiredInputs": []
   },
   {
     "name": "Techno Iron Rumble",
@@ -14526,7 +18133,17 @@
       "min": 0,
       "max": 0.8,
       "default": 0.34
-    }
+    },
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Delay"
+    ],
+    "style": "Industrial",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Techno Rail Drum Bus",
@@ -14577,7 +18194,18 @@
       "min": 0,
       "max": 0.7,
       "default": 0.3
-    }
+    },
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "Dynamics",
+      "EQ",
+      "Filter"
+    ],
+    "style": "Industrial",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Motion Blur Rumble Send",
@@ -14645,7 +18273,21 @@
       "max": 1.5,
       "default": 1
     },
-    "script": "# Motion Blur Rumble Send\n# Wet-only rumble return: diffused reverb, slow moving low-mid emphasis, saturation and input-envelope ducking. Send a kick into it and keep the original kick on its own track. Floor removes unusable sub energy; Return controls the tail level.\nparam a = Blur [0.3, 0.9]\nparam b = Motion [0, 1]\nparam c = Drive [1, 9]\nparam d = Duck [0, 0.95]\nparam e = Floor [25, 65]\nparam f = Return [0.4, 1.5]\nenv1: type = peak; attack = 0.0003; release = 0.16\nosc1: shape = sine; freq = 0.23; depth = 1\nfilter1: type = highpass; cutoff = e; resonance = 0.707\nreverb1: size = a; decay = 0.75; damp = 0.85; mix = 1; width = 0.8\neq1: type = peak; freq = 180 + osc1 * b * 85; q = 1.2; gain = 5\nstage1: y = tanh(x * c) * 0.75\nfilter2: type = lowpass; cutoff = 420; resonance = 0.707\nfilter3: type = highpass; cutoff = e; resonance = 0.707\nms1: mode = encode\nfilter4: channel = side; type = highpass; cutoff = 160; resonance = 0.707\nms2: mode = decode\nstage2: y = x * (1 - d * clamp(env1 * 4, 0, 1)) * f\n"
+    "script": "# Motion Blur Rumble Send\n# Wet-only rumble return: diffused reverb, slow moving low-mid emphasis, saturation and input-envelope ducking. Send a kick into it and keep the original kick on its own track. Floor removes unusable sub energy; Return controls the tail level.\nparam a = Blur [0.3, 0.9]\nparam b = Motion [0, 1]\nparam c = Drive [1, 9]\nparam d = Duck [0, 0.95]\nparam e = Floor [25, 65]\nparam f = Return [0.4, 1.5]\nenv1: type = peak; attack = 0.0003; release = 0.16\nosc1: shape = sine; freq = 0.23; depth = 1\nfilter1: type = highpass; cutoff = e; resonance = 0.707\nreverb1: size = a; decay = 0.75; damp = 0.85; mix = 1; width = 0.8\neq1: type = peak; freq = 180 + osc1 * b * 85; q = 1.2; gain = 5\nstage1: y = tanh(x * c) * 0.75\nfilter2: type = lowpass; cutoff = 420; resonance = 0.707\nfilter3: type = highpass; cutoff = e; resonance = 0.707\nms1: mode = encode\nfilter4: channel = side; type = highpass; cutoff = 160; resonance = 0.707\nms2: mode = decode\nstage2: y = x * (1 - d * clamp(env1 * 4, 0, 1)) * f\n",
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "EQ",
+      "Filter",
+      "Modulation",
+      "Reverb",
+      "Stereo"
+    ],
+    "style": "Industrial",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Gated Rumble Machine Send",
@@ -14696,7 +18338,22 @@
       "max": 12,
       "default": 6
     },
-    "script": "# Gated Rumble Machine Send\n# Rhythmic wet-only rumble with tempo-locked tremolo and optional external kick ducking. Use on an aux return. With no external sidechain the compressor remains open; rhythmic motion continues from the internal oscillator.\nparam a = Drive [2, 12]\nparam b = Gate [0, 1]\nparam c = Tail [0.25, 0.8]\nparam d = Duck [0, 12]\nosc1: shape = triangle; sync = 1/8; depth = 1\nfilter1: type = highpass; cutoff = 30; resonance = 0.707\nreverb1: size = c; decay = 0.65; damp = 0.9; mix = 1; width = 0.5\nstage1: y = tanh(x * a) * 0.7 * (1 - b + b * (0.5 + 0.5 * osc1) * (0.5 + 0.5 * osc1))\nfilter2: type = lowpass; cutoff = 280; resonance = 0.707\ncomp1: source = sidechain; threshold = -24; ratio = 1 + d; attack = 0.001; release = 0.14; knee = 6\n"
+    "script": "# Gated Rumble Machine Send\n# Rhythmic wet-only rumble with tempo-locked tremolo and optional external kick ducking. Use on an aux return. With no external sidechain the compressor remains open; rhythmic motion continues from the internal oscillator.\nparam a = Drive [2, 12]\nparam b = Gate [0, 1]\nparam c = Tail [0.25, 0.8]\nparam d = Duck [0, 12]\nosc1: shape = triangle; sync = 1/8; depth = 1\nfilter1: type = highpass; cutoff = 30; resonance = 0.707\nreverb1: size = c; decay = 0.65; damp = 0.9; mix = 1; width = 0.5\nstage1: y = tanh(x * a) * 0.7 * (1 - b + b * (0.5 + 0.5 * osc1) * (0.5 + 0.5 * osc1))\nfilter2: type = lowpass; cutoff = 280; resonance = 0.707\ncomp1: source = sidechain; threshold = -24; ratio = 1 + d; attack = 0.001; release = 0.14; knee = 6\n",
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Dynamics",
+      "Filter",
+      "Modulation",
+      "Reverb"
+    ],
+    "style": "Industrial",
+    "role": "Send / Return",
+    "requiredInputs": [
+      "sidechain"
+    ]
   },
   {
     "name": "Sub Harmonic Translation",
@@ -14736,7 +18393,18 @@
       "max": 0.65,
       "default": 0.25
     },
-    "script": "# Sub Harmonic Translation\n# Adds filtered upper harmonics derived from the existing bass, helping it remain audible on small speakers. The original fundamental stays on the dry path. Amount controls perceived bass presence; this does not synthesize a lower octave.\nparam a = Focus [55, 140]\nparam b = Drive [2, 12]\nparam c = Amount [0, 0.65]\nstage1: y = x\nbus harmonics:\n send: in = 1\n filter1: type = lowpass; cutoff = a; resonance = 0.707\n stage2: y = tanh(x * b) * 0.5\n filter2: type = highpass; cutoff = a * 1.5; resonance = 0.707\n filter3: type = lowpass; cutoff = 650; resonance = 0.707\nout: main = 1; harmonics = c\n"
+    "script": "# Sub Harmonic Translation\n# Adds filtered upper harmonics derived from the existing bass, helping it remain audible on small speakers. The original fundamental stays on the dry path. Amount controls perceived bass presence; this does not synthesize a lower octave.\nparam a = Focus [55, 140]\nparam b = Drive [2, 12]\nparam c = Amount [0, 0.65]\nstage1: y = x\nbus harmonics:\n send: in = 1\n filter1: type = lowpass; cutoff = a; resonance = 0.707\n stage2: y = tanh(x * b) * 0.5\n filter2: type = highpass; cutoff = a * 1.5; resonance = 0.707\n filter3: type = lowpass; cutoff = 650; resonance = 0.707\nout: main = 1; harmonics = c\n",
+    "soundSources": [
+      "Full Mix",
+      "Bass Guitar"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Drum Crush Parallel",
@@ -14774,7 +18442,19 @@
       "max": 0.2,
       "default": 0.085
     },
-    "script": "# Drum Crush Parallel\n# A dedicated parallel drum compressor with high-pass cleanup on the crushed path. Attack leaves the dry transient intact and Density blends in sustain. Match perceived level before judging the result.\nparam a = Density [0, 0.65]\nparam b = Threshold [14, 36]\nparam c = Recovery [0.035, 0.2]\nstage1: y = x\nbus crush:\n send: in = 1\n filter1: type = highpass; cutoff = 85; resonance = 0.707\n comp1: threshold = -b; ratio = 10; attack = 0.018; release = c; knee = 4; makeup = 7\n stage2: y = tanh(x * 1.2) * 0.8\nout: main = 1 - a * 0.25; crush = a\n"
+    "script": "# Drum Crush Parallel\n# A dedicated parallel drum compressor with high-pass cleanup on the crushed path. Attack leaves the dry transient intact and Density blends in sustain. Match perceived level before judging the result.\nparam a = Density [0, 0.65]\nparam b = Threshold [14, 36]\nparam c = Recovery [0.035, 0.2]\nstage1: y = x\nbus crush:\n send: in = 1\n filter1: type = highpass; cutoff = 85; resonance = 0.707\n comp1: threshold = -b; ratio = 10; attack = 0.018; release = c; knee = 4; makeup = 7\n stage2: y = tanh(x * 1.2) * 0.8\nout: main = 1 - a * 0.25; crush = a\n",
+    "soundSources": [
+      "Full Mix",
+      "Drums"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Dynamics",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Low Mid Congestion Control",
@@ -14807,7 +18487,17 @@
       "max": 1,
       "default": 0.5
     },
-    "script": "# Low Mid Congestion Control\n# Three-band compression focused on the low mids. Low and high bands retain the phase-matched crossover response; only the congested middle band is reduced. Tune the boundaries to the source and reduce Amount when the mix loses body.\nparam a = Low [100, 250]\nparam b = High [450, 1200]\nparam c = Amount [0, 1]\nxover1: f1 = a; f2 = b\nbus mid:\n comp1: threshold = -16 - c * 16; ratio = 1 + c * 3; attack = 0.03; release = 0.16; knee = 9\nout: low = 1; mid = 1; high = 1\n"
+    "script": "# Low Mid Congestion Control\n# Three-band compression focused on the low mids. Low and high bands retain the phase-matched crossover response; only the congested middle band is reduced. Tune the boundaries to the source and reduce Amount when the mix loses body.\nparam a = Low [100, 250]\nparam b = High [450, 1200]\nparam c = Amount [0, 1]\nxover1: f1 = a; f2 = b\nbus mid:\n comp1: threshold = -16 - c * 16; ratio = 1 + c * 3; attack = 0.03; release = 0.16; knee = 9\nout: low = 1; mid = 1; high = 1\n",
+    "soundSources": [
+      "Full Mix"
+    ],
+    "processingTypes": [
+      "Dynamics",
+      "Multi-Band"
+    ],
+    "style": "",
+    "role": "Parallel",
+    "requiredInputs": []
   },
   {
     "name": "Master Transient Glue",
@@ -14849,7 +18539,16 @@
       "max": 3,
       "default": 0.6
     },
-    "script": "# Master Transient Glue\n# Gentle slow-attack bus compression with an adjustable threshold and recovery. Intended for modest gain reduction while preserving attacks; no automatic loudness maximization. Match bypass loudness and leave delivery loudness to the final mastering stage.\nparam a = Threshold [8, 26]\nparam b = Ratio [1, 2]\nparam c = Recovery [0.08, 0.4]\nparam d = Makeup [0, 3]\ncomp1: threshold = -a; ratio = b; attack = 0.03; release = c; knee = 9; makeup = d\nlimit1: ceiling = -1; release = 0.12\n"
+    "script": "# Master Transient Glue\n# Gentle slow-attack bus compression with an adjustable threshold and recovery. Intended for modest gain reduction while preserving attacks; no automatic loudness maximization. Match bypass loudness and leave delivery loudness to the final mastering stage.\nparam a = Threshold [8, 26]\nparam b = Ratio [1, 2]\nparam c = Recovery [0.08, 0.4]\nparam d = Makeup [0, 3]\ncomp1: threshold = -a; ratio = b; attack = 0.03; release = c; knee = 9; makeup = d\nlimit1: ceiling = -1; release = 0.12\n",
+    "soundSources": [
+      "Full Mix"
+    ],
+    "processingTypes": [
+      "Dynamics"
+    ],
+    "style": "",
+    "role": "Master",
+    "requiredInputs": []
   },
   {
     "name": "Master Side Low Cleanup",
@@ -14887,7 +18586,19 @@
       "max": 1,
       "default": 0
     },
-    "script": "# Master Side Low Cleanup\n# High-pass filtering only the side channel removes unstable stereo sub energy while retaining the center bass. The side high shelf can soften wide cymbals. Not a loudness enhancer; compare stereo image and mono translation.\nparam a = Mono Below [35, 180]\nparam b = Side Air [-3, 1]\nms1: mode = encode\nfilter1: channel = side; type = highpass; cutoff = a; resonance = 0.707\neq1: channel = side; type = highshelf; freq = 6500; q = 0.707; gain = b\nms2: mode = decode\n"
+    "script": "# Master Side Low Cleanup\n# High-pass filtering only the side channel removes unstable stereo sub energy while retaining the center bass. The side high shelf can soften wide cymbals. Not a loudness enhancer; compare stereo image and mono translation.\nparam a = Mono Below [35, 180]\nparam b = Side Air [-3, 1]\nms1: mode = encode\nfilter1: channel = side; type = highpass; cutoff = a; resonance = 0.707\neq1: channel = side; type = highshelf; freq = 6500; q = 0.707; gain = b\nms2: mode = decode\n",
+    "soundSources": [
+      "Full Mix",
+      "Bass Guitar"
+    ],
+    "processingTypes": [
+      "EQ",
+      "Filter",
+      "Stereo"
+    ],
+    "style": "",
+    "role": "Master",
+    "requiredInputs": []
   },
   {
     "name": "Reference Master Polish",
@@ -14947,7 +18658,19 @@
       "min": 8,
       "max": 26,
       "default": 14
-    }
+    },
+    "soundSources": [
+      "Full Mix"
+    ],
+    "processingTypes": [
+      "Dynamics",
+      "EQ",
+      "Filter",
+      "Stereo"
+    ],
+    "style": "",
+    "role": "Master",
+    "requiredInputs": []
   },
   {
     "name": "Impact Master Finish",
@@ -15001,7 +18724,18 @@
       "min": -1.5,
       "max": -0.3,
       "default": -1
-    }
+    },
+    "soundSources": [
+      "Full Mix"
+    ],
+    "processingTypes": [
+      "Dynamics",
+      "EQ",
+      "Filter"
+    ],
+    "style": "",
+    "role": "Master",
+    "requiredInputs": []
   },
   {
     "name": "Curved Sync Duck",
@@ -15022,7 +18756,17 @@
       "min": 0.2,
       "max": 0.95,
       "default": 0.78
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Modulation"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "MIDI Bowed Resonator",
@@ -15055,7 +18799,19 @@
       "min": 0.4,
       "max": 3,
       "default": 1.3
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Modulation",
+      "Reverb"
+    ],
+    "style": "Ambient",
+    "role": "Insert",
+    "requiredInputs": [
+      "midi"
+    ]
   },
   {
     "name": "Bipolar Formant Arc",
@@ -15088,7 +18844,17 @@
       "min": 0.2,
       "max": 0.9,
       "default": 0.55
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Modulation"
+    ],
+    "style": "",
+    "role": "Parallel",
+    "requiredInputs": []
   },
   {
     "name": "Sixteen Step Filter",
@@ -15122,7 +18888,17 @@
       "min": 0,
       "max": 0.5,
       "default": 0.05
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Modulation"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Probability Break Chops",
@@ -15155,7 +18931,16 @@
       "min": 0.03,
       "max": 0.6,
       "default": 0.15
-    }
+    },
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "Modulation"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "MIDI Pluck Filter",
@@ -15187,7 +18972,19 @@
       "min": 800,
       "max": 9000,
       "default": 4000
-    }
+    },
+    "soundSources": [
+      "Synth"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Modulation"
+    ],
+    "style": "Electronic",
+    "role": "Insert",
+    "requiredInputs": [
+      "midi"
+    ]
   },
   {
     "name": "MIDI Swell Return",
@@ -15220,7 +19017,19 @@
       "min": 0.2,
       "max": 0.85,
       "default": 0.55
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Modulation",
+      "Reverb"
+    ],
+    "style": "Ambient",
+    "role": "Insert",
+    "requiredInputs": [
+      "midi"
+    ]
   },
   {
     "name": "Held Envelope Cutoff",
@@ -15252,7 +19061,17 @@
       "min": 0,
       "max": 0.5,
       "default": 0.06
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Modulation"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Seeded Drift Filter",
@@ -15284,7 +19103,17 @@
       "min": 400,
       "max": 3000,
       "default": 1200
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Modulation"
+    ],
+    "style": "",
+    "role": "Creative",
+    "requiredInputs": []
   },
   {
     "name": "Transient Accent Fold",
@@ -15317,7 +19146,17 @@
       "min": 0.5,
       "max": 8,
       "default": 3
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Modulation"
+    ],
+    "style": "Industrial",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Control Crossfade Filter",
@@ -15351,7 +19190,17 @@
       "min": 800,
       "max": 8000,
       "default": 3600
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Modulation"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Rectified Motion",
@@ -15384,7 +19233,17 @@
       "min": 600,
       "max": 7000,
       "default": 2400
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Modulation"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Quantized Random Steps",
@@ -15414,7 +19273,16 @@
       "min": 0.05,
       "max": 0.6,
       "default": 0.12
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Modulation"
+    ],
+    "style": "",
+    "role": "Creative",
+    "requiredInputs": []
   },
   {
     "name": "Transient Clip Bus",
@@ -15456,7 +19324,16 @@
       "min": -18,
       "max": 0,
       "default": -2
-    }
+    },
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "Filter"
+    ],
+    "style": "",
+    "role": "Bus",
+    "requiredInputs": []
   },
   {
     "name": "Transformer Bus Cushion",
@@ -15490,7 +19367,17 @@
       "min": 0.05,
       "max": 0.6,
       "default": 0.2
-    }
+    },
+    "soundSources": [
+      "Full Mix"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Dynamics"
+    ],
+    "style": "",
+    "role": "Master",
+    "requiredInputs": []
   },
   {
     "name": "Folded Parallel Texture",
@@ -15527,7 +19414,17 @@
       "min": 0.1,
       "max": 0.8,
       "default": 0.4
-    }
+    },
+    "soundSources": [
+      "FX / Field Recording"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Glitch"
+    ],
+    "style": "",
+    "role": "Send / Return",
+    "requiredInputs": []
   },
   {
     "name": "Jittered Drum Sampler",
@@ -15565,7 +19462,16 @@
       "min": 0.15,
       "max": 0.85,
       "default": 0.55
-    }
+    },
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "Glitch"
+    ],
+    "style": "Lo-Fi",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Transparent Gain Trim",
@@ -15583,7 +19489,16 @@
       "min": -18,
       "max": 18,
       "default": 0
-    }
+    },
+    "soundSources": [
+      "Full Mix"
+    ],
+    "processingTypes": [
+      "Utility"
+    ],
+    "style": "",
+    "role": "Bus",
+    "requiredInputs": []
   },
   {
     "name": "Metallic Resonant Body",
@@ -15616,7 +19531,16 @@
       "min": 0.1,
       "max": 0.8,
       "default": 0.4
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Reverb"
+    ],
+    "style": "",
+    "role": "Creative",
+    "requiredInputs": []
   },
   {
     "name": "Frequency Shift Halo",
@@ -15642,7 +19566,17 @@
       "min": 0.1,
       "max": 0.75,
       "default": 0.45
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Pitch"
+    ],
+    "style": "",
+    "role": "Creative",
+    "requiredInputs": []
   },
   {
     "name": "Fold Threshold Bass",
@@ -15677,7 +19611,17 @@
       "min": 900,
       "max": 6500,
       "default": 3200
-    }
+    },
+    "soundSources": [
+      "Bass Guitar"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Glitch"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Nonlinear Lowpass Drive",
@@ -15709,7 +19653,16 @@
       "min": 0.15,
       "max": 1,
       "default": 0.7
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Filter"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Tape Brake Transition",
@@ -15741,7 +19694,16 @@
       "min": 0.1,
       "max": 0.85,
       "default": 0.5
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Glitch"
+    ],
+    "style": "",
+    "role": "Creative",
+    "requiredInputs": []
   },
   {
     "name": "Reverse Grain Return",
@@ -15773,7 +19735,17 @@
       "min": 0.1,
       "max": 0.7,
       "default": 0.35
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Delay"
+    ],
+    "style": "",
+    "role": "Insert",
+    "requiredInputs": []
   },
   {
     "name": "Ring Sideband Percussion",
@@ -15805,6 +19777,594 @@
       "min": 2000,
       "max": 14000,
       "default": 9000
-    }
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Glitch"
+    ],
+    "style": "",
+    "role": "Creative",
+    "requiredInputs": []
+  },
+  {
+    "name": "Poly Synth Motion",
+    "category": "Synth",
+    "description": "Slow looping MSEG plus seeded random drift mixed into a lowpass. Motion is the curve length; Drift sets how much random moves the cutoff. The dry signal stays on the main path.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Poly Synth Motion\n# Slow looping MSEG plus seeded random drift mixed into a lowpass. Motion is the curve length; Drift sets how much random moves the cutoff. The dry signal stays on the main path.\nparam a = Motion [0.6, 12]\nparam b = Drift [0, 1.4]\nparam c = Rate [0.05, 2]\nparam d = Tone [200, 4000]\nparam e = Resonance [0.2, 1.1]\nparam f = Blend [0.15, 1]\nmseg1: points = 0:0.15:0.5,0.4:1:1.2,0.75:0.35:-0.8,1:0.2:0; duration = a; source = free; mode = loop\nrandom1: rate = c; min = 0; max = 1; smooth = 0.92; seed = 441\nmodmix1: ina = mseg1; inb = random1; levela = 1; levelb = b; mix = 0.5\nstage1: y = x\nbus motion:\n  filter1: type = lowpass; cutoff = d + modmix1 * 5200; resonance = e\nout: main = 1-f; motion = f\n",
+    "tags": [
+      "bus",
+      "filter",
+      "lowpass",
+      "parallel",
+      "synth"
+    ],
+    "paramA": {
+      "name": "Motion",
+      "min": 0.6,
+      "max": 12,
+      "default": 3.2
+    },
+    "paramB": {
+      "name": "Drift",
+      "min": 0,
+      "max": 1.4,
+      "default": 0.35
+    },
+    "paramC": {
+      "name": "Rate",
+      "min": 0.05,
+      "max": 2,
+      "default": 0.35
+    },
+    "paramD": {
+      "name": "Tone",
+      "min": 200,
+      "max": 4000,
+      "default": 1200
+    },
+    "paramE": {
+      "name": "Resonance",
+      "min": 0.2,
+      "max": 1.1,
+      "default": 0.45
+    },
+    "paramF": {
+      "name": "Blend",
+      "min": 0.15,
+      "max": 1,
+      "default": 0.55
+    },
+    "soundSources": [
+      "Synth"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Modulation"
+    ],
+    "style": "Electronic",
+    "role": "Parallel",
+    "requiredInputs": []
+  },
+  {
+    "name": "Velocity Driven Drive",
+    "category": "Synth",
+    "description": "MIDI velocity scales saturation drive through a short ADSR. Soft notes stay close to the dry tone; harder notes add harmonics. Route MIDI notes to the insert.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Velocity Driven Drive\n# MIDI velocity scales saturation drive through a short ADSR. Soft notes stay close to the dry tone; harder notes add harmonics. Route MIDI notes to the insert.\nparam a = Drive [2, 18]\nparam b = Tone [0.2, 0.85]\nparam c = Cutoff [1200, 14000]\nadsr1: gate = midi; attack = 0.004; decay = 0.12; sustain = 0; release = 0.08; velocity = 1\nsaturate1: mode = transistor; drive = 1.5 + adsr1 * a; tone = b; mix = 1; autoGain = on\nfilter1: type = lowpass; cutoff = c; resonance = 0.32\n",
+    "tags": [
+      "drive",
+      "filter",
+      "lowpass",
+      "synth"
+    ],
+    "paramA": {
+      "name": "Drive",
+      "min": 2,
+      "max": 18,
+      "default": 8
+    },
+    "paramB": {
+      "name": "Tone",
+      "min": 0.2,
+      "max": 0.85,
+      "default": 0.5
+    },
+    "paramC": {
+      "name": "Cutoff",
+      "min": 1200,
+      "max": 14000,
+      "default": 6500
+    },
+    "soundSources": [
+      "Synth"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Filter",
+      "Modulation"
+    ],
+    "style": "Electronic",
+    "role": "Insert",
+    "requiredInputs": [
+      "midi"
+    ]
+  },
+  {
+    "name": "Hybrid Dynamic Wah",
+    "category": "Modulation",
+    "description": "Envelope and LFO share one filter. Sensitivity scales the envelope; Motion Balance crossfades envelope versus LFO. Works on guitar, bass, or synth without extra inputs.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Hybrid Dynamic Wah\n# Envelope and LFO share one filter. Sensitivity scales the envelope; Motion Balance crossfades envelope versus LFO. Works on guitar, bass, or synth without extra inputs.\nparam a = Sensitivity [0.2, 1]\nparam b = Rate [0.15, 6]\nparam c = Motion Balance [0, 1]\nparam d = Cutoff [200, 1800]\nparam e = Depth [400, 5000]\nparam f = Resonance [0.4, 1.4]\nenv1: type = peak; unit = lin; attack = 0.006; release = 0.07; min = 0; max = a\nosc1: shape = sine; freq = b; depth = 1\nmodmix1: ina = env1; inb = osc1; mix = c; levela = 1; levelb = 1\nfilter1: type = bandpass; center = d + modmix1 * e; width = 900; resonance = f\n",
+    "tags": [
+      "bass",
+      "envelope",
+      "filter",
+      "guitar",
+      "lfo",
+      "modulation",
+      "synth",
+      "width"
+    ],
+    "paramA": {
+      "name": "Sensitivity",
+      "min": 0.2,
+      "max": 1,
+      "default": 0.7
+    },
+    "paramB": {
+      "name": "Rate",
+      "min": 0.15,
+      "max": 6,
+      "default": 1.4
+    },
+    "paramC": {
+      "name": "Motion Balance",
+      "min": 0,
+      "max": 1,
+      "default": 0.45
+    },
+    "paramD": {
+      "name": "Cutoff",
+      "min": 200,
+      "max": 1800,
+      "default": 480
+    },
+    "paramE": {
+      "name": "Depth",
+      "min": 400,
+      "max": 5000,
+      "default": 1800
+    },
+    "paramF": {
+      "name": "Resonance",
+      "min": 0.4,
+      "max": 1.4,
+      "default": 0.85
+    },
+    "soundSources": [
+      "Guitar",
+      "Synth"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Modulation"
+    ],
+    "style": "Electronic",
+    "role": "Insert",
+    "requiredInputs": []
+  },
+  {
+    "name": "Subsafe Groove Bass",
+    "category": "Bass",
+    "description": "Crossover keeps the low band on a clean path. The upper band gets a host-synced filter groove and light saturation. Blend is the upper return; it is not a measured brickwall for the sub.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Subsafe Groove Bass\n# Crossover keeps the low band on a clean path. The upper band gets a host-synced filter groove and light saturation. Blend is the upper return; it is not a measured brickwall for the sub.\nparam a = Crossover [80, 220]\nparam b = Motion [400, 6000]\nparam c = Drive [1, 8]\nparam d = Groove [0.25, 1]\nparam e = Tone [0.2, 0.85]\nparam f = Blend [0.2, 1]\nxover1: f1 = a\nstepseq1: steps = 8; sync = 1/16; values = 0.2,0.9,0.35,0.75,0.15,1,0.4,0.65; glide = 0.04\nbus high:\n  nlfilter1: cutoff = 600 + stepseq1 * b; drive = c; mix = d\n  saturate1: mode = transistor; drive = c; tone = e; mix = 0.3\nout: low = 1; high = f\n",
+    "tags": [
+      "bass",
+      "bus",
+      "drive",
+      "eq",
+      "equalizer",
+      "filter",
+      "parallel"
+    ],
+    "paramA": {
+      "name": "Crossover",
+      "min": 80,
+      "max": 220,
+      "default": 140
+    },
+    "paramB": {
+      "name": "Motion",
+      "min": 400,
+      "max": 6000,
+      "default": 2400
+    },
+    "paramC": {
+      "name": "Drive",
+      "min": 1,
+      "max": 8,
+      "default": 2.4
+    },
+    "paramD": {
+      "name": "Groove",
+      "min": 0.25,
+      "max": 1,
+      "default": 0.7
+    },
+    "paramE": {
+      "name": "Tone",
+      "min": 0.2,
+      "max": 0.85,
+      "default": 0.5
+    },
+    "paramF": {
+      "name": "Blend",
+      "min": 0.2,
+      "max": 1,
+      "default": 0.65
+    },
+    "soundSources": [
+      "Bass Guitar"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Filter",
+      "Modulation",
+      "Multi-Band"
+    ],
+    "style": "",
+    "role": "Parallel",
+    "requiredInputs": []
+  },
+  {
+    "name": "Resonant Drum Body",
+    "category": "Drums",
+    "description": "Onsets trigger a parallel resonant body. Tune and Resonance set the ring; Decay is the trigger hold. Dry transients stay on the main path.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Resonant Drum Body\n# Onsets trigger a parallel resonant body. Tune and Resonance set the ring; Decay is the trigger hold. Dry transients stay on the main path.\nparam a = Trigger [-36, -8]\nparam b = Tune [80, 1800]\nparam c = Resonance [1.2, 8]\nparam d = Decay [20, 220]\nparam e = Blend [0.1, 0.8]\nenvtrigger1: thresholddb = a; hysteresis = 5; holdoff = 25; hold = d; level = 1; source = peak\nstage1: y = x\nbus body:\n  resonator1: freq = b; res = c; gain = -4; mix = 1\n  stage2: y = x * envtrigger1\nout: main = 1; body = e\n",
+    "tags": [
+      "bus",
+      "drum",
+      "drums",
+      "parallel"
+    ],
+    "paramA": {
+      "name": "Trigger",
+      "min": -36,
+      "max": -8,
+      "default": -22
+    },
+    "paramB": {
+      "name": "Tune",
+      "min": 80,
+      "max": 1800,
+      "default": 220
+    },
+    "paramC": {
+      "name": "Resonance",
+      "min": 1.2,
+      "max": 8,
+      "default": 3.2
+    },
+    "paramD": {
+      "name": "Decay",
+      "min": 20,
+      "max": 220,
+      "default": 70
+    },
+    "paramE": {
+      "name": "Blend",
+      "min": 0.1,
+      "max": 0.8,
+      "default": 0.35
+    },
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "Modulation"
+    ],
+    "style": "",
+    "role": "Parallel",
+    "requiredInputs": []
+  },
+  {
+    "name": "Dynamic Hat Tamer",
+    "category": "Drums",
+    "description": "De-esser on hats and bright percussion. Amount only rises when the band exceeds the threshold. Not a static lowpass; Metal Cymbal Tamer remains the static overhead EQ.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Dynamic Hat Tamer\n# De-esser on hats and bright percussion. Amount only rises when the band exceeds the threshold. Not a static lowpass; Metal Cymbal Tamer remains the static overhead EQ.\nparam a = Frequency [4000, 11000]\nparam b = Threshold [-18, 0]\nparam c = Amount [0.2, 1]\nparam d = Release [0.02, 0.16]\nparam e = Air [-4, 2]\ndeesser1: freq = a; threshold = b; amount = c; attack = 0.002; release = d; mix = 1\neq1: type = highshelf; freq = 11000; q = 0.5; gain = e\n",
+    "tags": [
+      "air",
+      "drums",
+      "eq",
+      "equalizer",
+      "hat",
+      "lowpass",
+      "metal"
+    ],
+    "paramA": {
+      "name": "Frequency",
+      "min": 4000,
+      "max": 11000,
+      "default": 7500
+    },
+    "paramB": {
+      "name": "Threshold",
+      "min": -18,
+      "max": 0,
+      "default": -8
+    },
+    "paramC": {
+      "name": "Amount",
+      "min": 0.2,
+      "max": 1,
+      "default": 0.65
+    },
+    "paramD": {
+      "name": "Release",
+      "min": 0.02,
+      "max": 0.16,
+      "default": 0.05
+    },
+    "paramE": {
+      "name": "Air",
+      "min": -4,
+      "max": 2,
+      "default": 0
+    },
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "Restoration",
+      "EQ"
+    ],
+    "style": "Metal",
+    "role": "Insert",
+    "requiredInputs": []
+  },
+  {
+    "name": "Triggered Room Send",
+    "category": "Drums",
+    "description": "Audio onsets open a parallel room. The dry path is unchanged. Trigger must move the send into the reverb; a silent trigger leaves only the dry signal.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Triggered Room Send\n# Audio onsets open a parallel room. The dry path is unchanged. Trigger must move the send into the reverb; a silent trigger leaves only the dry signal.\nparam a = Trigger [-36, -8]\nparam b = Room [0.2, 0.85]\nparam c = Decay [0.2, 2.5]\nparam d = Tone [2500, 12000]\nparam e = Return [0.08, 0.7]\nenvtrigger1: thresholddb = a; hysteresis = 6; holdoff = 40; hold = 90; level = 1; source = peak\nstage1: y = x\nbus room:\n  send: in = 1\n  stage2: y = x * envtrigger1\n  reverb1: size = b; decay = c; damp = 0.55; mix = 1\n  filter1: type = lowpass; cutoff = d; resonance = 0.3\nout: main = 1; room = e\n",
+    "tags": [
+      "bus",
+      "drums",
+      "filter",
+      "lowpass",
+      "parallel",
+      "reverb",
+      "room",
+      "send",
+      "space"
+    ],
+    "paramA": {
+      "name": "Trigger",
+      "min": -36,
+      "max": -8,
+      "default": -20
+    },
+    "paramB": {
+      "name": "Room",
+      "min": 0.2,
+      "max": 0.85,
+      "default": 0.45
+    },
+    "paramC": {
+      "name": "Decay",
+      "min": 0.2,
+      "max": 2.5,
+      "default": 0.7
+    },
+    "paramD": {
+      "name": "Tone",
+      "min": 2500,
+      "max": 12000,
+      "default": 6500
+    },
+    "paramE": {
+      "name": "Return",
+      "min": 0.08,
+      "max": 0.7,
+      "default": 0.28
+    },
+    "soundSources": [
+      "Drums"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Modulation",
+      "Reverb"
+    ],
+    "style": "",
+    "role": "Send / Return",
+    "requiredInputs": []
+  },
+  {
+    "name": "Patterned Delay Throws",
+    "category": "Delay",
+    "description": "Host-synced steps open a delay send while the dry path stays constant. Edit the sequencer in Circuit for the throw pattern. Tone is delay damping.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Patterned Delay Throws\n# Host-synced steps open a delay send while the dry path stays constant. Edit the sequencer in Circuit for the throw pattern. Tone is delay damping.\nparam a = Pattern [0.3, 1]\nparam b = Time [80, 480]\nparam c = Feedback [0.1, 0.65]\nparam d = Tone [2500, 12000]\nparam e = Throw Level [0.1, 0.8]\nstepseq1: steps = 8; sync = 1/8; values = 0,0,1,0,0,0,0.7,0; glide = 0.02\nstage1: y = x\nbus throws:\n  send: in = 1\n  stage2: y = x * (a * stepseq1)\n  delay1: time = b; feedback = c; mix = 1; damp = d\n  filter1: type = highpass; cutoff = 160; resonance = 0.3\nout: main = 1; throws = e\n",
+    "tags": [
+      "bus",
+      "delay",
+      "eq",
+      "equalizer",
+      "filter",
+      "highpass",
+      "parallel",
+      "send"
+    ],
+    "paramA": {
+      "name": "Pattern",
+      "min": 0.3,
+      "max": 1,
+      "default": 0.85
+    },
+    "paramB": {
+      "name": "Time",
+      "min": 80,
+      "max": 480,
+      "default": 187.5
+    },
+    "paramC": {
+      "name": "Feedback",
+      "min": 0.1,
+      "max": 0.65,
+      "default": 0.32
+    },
+    "paramD": {
+      "name": "Tone",
+      "min": 2500,
+      "max": 12000,
+      "default": 7000
+    },
+    "paramE": {
+      "name": "Throw Level",
+      "min": 0.1,
+      "max": 0.8,
+      "default": 0.35
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Modulation",
+      "Delay"
+    ],
+    "style": "",
+    "role": "Send / Return",
+    "requiredInputs": []
+  },
+  {
+    "name": "Vocal Presence Duck",
+    "category": "Mixing",
+    "description": "External sidechain compresses only the presence band of the insert. Lows and air pass around it. Route a vocal to the sidechain input; without that input there is no ducking.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Vocal Presence Duck\n# External sidechain compresses only the presence band of the insert. Lows and air pass around it. Route a vocal to the sidechain input; without that input there is no ducking.\nparam a = Frequency [800, 3500]\nparam b = Width [400, 2500]\nparam c = Sensitivity [-28, -8]\nparam d = Recovery [0.04, 0.35]\nparam e = Duck Amount [0.2, 1]\nsidechain1: mix = 1\nxover1: f1 = a; f2 = a + b\nbus mid:\n  comp1: threshold = c; ratio = 1 + e * 5; attack = 0.008; release = d; source = sidechain; makeup = 0\nout: low = 1; mid = 1; high = 1\n",
+    "tags": [
+      "air",
+      "bus",
+      "compressor",
+      "mixing",
+      "parallel",
+      "sidechain",
+      "vocal",
+      "width"
+    ],
+    "paramA": {
+      "name": "Frequency",
+      "min": 800,
+      "max": 3500,
+      "default": 1800
+    },
+    "paramB": {
+      "name": "Width",
+      "min": 400,
+      "max": 2500,
+      "default": 900
+    },
+    "paramC": {
+      "name": "Sensitivity",
+      "min": -28,
+      "max": -8,
+      "default": -16
+    },
+    "paramD": {
+      "name": "Recovery",
+      "min": 0.04,
+      "max": 0.35,
+      "default": 0.12
+    },
+    "paramE": {
+      "name": "Duck Amount",
+      "min": 0.2,
+      "max": 1,
+      "default": 0.6
+    },
+    "soundSources": [
+      "Full Mix",
+      "Vocals"
+    ],
+    "processingTypes": [
+      "Dynamics",
+      "Multi-Band"
+    ],
+    "style": "",
+    "role": "Parallel",
+    "requiredInputs": [
+      "sidechain"
+    ]
+  },
+  {
+    "name": "Metered Drive Template",
+    "category": "Utility",
+    "description": "Gain into a peak meter, tape saturator, soft clipper, then a second peak meter. Inspect each Meter chip for input versus output. The meters do not change the audio.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Metered Drive Template\n# Gain into a peak meter, tape saturator, soft clipper, then a second peak meter. Inspect each Meter chip for input versus output. The meters do not change the audio.\nparam a = Input [-12, 12]\nparam b = Drive [0, 18]\nparam c = Ceiling [-12, 0]\namp1: gain = a; mix = 1\nmeter1: mode = peak\nsaturate1: mode = tape; drive = b; mix = 1; tone = 0.55; autoGain = off\nclip1: mode = soft; threshold = c; mix = 1\nmeter2: mode = peak\n",
+    "tags": [
+      "clipper",
+      "drive",
+      "tape",
+      "utility"
+    ],
+    "paramA": {
+      "name": "Input",
+      "min": -12,
+      "max": 12,
+      "default": 0
+    },
+    "paramB": {
+      "name": "Drive",
+      "min": 0,
+      "max": 18,
+      "default": 6
+    },
+    "paramC": {
+      "name": "Ceiling",
+      "min": -12,
+      "max": 0,
+      "default": -1
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Utility"
+    ],
+    "style": "",
+    "role": "Template",
+    "requiredInputs": []
   }
 ]

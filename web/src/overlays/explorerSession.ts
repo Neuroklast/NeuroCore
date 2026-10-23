@@ -4,6 +4,9 @@ export type ExplorerSession = {
   q: string;
   scope: ExplorerScope;
   cat: string;
+  sources: string[];
+  types: string[];
+  styles: string[];
   selectedName: string;
   folderScroll: number;
   listScroll: number;
@@ -13,6 +16,9 @@ export const explorerSession: ExplorerSession = {
   q: "",
   scope: "all",
   cat: "",
+  sources: [],
+  types: [],
+  styles: [],
   selectedName: "",
   folderScroll: 0,
   listScroll: 0,

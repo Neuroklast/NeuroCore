@@ -443,6 +443,20 @@ juce::var presetStateVar (NeuroKoreAudioProcessor& proc)
         for (const auto& t : e.tags)
             tags.add (t);
         o->setProperty ("tags", tags);
+        juce::Array<juce::var> sources;
+        for (const auto& s : e.soundSources)
+            sources.add (s);
+        o->setProperty ("soundSources", sources);
+        juce::Array<juce::var> types;
+        for (const auto& t : e.processingTypes)
+            types.add (t);
+        o->setProperty ("processingTypes", types);
+        o->setProperty ("style", e.style);
+        o->setProperty ("role", e.role);
+        juce::Array<juce::var> required;
+        for (const auto& r : e.requiredInputs)
+            required.add (r);
+        o->setProperty ("requiredInputs", required);
         list.add (juce::var (o));
     }
     for (const auto& f : proc.presetManager.getAvailablePresets (PresetLibrary::userPresetRoot()))
