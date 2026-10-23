@@ -13,6 +13,11 @@ struct FactoryPresetEntry
     juce::String description;
     juce::String script;
     juce::StringArray tags;
+    juce::StringArray soundSources;
+    juce::StringArray processingTypes;
+    juce::String style;
+    juce::String role;
+    juce::StringArray requiredInputs;
     /** Slot id ("ir1") -> original WAV filename. Audio is not in the formula. */
     std::map<juce::String, juce::String> irs;
     juce::String paramNames[8];

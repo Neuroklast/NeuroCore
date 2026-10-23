@@ -5,6 +5,14 @@ import re
 import unittest
 
 CATALOG = Path(__file__).resolve().parents[1] / 'resources' / 'factory_presets.json'
+SOURCES = {
+    'Any', 'Guitar', 'Bass Guitar', 'Synth', 'Synth Bass', 'Drums', 'Percussion',
+    'Vocals', 'Speech', 'Acoustic Instruments', 'Full Mix', 'FX / Field Recording',
+}
+TYPES = {
+    'Distortion', 'Saturation', 'Dynamics', 'Transient', 'EQ', 'Filter', 'Modulation',
+    'Pitch', 'Delay', 'Reverb', 'Stereo', 'Spatial', 'Multi-Band', 'Glitch', 'Utility', 'Restoration',
+}
 
 class FactoryCuration(unittest.TestCase):
     def test_names_controls_and_expressions(self):
@@ -25,6 +33,22 @@ class FactoryCuration(unittest.TestCase):
                 text = (preset['name'] + ' ' + preset['description'] + ' ' + script).casefold()
                 for artist in ('zatox', 'holypriest', 'holy priest', 'sub zero project', 'rekkt', 'zerosum', 'koren stack', 'priest split', 'sub zero pummel'):
                     self.assertNotIn(artist, text)
+
+    def test_metadata_vocab_except_protected_mesa(self):
+        presets = json.loads(CATALOG.read_text(encoding='utf-8'))
+        for preset in presets:
+            with self.subTest(preset=preset['name']):
+                if preset['name'] == 'Mesa High Gain':
+                    self.assertNotIn('soundSources', preset)
+                    continue
+                sources = preset.get('soundSources') or []
+                types = preset.get('processingTypes') or []
+                self.assertTrue(sources)
+                self.assertTrue(types)
+                self.assertTrue(set(sources) <= SOURCES)
+                self.assertTrue(set(types) <= TYPES)
+                for item in preset.get('requiredInputs') or []:
+                    self.assertIn(item, ('midi', 'sidechain'))
 
 if __name__ == '__main__':
     unittest.main()

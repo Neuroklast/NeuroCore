@@ -75,6 +75,18 @@ describe("factory catalog", () => {
     expect(empty, empty.join(", ")).toEqual([]);
   });
 
+  it("keeps explicit source and type metadata off Mesa High Gain", () => {
+    const mesa = findFactory("Mesa High Gain");
+    expect(mesa?.soundSources ?? []).toEqual([]);
+    expect(mesa?.processingTypes ?? []).toEqual([]);
+    const duck = findFactory("Sidechain Duck Bass");
+    expect(duck?.soundSources.length).toBeGreaterThan(0);
+    expect(duck?.processingTypes.length).toBeGreaterThan(0);
+    expect(duck?.requiredInputs).toContain("sidechain");
+    const midi = findFactory("MIDI Pluck Filter");
+    expect(midi?.requiredInputs).toContain("midi");
+  });
+
   it("keeps factory IR and gain fields that native applyPreset reads", () => {
     const cab = findFactory("Mesa High Gain");
     expect(cab?.irs?.ir1).toMatch(/\.wav$/i);

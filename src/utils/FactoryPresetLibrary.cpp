@@ -65,15 +65,33 @@ bool parseFactoryPresetsJson(const juce::String& text, std::vector<FactoryPreset
         e.description = item.value("description", std::string{});
         e.script      = item.value("script", std::string{});
 
-        if (item.contains ("tags") && item["tags"].is_array())
+        auto readStrings = [&item] (const char* key, juce::StringArray& dest)
         {
-            for (const auto& t : item["tags"])
+            if (! item.contains (key) || ! item[key].is_array())
+                return;
+            for (const auto& t : item[key])
                 if (t.is_string())
-                    PresetSearch::addTag (e.tags, t.get<std::string>());
-        }
+                    PresetSearch::addTag (dest, t.get<std::string>());
+        };
+        readStrings ("tags", e.tags);
+        readStrings ("soundSources", e.soundSources);
+        readStrings ("processingTypes", e.processingTypes);
+        readStrings ("requiredInputs", e.requiredInputs);
+        if (item.contains ("style") && item["style"].is_string())
+            e.style = item["style"].get<std::string>();
+        if (item.contains ("role") && item["role"].is_string())
+            e.role = item["role"].get<std::string>();
         e.tags = PresetSearch::mergeTags (e.tags,
                                           PresetSearch::inferTags (e.script, e.name,
                                                                    e.category, e.description));
+        for (const auto& s : e.soundSources)
+            PresetSearch::addTag (e.tags, s);
+        for (const auto& t : e.processingTypes)
+            PresetSearch::addTag (e.tags, t);
+        if (e.style.isNotEmpty())
+            PresetSearch::addTag (e.tags, e.style);
+        for (const auto& r : e.requiredInputs)
+            PresetSearch::addTag (e.tags, r);
 
         if (e.name.isEmpty() || e.script.isEmpty())
             continue;

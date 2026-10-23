@@ -45,6 +45,11 @@ export interface HostState {
     author: string;
     factory: boolean;
     tags: string[];
+    soundSources?: string[];
+    processingTypes?: string[];
+    style?: string;
+    role?: string;
+    requiredInputs?: string[];
   }>;
   licensed: boolean;
   demoRemainSec: number;
@@ -413,6 +418,11 @@ export const useHostStore = create<HostState>((set) => ({
           author: String(e.author ?? "Neuroklast"),
           factory: e.factory !== false,
           tags: Array.isArray(e.tags) ? e.tags.map(String) : [],
+          soundSources: Array.isArray(e.soundSources) ? e.soundSources.map(String) : [],
+          processingTypes: Array.isArray(e.processingTypes) ? e.processingTypes.map(String) : [],
+          style: String(e.style ?? ""),
+          role: String(e.role ?? ""),
+          requiredInputs: Array.isArray(e.requiredInputs) ? e.requiredInputs.map(String) : [],
         }))
       : s.presets,
   };

@@ -44,6 +44,11 @@ export type FactoryRow = {
   outputGain: number;
   irs: Record<string, string>;
   knobs: FactoryKnob[];
+  soundSources: string[];
+  processingTypes: string[];
+  style: string;
+  role: string;
+  requiredInputs: string[];
 };
 
 function catalogIrs(raw: unknown): Record<string, string> {
@@ -62,7 +67,13 @@ const rows: FactoryRow[] = factory
       outputGain?: number;
       irs?: Record<string, string>;
       knobs?: FactoryKnob[];
+      soundSources?: string[];
+      processingTypes?: string[];
+      style?: string;
+      role?: string;
+      requiredInputs?: string[];
     };
+    const strings = (v: unknown) => Array.isArray(v) ? v.map(String) : [];
     return {
       name: p.name,
       category: String(p.category ?? "Factory"),
@@ -84,6 +95,11 @@ const rows: FactoryRow[] = factory
             default: Number(k.default ?? 0),
           }))
         : [],
+      soundSources: strings(rec.soundSources),
+      processingTypes: strings(rec.processingTypes),
+      style: String(rec.style ?? ""),
+      role: String(rec.role ?? ""),
+      requiredInputs: strings(rec.requiredInputs),
     };
   });
 
@@ -99,6 +115,11 @@ export function factoryExplorerRows(): Array<Omit<FactoryRow, "script" | "knobs"
     author: row.author,
     factory: row.factory,
     tags: row.tags,
+    soundSources: row.soundSources,
+    processingTypes: row.processingTypes,
+    style: row.style,
+    role: row.role,
+    requiredInputs: row.requiredInputs,
   }));
 }
 

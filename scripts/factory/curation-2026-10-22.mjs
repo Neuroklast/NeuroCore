@@ -242,18 +242,10 @@ filter1: type = lowpass; cutoff = c; resonance = 0.4`,
 {a:k("Carrier",35,1600,190),b:k("Ring",.15,.9,.55),c:k("Tone",2000,14000,9000)}),
 ];
 export function curateFactory(input) {
-  const addedNames=new Set(additions.map(p=>p.name));
-  const result=input.filter(p=>!retired[p.name]&&!addedNames.has(p.name)).map(p=>{
-    if(p.name==="Mesa High Gain")return p;
-    if(revisions.has(p.name))return revisions.get(p.name).preset;
-    if(p.name==="Midtempo Pressure Pump"){
-      const description="Tempo-synced moving filter into tube and asymmetric fold distortion, followed by compressor pumping. Push adds pre-filter gain; no external sidechain is required.";
-      return {...p,description,paramE:{...p.paramE,name:"Push"},script:p.script.replace(/^#.*\n#.*\n/,"# Midtempo Pressure Pump\n# "+description+"\n").replace("param e = Noise","param e = Push")};
-    }
-    if(p.name==="Optical Leveler Comp")return {...p,description:"Slow optical-style level control with a fixed 10 ms attack and 480 ms release, followed by tube saturation. Ratio reaches down to 2:1.",script:p.script.replace("Limit [3.0, 12.0]","Limit [2.0, 12.0]"),paramC:{...p.paramC,min:2}};
-    return p;
-  });
-  return [...result,...additions].map(p=>{
+  const have=new Set(input.map(p=>p.name));
+  const kept=input.filter(p=>!retired[p.name]);
+  const missing=additions.filter(a=>!have.has(a.name)&&!retired[a.name]);
+  return [...kept,...missing].map(p=>{
     if(!dcCleanupNames.includes(p.name)||p.script.includes("filter999:"))return p;
     return {...p,script:p.script.trimEnd()+"\nfilter999: type = highpass; cutoff = 20; resonance = 0.35\n"};
   });
