@@ -145,9 +145,15 @@ export async function commitBoardConnect(src: BoardPort, dst: BoardPort): Promis
     return;
   }
   const cur = useAstStore.getState();
-  const next = scriptAfterConnect(cur.lastValidScript || cur.script, from.nodeId, to.nodeId);
-  await publishScript(next, "canvas");
-  rerouteBoard();
+  try {
+    const next = scriptAfterConnect(cur.lastValidScript || cur.script, from.nodeId, to.nodeId,
+      { fromJack: from.jackId, toJack: to.jackId, kind: src.kind });
+    await publishScript(next, "canvas");
+    rerouteBoard();
+  } catch (error) {
+    useAstStore.setState({ diagnostics: [{ line: 1, column: 1,
+      message: error instanceof Error ? error.message : "Connection could not be created." }] });
+  }
 }
 
 export async function commitBoardCut(port: BoardPort): Promise<void> {

@@ -128,3 +128,14 @@ describe("circuit connect model", () => {
     expect(relinked.indexOf("stage1:")).toBeLessThan(relinked.indexOf("filter1:"));
   });
 });
+
+it("web control connections preserve the selected ModMix input and source order", () => {
+ const script = "random1: min = 0; max = 1\nstepseq1: rate = 2\nmodmix1: inA = stepseq1; inB = stepseq1\n";
+ const next = scriptAfterConnect(script,"random1","modmix1",{fromJack:"out",toJack:"inB",kind:"mod"});
+ expect(next).toBe("random1: min = 0; max = 1\nstepseq1: rate = 2\nmodmix1: inA = stepseq1; inB = random1\n");
+});
+
+it("refuses unsupported web audio rails without rewriting the patch", () => {
+ const script = "split_ms1: mode = encode\nfilter1: cutoff = 900\n";
+ expect(() => scriptAfterConnect(script,"split_ms1","filter1",{fromJack:"side",toJack:"in",kind:"audio"})).toThrow("native plugin editor");
+});
