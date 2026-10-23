@@ -49,7 +49,7 @@ import {
   type ContainmentPose,
 } from "./containmentModel";
 import { createContainment } from "./containmentPass";
-import { GL_RESTORE_MS, glOnLost, glOnRestoreTimeout, glOnRestored, glShouldDraw, type GlLife } from "./glLife";
+import { glOnLost, glOnRestored, glShouldDraw, type GlLife } from "./glLife";
 
 const PIXEL_BUDGET = 4.5e6;
 const INTRO_SECONDS = 2.2;
@@ -1040,26 +1040,15 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
     };
 
     let life: GlLife = "live";
-    let restoreTimer = 0;
     const onLost = (e: Event) => {
       e.preventDefault();
-      const next = glOnLost(life);
-      life = next.life;
-      if (next.waitMs > 0) {
-        window.clearTimeout(restoreTimer);
-        restoreTimer = window.setTimeout(() => {
-          life = glOnRestoreTimeout(life);
-          if (life === "dead") {
-            setFailed(true);
-          }
-        }, next.waitMs);
-      }
+      life = glOnLost(life);
     };
     const onRestored = () => {
-      if (glOnRestored(life) !== "live") {
+      if (life !== "lost") {
         return;
       }
-      window.clearTimeout(restoreTimer);
+      life = glOnRestored(life);
       skipLose.current = true;
       setEpoch((n) => n + 1);
     };
@@ -1097,7 +1086,6 @@ export function BallGl({ fallback }: { fallback: ReactNode }) {
 
     return () => {
       alive = false;
-      window.clearTimeout(restoreTimer);
       unsubscribe();
       canvas.removeEventListener("webglcontextlost", onLost);
       canvas.removeEventListener("webglcontextrestored", onRestored);

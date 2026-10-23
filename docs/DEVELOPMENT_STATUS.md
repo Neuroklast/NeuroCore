@@ -6,7 +6,7 @@
 
 ## UI/UX stabilization (2026-10-23)
 
-Preset Explorer keeps active Source/Type/Style chips at count 0, Clear all restores the catalog, leftover `cat` cannot hide results, keyboard Enter/arrows stay in the list or search, unknown names no longer report success, and header prev/next walk the full catalog. Detail lists documented metadata and parsed DSP/mod blocks. Header splits tools vs LIVE/STUDIO/BYPASS; Bypass is still Mix→0 (`dryWet`), not DSP bypass. Tooltips are one layer inside the plugin window (layout pixels after ScaleShell). Unit ball pauses on `webglcontextlost`, rebuilds on restore, falls back after 2 s. Exiting overlays do not keep pointer capture. Browser Circuit demo clips unsubscribe off that tab.
+Preset Explorer keeps active Source/Type/Style chips at count 0, Clear all restores the catalog, leftover `cat` cannot hide results, keyboard Enter/arrows stay in the list or search, unknown names no longer report success, and header prev/next walk the full catalog. Detail lists documented metadata and parsed DSP/mod blocks. Header splits tools vs LIVE/STUDIO/BYPASS; Bypass is still Mix→0 (`dryWet`), not DSP bypass. Tooltips are one layer inside the plugin window (layout pixels after ScaleShell). Unit ball pauses on `webglcontextlost` and rebuilds on restore; no 2 s fallback timer. Exiting overlays do not keep pointer capture. Browser Circuit demo clips unsubscribe off that tab.
 
 Contracts: explorer filter/key/load/detail, tooltip scaleRect, glLife, overlay exit, workspace demo-clock scan. Focused vitest 70 pass. Playwright layout and nkperf frame timings not run. GPU before/after numbers are not available.
 
