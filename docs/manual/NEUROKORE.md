@@ -51,7 +51,7 @@ L / BOTH / R chooses which input side the sound hears. BOTH is the default. A de
 
 Top bar
 - Mark left, then the preset name — click the name for the library. Untitled if nothing is loaded. `<` / `>` step through factory, then your sounds. Functions, Stages, Settings, Help, LIVE / STUDIO and Bypass sit on the right of this row.
-- The row under it is Unit / Circuit / Terminal, then A | B, A→B and MATCH on the right.
+- The row under it is Unit / Circuit / Terminal, then A | B, A→B and MATCH on the right. Unit and Circuit crossfade. Unit still tears down its GPU view when you leave it. Circuit stays mounted. Motion Off cuts the fade.
 - Functions — look up formula words and insert them.
 - Stages — chain on the left, parameters of the selected block on the right. Arrow keys move the selection; Enter opens Inspect. The title X closes Inspect and every other overlay. Select an IR block to open that cabinet slot.
 - Settings — motion, Live / Studio, theme (Signal, Gold, Azure, DIGICIDE), frame rate (30 or 60), unsaved prompt, cables, tempo, standalone audio device, About, License, Help. These apply to every instance on this machine, including inserts whose window is closed, and are kept after you close the DAW in `%AppData%/NEUROKLAST/NeuroKore/ui.settings`. Window size, oversampling, Soft Clip, and Unit meter view (source, time/freq, linear/dB, grid, invert Y, delta) are stored there too. Mix, knobs, and the formula stay with the insert. A saved project cannot override OS, Soft Clip, or meters — AppData wins. Resize the window by dragging the frame; the next launch opens at that size. The UI scales with the display (4K / HiDPI): the frame and the web UI grow together. Live/Studio does not change the window size. Signal is crimson plus cyan. Gold is Cyberpunk 2077 yellow, sky, and teal. DIGICIDE is the industrial steel look; Unit then shows the Digicide mask instead of the Neurokore mark. Motion **Full** plays even if Windows animation effects are off. Off is always still.
@@ -96,7 +96,7 @@ Click the preset name. Categories stay on the left, names in the middle, details
 
 A restrained silkscreen strip below the routed circuit identifies the current preset and the actual effect types on the board. It stays outside components and connection routes and does not change chip positions.
 
-Inspect opens a compact hardware panel with a scrollable control grid, direct value entry and Peak/RMS readings. Use arrow keys on a focused dial to adjust it, Shift for fine changes, Home/End for its limits, or Reset for the default. IN and OUT show the plugin input/output even when they are implicit in the source. The panel’s close button stays in its title bar while content scrolls.
+Inspect opens a compact hardware panel with a scrollable control grid, direct value entry and Peak/RMS readings. Step counts, bit depths, phaser stages and chorus voices stay whole numbers. Lists such as Sync sit below the dials, not in the same cell. Use arrow keys on a focused dial to adjust it, Shift for fine changes, Home/End for its limits, or Reset for the default. IN and OUT show the plugin input/output even when they are implicit in the source. The panel’s close button stays in its title bar while content scrolls.
 
 With Full animation, bright directional impulses travel along both Wave and Dots cables. RMS controls speed and peak controls brightness. Dots keeps the dotted trace underneath. Measured sustained energy remains visible even between transients. Pulses traverse long routes before fading and do not loop, including when the incoming audio falls silent or zoom changes during travel. Reduced/Off motion keeps a stationary level indication and discards travelling pulses.
 
@@ -122,7 +122,7 @@ Cables
 - OUT grows when several buses mix in (low/mid/high, send returns). One input stays a compact tile.
 
 IN and OUT
-- **AUDIO IN**, **MIDI IN** and **SIDECHAIN IN** are fixed plates on the left of the board. They cannot be moved, copied or deleted. AUDIO IN has one output, **out**, for the track. SIDECHAIN IN is the host sidechain (`sc`); it is silent when the host pin is off. MIDI IN is the host MIDI input. Formula variables `midi_note`, `midi_freq`, `midi_vel`, `midi_gate`, `midi_bend` and `midi_mod` still come from that host MIDI. MIDI Learn on a knob is separate and is not a board cable. There is no MIDI output. **AUDIO OUT** is the fixed plate on the right.
+- **AUDIO IN**, **MIDI IN** and **SIDECHAIN IN** are fixed plates on the left of the board. They cannot be moved, copied or deleted. AUDIO IN has one output, **out**, for the track. SIDECHAIN IN is the host sidechain (`sc`); the plate dims when the host pin is off. MIDI IN is the host MIDI input. Its plate lights on note gate, velocity, or mod wheel. An unused patch still shows a gate jack; dragging a cable from it is refused. Formula variables `midi_note`, `midi_freq`, `midi_vel`, `midi_gate`, `midi_bend` and `midi_mod` still come from that host MIDI. MIDI Learn on a knob is separate and is not a board cable. There is no MIDI output. **AUDIO OUT** is the fixed plate on the right. Parameter cables meet the south jacks of a chip; audio stays east/west.
 - **OUT** is the mix back to the host. Named buses (a Send row) land on their own west mix jacks — `main`, then each bus — not a leftover `in`. Expand it (chevron or right-click Details) for **gain** (−24 to +12 dB). Gain is not a slider on the closed tile.
 
 Blocks
@@ -334,7 +334,7 @@ The overlapping radio/telephone/clipper variants are consolidated. Complete remo
 
 ### Control-chain connections
 
-Audio Join accepts audio on `inA` and `inB`. ModMath and ModMix accept control sources on those contacts. StepSeq, ADSR, Sample & Hold, Random, ModMath and ModMix expose control outputs in Circuit. A source’s Depth and Polarity apply once at every outgoing connection, including connections into another modulator.
+Audio Join accepts audio on `inA` and `inB`. ModMath and ModMix accept control sources on those contacts. StepSeq, ADSR, Sample & Hold, Random, ModMath and ModMix expose control outputs in Circuit. A formula such as `cutoff = random1` draws that cable onto the cutoff jack. A source’s Depth and Polarity apply once at every outgoing connection, including connections into another modulator.
 
 ### ModMix control mixer
 

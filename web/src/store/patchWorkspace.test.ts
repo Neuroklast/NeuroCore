@@ -40,8 +40,9 @@ describe("PR1 baseline: Circuit and Terminal are split editors", () => {
     usePatchSelectionStore.setState({ ...EMPTY_SELECTION });
   });
 
-  it("Circuit stays mounted hidden; Terminal unmounts off the hack tab", () => {
-    expect(app).toContain('workspace === "assemble" ? "h-full min-h-0" : "hidden"');
+  it("Circuit stays mounted; Unit unmounts; Terminal unmounts off the hack tab", () => {
+    expect(app).toContain("workspacePaneClass(workspace === \"assemble\")");
+    expect(app).toContain('workspace === "face" ? (');
     expect(app).toContain("terminalMounted(workspace)");
     expect(terminalMounted("assemble")).toBe(false);
     expect(terminalMounted("hack")).toBe(true);

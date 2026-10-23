@@ -157,8 +157,10 @@ describe("headless board model", () => {
     ]);
     expect(portLocal(node, west[0]!).y).toBe(portLocal(node, east[0]!).y);
     const layout = graphToLayout(g).nodes.find((n) => n.id === "octaver1")!;
-    expect(layout.ins.map((p) => p.id)).toEqual([portId("octaver1", "in", false)]);
-    expect(layout.ins[0]!.y).toBe(layout.outs[0]!.y);
+    const layoutWest = layout.ins.filter((p) => p.face === "w");
+    expect(layoutWest.map((p) => p.id)).toEqual([portId("octaver1", "in", false)]);
+    expect(layoutWest[0]!.y).toBe(layout.outs[0]!.y);
+    expect(layout.ins.some((p) => p.face === "s")).toBe(true);
   });
 
   it("keeps OTT audio in on the west face when a param reuses that jack id", () => {
@@ -181,9 +183,11 @@ describe("headless board model", () => {
     const south = Object.values(g.ports).filter((p) => p.nodeId === "ott1" && p.face === "s");
     expect(west.map((p) => p.jackId)).toEqual(["in"]);
     expect(south.map((p) => p.jackId)).not.toContain("in");
-    expect(graphToLayout(g).nodes.find((n) => n.id === "ott1")!.ins.map((p) => p.id)).toEqual([
+    const layout = graphToLayout(g).nodes.find((n) => n.id === "ott1")!;
+    expect(layout.ins.filter((p) => p.face === "w").map((p) => p.id)).toEqual([
       portId("ott1", "in", false),
     ]);
+    expect(layout.ins.some((p) => p.face === "s")).toBe(true);
   });
 });
 

@@ -27,7 +27,7 @@ import { resetMuteSolo } from "../assemble/muteSoloApply";
 import { useChipViewStore } from "../store/expandStore";
 import { dismissSplash, setSplashProgress } from "../theme/splash";
 import { nk } from "../theme/tokens";
-import { knobBindEnabled, telemetryIntervalMs, terminalMounted, type Workspace } from "./workspace";
+import { knobBindEnabled, telemetryIntervalMs, terminalMounted, workspacePaneClass, type Workspace } from "./workspace";
 
 const HackView = lazy(() => import("../hack/HackView"));
 
@@ -182,21 +182,23 @@ export function App() {
       <WorkspaceTabs workspace={workspace} setWorkspace={setWorkspace} />
         <div className="nk-bind-host nk-chrome-x relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         <div className="nk-frame relative min-h-0 flex-1 overflow-hidden border border-[var(--nk-line)]">
+          <div className="nk-panes">
           {workspace === "face" ? (
-            <div className="h-full min-h-0">
+            <div className={workspacePaneClass(true)} data-pane="face">
               <FaceView />
             </div>
           ) : null}
-          <div className={workspace === "assemble" ? "h-full min-h-0" : "hidden"}>
+          <div className={workspacePaneClass(workspace === "assemble")} data-pane="assemble">
             <AssembleView active={workspace === "assemble"} onOpenTerminal={() => setWorkspace("hack")} />
           </div>
           {terminalMounted(workspace) ? (
-            <div className="h-full min-h-0">
+            <div className={workspacePaneClass(true)} data-pane="hack">
               <Suspense fallback={null}>
                 <HackView />
               </Suspense>
             </div>
           ) : null}
+          </div>
           <PaneVignette />
         </div>
         <MixOs />

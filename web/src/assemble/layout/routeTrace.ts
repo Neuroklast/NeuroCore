@@ -89,8 +89,8 @@ export function routeBoardTrace(
   };
   map.markExitStub(start.c, start.r);
   map.markEntryStub(goal.c, goal.r);
-  map.reserveRunway(edgeId, start, 1, 2);
-  map.reserveRunway(edgeId, goal, -1, 2);
+  map.reserveRunway(edgeId, start, 1, 0, 2);
+  map.reserveRunway(edgeId, goal, -1, 0, 2);
   map.expandTo(start.c, start.r);
   map.expandTo(goal.c, goal.r);
   map.finishHalo();

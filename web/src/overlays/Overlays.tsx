@@ -17,7 +17,7 @@ import { chipSpec } from "../assemble/chipSpec";
 import { nodeMeter } from "../assemble/nodeMeter";
 import { adsrEnvelopePath } from "../assemble/nodeFace/adsrEnvelope";
 import { envEnvelopePath } from "../assemble/nodeFace/envEnvelope";
-import { inspectArgFields, inspectBlurb, inspectRows, inspectNode } from "./inspectModel";
+import { inspectArgFields, inspectBlurb, inspectControlGroups, inspectRows, inspectNode } from "./inspectModel";
 import { InspectKnob, isLiteralNumber, isMacroOrExpression } from "./InspectKnob";
 import { OptimizePanel } from "./OptimizePanel";
 import { overlayBodyOverflow, overlayIsWide, overlayShowsHostClose, overlaySizesToContent } from "./overlayChrome";
@@ -83,7 +83,7 @@ export function InspectBody({ nodeId }: { nodeId: string | null }) {
     });
     const terminal = node.type === "in" || node.type === "out";
     const blurb = terminal ? (node.type === "out" ? "Final plugin output sent to the host." : "Audio entering the plugin from the host.") : inspectBlurb(node.type);
-    const editable = argFields.filter((f) => isLiteralNumber(f.value) || f.options.length > 0);
+    const { knobs, enums } = inspectControlGroups(argFields);
     const bound = argFields.filter((f) => isMacroOrExpression(f.value));
     const formula = argFields.filter((f) => {
       if (node.type === "mseg" && f.key === "points") return false;
@@ -113,19 +113,33 @@ export function InspectBody({ nodeId }: { nodeId: string | null }) {
         </div>
 
         {/* Primäre Bedienelemente: kompakte Regler + Werte */}
-        {editable.length > 0 ? (
+        {knobs.length > 0 ? (
           <div className="nk-inspect-controls">
-            {editable.map((f) => (
-              <div key={f.key} className="flex flex-col gap-1">
-                <InspectKnob
-                  nodeId={node.id}
-                  nodeType={node.type}
-                  field={f}
-                  current={f.value}
-                  onCommit={onCommit}
-                  onReveal={() => onReveal(f.key)}
-                />
-              </div>
+            {knobs.map((f) => (
+              <InspectKnob
+                key={f.key}
+                nodeId={node.id}
+                nodeType={node.type}
+                field={f}
+                current={f.value}
+                onCommit={onCommit}
+                onReveal={() => onReveal(f.key)}
+              />
+            ))}
+          </div>
+        ) : null}
+        {enums.length > 0 ? (
+          <div className="nk-inspect-enums">
+            {enums.map((f) => (
+              <InspectKnob
+                key={f.key}
+                nodeId={node.id}
+                nodeType={node.type}
+                field={f}
+                current={f.value}
+                onCommit={onCommit}
+                onReveal={() => onReveal(f.key)}
+              />
             ))}
           </div>
         ) : null}

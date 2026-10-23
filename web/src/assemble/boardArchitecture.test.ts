@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { AstDocument, AstNode } from "../bridge/ast";
 import { canDeleteChip } from "./boardEdit";
+import { midiPlateLit, sidechainPlateLive } from "./boardTerminalLive";
 import { graphOpEndpoints, graphToLayout, hydrateBoard, portGlobal, portId } from "./boardModel";
 import { parseRoutePath } from "./boardPath";
 import { chipSpec } from "./chipSpec";
@@ -53,6 +54,36 @@ describe("board architecture baseline", () => {
     expect(south).toContain("ceiling");
     expect(south).not.toContain("lookahead");
     expect(g.ports[portId("comp1", "ceiling", false)]).toBeTruthy();
+  });
+
+  it("routes a south param cable to the south jack, not the west audio in", async () => {
+    const ast: AstDocument = {
+      ...emptyAst(),
+      nodes: [
+        node("osc1", "osc", { freq: "1" }),
+        node("comp1", "comp", chipSpec("comp").defaultArgs),
+      ],
+      edges: [
+        { from: "IN", to: "comp1", kind: "audio", fromJack: "out", toJack: "in" },
+        { from: "osc1", to: "comp1", kind: "mod", fromJack: "mod", toJack: "ceiling" },
+      ],
+    };
+    const g = hydrateBoard(ast);
+    const layout = graphToLayout(g);
+    const ceilingId = portId("comp1", "ceiling", false);
+    expect(layout.nodes.find((n) => n.id === "comp1")!.ins.map((p) => p.id)).toContain(ceilingId);
+    expect(layout.edges.some((e) => e.toJack === ceilingId)).toBe(true);
+    const laid = await compact(layout.nodes, layout.edges, { w: 896, h: 520 });
+    const edge = layout.edges.find((e) => e.toJack === ceilingId);
+    expect(edge).toBeTruthy();
+    const pts = parseRoutePath(laid.edgePaths[edge!.id] ?? "");
+    expect(pts.length).toBeGreaterThan(1);
+    const jack = g.ports[ceilingId]!;
+    const box = laid.nodes.comp1!;
+    const dest = portGlobal({ ...g.nodes.comp1!, x: box.x, y: box.y, w: box.w, h: box.h }, jack);
+    const end = pts[pts.length - 1]!;
+    expect(end.x, "south jack, not west audio in").toBeCloseTo(dest.x, 0);
+    expect(end.y, "south jack, not west audio in").toBeCloseTo(dest.y, 0);
   });
 });
 
@@ -160,6 +191,21 @@ describe("midi terminal contract", () => {
 
   it("does not invent a MIDI graphOp source for unused patches", () => {
     const g = hydrateBoard(emptyAst());
+    expect(g.ports[portId("MIDI", "gate", true)]?.nodeId).toBe("MIDI");
     expect(Object.values(g.edges).some((e) => e.sourceNodeId === "MIDI")).toBe(false);
+  });
+
+  it("lights MIDI from host midiGate/vel/mod, not from a graph edge", () => {
+    expect(midiPlateLit(0, 0, 0)).toBe(false);
+    expect(midiPlateLit(1, 0, 0)).toBe(true);
+    expect(midiPlateLit(0, 0.8, 0)).toBe(true);
+    expect(midiPlateLit(0, 0, 0.4)).toBe(true);
+  });
+});
+
+describe("sidechain terminal live", () => {
+  it("dims SC when the host pin is off", () => {
+    expect(sidechainPlateLive(false)).toBe(false);
+    expect(sidechainPlateLive(true)).toBe(true);
   });
 });

@@ -9,6 +9,7 @@ import {
   inspectNoteChoices,
   inspectSnapNote,
   inspectValueFromNote,
+  inspectControlGroups,
   inspectRows,
 } from "./inspectModel";
 
@@ -171,6 +172,26 @@ describe("inspect enums / ranges / blurb / bindings", () => {
     expect(a.value).toContain("1/1");
     expect(a.value).toContain("1/16");
     expect(a.value).not.toContain("0.06");
+  });
+
+  it("steps is an integer count: 19.75 snaps to 20", () => {
+    expect(clampInspectArg("stepseq", "steps", "19.75")).toBe("20");
+    expect(clampInspectArg("stepseq", "steps", "1.2")).toBe("1");
+    expect(clampInspectArg("bitcrush", "bits", "8.7")).toBe("9");
+    expect(clampInspectArg("filter", "cutoff", "1000.5")).toBe("1000.5");
+    const fields = inspectArgFields({
+      id: "stepseq1",
+      type: "stepseq",
+      busName: "main",
+      args: { steps: "19.75", glide: "0.06", sync: "1/8" },
+      trailingComment: "",
+    });
+    expect(fields.find((f) => f.key === "steps")?.integer).toBe(true);
+    expect(fields.find((f) => f.key === "glide")?.integer).toBe(false);
+    const groups = inspectControlGroups(fields);
+    expect(groups.knobs.some((f) => f.key === "steps")).toBe(true);
+    expect(groups.enums.some((f) => f.key === "sync")).toBe(true);
+    expect(groups.knobs.some((f) => f.key === "sync")).toBe(false);
   });
 });
 

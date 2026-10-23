@@ -1,10 +1,14 @@
 import { useCallback, useRef, useState, useEffect } from "react";
 import { chipSpec } from "../assemble/chipSpec";
-import {
-  KNOB_CX, KNOB_CY, knobArcLen, knobArcOffset,
-} from "../chrome/knobChrome";
+import { knobArcLen, knobArcOffset } from "../chrome/knobChrome";
 import { formatKnobDisplay, mappedToNorm } from "../chrome/noteValue";
-import type { InspectArgField } from "./inspectModel";
+import {
+  INSPECT_DIAL_CX,
+  INSPECT_DIAL_CY,
+  INSPECT_DIAL_R,
+  INSPECT_DIAL_VIEW,
+} from "./inspectDial";
+import { snapInspectNumber, type InspectArgField } from "./inspectModel";
 
 const PURE_NUMBER = /^-?\d+(\.\d+)?([eE][+-]?\d+)?$/;
 const MACRO_LETTER = /\b[a-f]\b/i;
@@ -98,40 +102,40 @@ export function InspectKnob({
         const fine = ev.shiftKey ? 0.25 : 1;
         const next = Math.max(0, Math.min(1, start.current - (ev.clientY - e.clientY) / 140 * fine));
         live.current = next;
-        setDraft(String(field.min + next * (field.max - field.min)));
+        setDraft(String(snapInspectNumber(field.min + next * (field.max - field.min), field.min, field.max, field.integer)));
       };
       const up = (ev: globalThis.PointerEvent) => {
         el.releasePointerCapture(ev.pointerId);
         window.removeEventListener("pointermove", move);
         window.removeEventListener("pointerup", up);
         gesture.current = false;
-        commit(String(field.min + live.current * (field.max - field.min)));
+        commit(String(snapInspectNumber(field.min + live.current * (field.max - field.min), field.min, field.max, field.integer)));
       };
       moveRef.current = move;
       upRef.current = up;
       window.addEventListener("pointermove", move);
       window.addEventListener("pointerup", up);
-    }, [norm01, value, field.min, field.max, commit]);
+    }, [norm01, value, field.min, field.max, field.integer, commit]);
 
   if (isNum) {
-    const readout = formatKnobDisplay(mapped, field.unit);
+    const readout = field.integer ? String(Math.round(mapped)) : formatKnobDisplay(mapped, field.unit);
     const angle = SWEEP_START + norm01 * (SWEEP_END - SWEEP_START);
-    const p1x = KNOB_CX + 16 * Math.sin(angle);
-    const p1y = KNOB_CY - 16 * Math.cos(angle);
-    const p0x = KNOB_CX + 4 * Math.sin(angle);
-    const p0y = KNOB_CY - 4 * Math.cos(angle);
-    const arc = knobArcLen(20);
-    const offset = knobArcOffset(norm01, 20);
+    const p1x = INSPECT_DIAL_CX + 16 * Math.sin(angle);
+    const p1y = INSPECT_DIAL_CY - 16 * Math.cos(angle);
+    const p0x = INSPECT_DIAL_CX + 4 * Math.sin(angle);
+    const p0y = INSPECT_DIAL_CY - 4 * Math.cos(angle);
+    const arc = knobArcLen(INSPECT_DIAL_R);
+    const offset = knobArcOffset(norm01, INSPECT_DIAL_R);
 
     const onDbl = () => setEdit(String(mapped));
     const onEditBlur = () => {
       if (edit == null) {
         return;
       }
-      const n = Number(edit.replace(",", "."));
-      if (Number.isFinite(n)) {
-        commit(String(Math.min(field.max, Math.max(field.min, n))));
-      } else {
+        const n = Number(edit.replace(",", "."));
+        if (Number.isFinite(n)) {
+          commit(String(snapInspectNumber(n, field.min, field.max, field.integer)));
+        } else {
         // Restore the last committed value instead of clearing the field.
         setEdit(null);
       }
@@ -146,16 +150,16 @@ export function InspectKnob({
           onKeyDown={(e) => {
             if (!["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)) return;
             e.preventDefault();
-            const delta = (field.max - field.min) * (e.shiftKey ? 0.001 : 0.01);
+            const delta = field.integer ? 1 : (field.max - field.min) * (e.shiftKey ? 0.001 : 0.01);
             const next = e.key === "Home" ? field.min : e.key === "End" ? field.max
               : mapped + (e.key === "ArrowUp" || e.key === "ArrowRight" ? delta : -delta);
-            commit(String(Math.min(field.max, Math.max(field.min, next))));
+            commit(String(snapInspectNumber(next, field.min, field.max, field.integer)));
           }}>
-          <svg viewBox="0 0 44 44" className="nk-inspect-knob" aria-hidden>
-            <circle cx={KNOB_CX} cy={KNOB_CY} r={20} fill="var(--nk-well)" stroke="var(--nk-line)" strokeWidth="2" />
-            <circle cx={KNOB_CX} cy={KNOB_CY} r={20} fill="none" stroke="var(--nk-accent)" strokeWidth="2.5" strokeDasharray={`${arc} ${arc * 2}`} strokeDashoffset={offset} strokeLinecap="round" />
+          <svg viewBox={`0 0 ${INSPECT_DIAL_VIEW} ${INSPECT_DIAL_VIEW}`} className="nk-inspect-knob" aria-hidden>
+            <circle cx={INSPECT_DIAL_CX} cy={INSPECT_DIAL_CY} r={INSPECT_DIAL_R} fill="var(--nk-well)" stroke="var(--nk-line)" strokeWidth="2" />
+            <circle cx={INSPECT_DIAL_CX} cy={INSPECT_DIAL_CY} r={INSPECT_DIAL_R} fill="none" stroke="var(--nk-accent)" strokeWidth="2.5" strokeDasharray={`${arc} ${arc * 2}`} strokeDashoffset={offset} strokeLinecap="round" />
             <line x1={p0x} y1={p0y} x2={p1x} y2={p1y} stroke="var(--nk-ink)" strokeWidth="1.6" strokeLinecap="round" />
-            <circle cx={KNOB_CX} cy={KNOB_CY} r={3.5} fill="var(--nk-surface)" stroke="var(--nk-line)" strokeWidth="1" />
+            <circle cx={INSPECT_DIAL_CX} cy={INSPECT_DIAL_CY} r={3.5} fill="var(--nk-surface)" stroke="var(--nk-line)" strokeWidth="1" />
           </svg>
         </div>
         <input id={`${nodeId}-${argKey}`} className="nk-inspect-value" inputMode="decimal"

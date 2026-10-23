@@ -87,10 +87,10 @@ describe("astar grid router", () => {
     const a1 = { c: 12, r: 2 };
     const b0 = { c: 2, r: 3 };
     const b1 = { c: 12, r: 5 };
-    map.reserveRunway("A", a0, 1, 3);
-    map.reserveRunway("A", a1, -1, 3);
-    map.reserveRunway("B", b0, 1, 3);
-    map.reserveRunway("B", b1, -1, 3);
+    map.reserveRunway("A", a0, 1, 0, 3);
+    map.reserveRunway("A", a1, -1, 0, 3);
+    map.reserveRunway("B", b0, 1, 0, 3);
+    map.reserveRunway("B", b1, -1, 0, 3);
     map.finishHalo();
     const a = astarRoute(map, a0, a1, DIR_E, false, "A")!;
     expect(a).toBeTruthy();
@@ -119,9 +119,9 @@ describe("astar grid router", () => {
     const foreign = portInCell(288, 208);
     map.markExitStub(start.c, start.r);
     map.markEntryStub(goal.c, goal.r);
-    map.reserveRunway("audio", start, 1, 1);
-    map.reserveRunway("audio", goal, -1, 1);
-    map.reserveRunway("mod", foreign, -1, 1);
+    map.reserveRunway("audio", start, 1, 0, 1);
+    map.reserveRunway("audio", goal, -1, 0, 1);
+    map.reserveRunway("mod", foreign, -1, 0, 1);
     map.finishHalo();
     expect(start).toEqual({ c: 7, r: 6 });
     expect(goal).toEqual({ c: 8, r: 4 });

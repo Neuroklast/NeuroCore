@@ -4,9 +4,13 @@
 **Version:** 0.7.2-beta  
 **Branch:** `feat/circuit-board-architecture-v2`
 
+## Inspect integers and control cables (2026-10-23)
+
+Inspect step/bit/stage/voice fields snap to whole numbers; dials use a 44×44 centre, not the footer knob origin. Enums sit in a separate row. `inferModLinks` targets the arg key (`cutoff = random1` → cutoff jack); hydrate builds those jacks before dropping edges. Catalog `modOuts` are painted when `audioOuts` is empty.
+
 ## Circuit board terminals (2026-10-23)
 
-Circuit host I/O is no longer painted as ordinary chips. Hydrate always creates locked `IN`, `MIDI`, `SC` and `OUT` plates. AUDIO IN keeps jack `out`. Sidechain stays semantic `IN::sc::src` on visual node `SC`, so `graphOp` still publishes `IN`/`sc`. MIDI is a host plate; drag-connect is refused and native graphOp never sees node `MIDI`. Compact south rails show `faceParamKeys` plus connected jacks only (StepSeq/Comp ≤ 448 px). Random’s closed face is a stepped range, not an LFO sine. Layout packs IN/chips/OUT; MIDI/SC pin below that hull so they do not overlap wrapped chips. SC edges go through A* from the SC plate. Ports use `face: n|e|s|w` (output is `::src`, not east). Unit↔Circuit motion and MIDI live lamps are not in this pass.
+Circuit host I/O is no longer painted as ordinary chips. Hydrate always creates locked `IN`, `MIDI`, `SC` and `OUT` plates. AUDIO IN keeps jack `out`. Sidechain stays semantic `IN::sc::src` on visual node `SC`, so `graphOp` still publishes `IN`/`sc`. MIDI is a host plate; drag-connect is refused and native graphOp never sees node `MIDI`. Compact south rails show `faceParamKeys` plus connected jacks only (StepSeq/Comp ≤ 448 px). Random’s closed face is a stepped range, not an LFO sine. Layout packs IN/chips/OUT; MIDI/SC pin below that hull so they do not overlap wrapped chips. SC edges go through A* from the SC plate. Ports use `face: n|e|s|w` (output is `::src`, not east). Layout ports keep local `x,y,face`; A* leaves/enters on that face so south param cables land on the south rail, not the west audio in. Router endpoints use the same `globalPort` snap as the painted jack. MIDI plate lamps read `midiGate`/`midiVel`/`midiMod` atomics from the host snapshot (timer thread). SC dims when `sidechainOn` is false. Unit/Circuit panes crossfade (`nk-pane`); Unit still unmounts WebGL; Circuit stays mounted. MIDI keeps a display `gate` jack when the patch does not mention MIDI vars.
 
 Contracts: `boardArchitecture.test.ts` failed on unlocked IN and missing SC/MIDI, then passed. Focused assemble layout/model checks pass. Pre-existing chipSpec catalog (comp params) and BoardChip knobs-subscription source scans remain.
 

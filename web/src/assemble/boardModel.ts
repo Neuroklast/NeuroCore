@@ -221,7 +221,8 @@ export function hydrateBoard(ast: AstDocument, sidechainOn = false): BoardGraph 
   addSidePorts(ports, "IN", inJacks, true);
 
   const usedMidi = [...new Set(visible.flatMap((n) => midiRefs(n.args)))];
-  const midiJacks: AstJack[] = usedMidi.map((name) => ({
+  const midiNames = usedMidi.length > 0 ? usedMidi : ["midi_gate"];
+  const midiJacks: AstJack[] = midiNames.map((name) => ({
     id: midiJack(name),
     label: midiJack(name),
     output: true,
@@ -239,7 +240,7 @@ export function hydrateBoard(ast: AstDocument, sidechainOn = false): BoardGraph 
     "",
     true,
   );
-  usedMidi.forEach((name, index) => {
+  midiNames.forEach((name, index) => {
     const id = portId("MIDI", midiJack(name), true);
     ports[id] = {
       id,
@@ -247,7 +248,7 @@ export function hydrateBoard(ast: AstDocument, sidechainOn = false): BoardGraph 
       jackId: midiJack(name),
       face: "e",
       index,
-      count: usedMidi.length,
+      count: midiNames.length,
       kind: "mod",
     };
   });
@@ -276,13 +277,15 @@ export function hydrateBoard(ast: AstDocument, sidechainOn = false): BoardGraph 
   };
   x += nodes.IN.w + CHIP_GAP;
 
+  const inferred = inferModLinks(visible);
+  const jackEdges = [...(ast.edges ?? []), ...inferred];
+
   for (const n of visible) {
     if (n.type === "in" || n.id === "IN" || n.id === "MIDI" || n.id === "SC") {
       continue;
     }
-    const jacks = visualJacksFor(n, visible, ast.edges ?? []).length
-      ? visualJacksFor(n, visible, ast.edges ?? [])
-      : (n.jacks ?? []);
+    const visual = visualJacksFor(n, visible, jackEdges);
+    const jacks = visual.length ? visual : (n.jacks ?? []);
     const custom = n.id.toLowerCase().startsWith("custom") || n.type.toLowerCase() === "custom";
     const role: "io" | "chip" = n.type === "out" ? "io" : "chip";
     const px = x;
@@ -314,7 +317,6 @@ export function hydrateBoard(ast: AstDocument, sidechainOn = false): BoardGraph 
   }
 
   const explicit = visualAudioEdges(visible, ast.edges ?? []);
-  const inferred = inferModLinks(visible);
   const merged: AstEdge[] = [];
   const seen = new Set<string>();
   for (const e of [...explicit, ...inferred]) {
@@ -416,8 +418,13 @@ export function assignRanks(graph: BoardGraph): Record<string, number> {
 
 export function graphToLayout(graph: BoardGraph): { nodes: LayoutNode[]; edges: LayoutEdge[] } {
   const nodes: LayoutNode[] = Object.values(graph.nodes).map((n) => {
-    const ins = Object.values(graph.ports).filter((p) => p.nodeId === n.id && p.face === "w");
-    const outs = Object.values(graph.ports).filter((p) => p.nodeId === n.id && p.face === "e");
+    const owned = Object.values(graph.ports).filter((p) => p.nodeId === n.id);
+    const ins = owned.filter((p) => ! portIsOutput(p));
+    const outs = owned.filter((p) => portIsOutput(p));
+    const asLayout = (p: BoardPort) => {
+      const loc = portLocal(n, p);
+      return { id: p.id, x: loc.x, y: loc.y, face: p.face, index: p.index, count: p.count };
+    };
     return {
       id: n.id,
       x: n.x,
@@ -426,8 +433,8 @@ export function graphToLayout(graph: BoardGraph): { nodes: LayoutNode[]; edges: 
       h: n.h,
       pin: n.id === "MIDI" || n.id === "SC",
       rail: isLfoNode(n) || n.type === "env" ? "mod" : n.busName || "main",
-      ins: ins.map((p) => ({ id: p.id, y: portLocal(n, p).y })),
-      outs: outs.map((p) => ({ id: p.id, y: portLocal(n, p).y })),
+      ins: ins.map(asLayout),
+      outs: outs.map(asLayout),
     };
   });
   const edges: LayoutEdge[] = Object.values(graph.edges).map((e) => ({

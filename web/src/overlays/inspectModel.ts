@@ -1,4 +1,5 @@
 import type { AstDocument, AstNode, AstParam } from "../bridge/ast";
+import { entryById } from "../assemble/blockCatalog";
 import { readMsegPoints } from "../assemble/msegModel";
 import { chipSpec } from "../assemble/chipSpec";
 import { nodeProbe, probeLabel } from "../assemble/nodeProbe";
@@ -27,6 +28,7 @@ export interface InspectArgField {
   min: number;
   max: number;
   timing: boolean;
+  integer: boolean;
 }
 
 /** Inspect note picker: 8 bars down to a sixteenth, plus dotted/triplet in that span. */
@@ -84,6 +86,18 @@ export function inspectEnumOptions(type: string, key: string): string[] {
   return [...(chipSpec(type).enums[key] ?? [])];
 }
 
+export function catalogInteger(type: string, key: string): boolean {
+  return entryById(chipSpec(type).id)?.params.find((p) => p.key === key)?.integer === true;
+}
+
+export function snapInspectNumber(n: number, min: number, max: number, integer: boolean): number {
+  const clamped = Math.min(max, Math.max(min, n));
+  if (! integer) {
+    return clamped;
+  }
+  return Math.min(max, Math.max(min, Math.round(clamped)));
+}
+
 /** Pure numbers clamp to chipSpec.ranges; expressions and letters pass through. */
 export function clampInspectArg(type: string, key: string, raw: string): string {
   const range = chipSpec(type).ranges[key];
@@ -98,11 +112,18 @@ export function clampInspectArg(type: string, key: string, raw: string): string 
   if (! Number.isFinite(n)) {
     return String(range.min);
   }
-  const clamped = Math.min(range.max, Math.max(range.min, n));
-  if (Number.isInteger(clamped)) {
-    return String(clamped);
-  }
-  return String(clamped);
+  return String(snapInspectNumber(n, range.min, range.max, catalogInteger(type, key)));
+}
+
+export function inspectControlGroups(fields: InspectArgField[]): {
+  knobs: InspectArgField[];
+  enums: InspectArgField[];
+} {
+  const editable = fields.filter((f) => PURE_NUMBER.test(f.value.trim()) || f.options.length > 0);
+  return {
+    knobs: editable.filter((f) => f.options.length === 0),
+    enums: editable.filter((f) => f.options.length > 0),
+  };
 }
 
 export function inspectBlurb(type: string): string {
@@ -204,7 +225,7 @@ export function inspectArgFields(node: AstNode): InspectArgField[] {
   return Object.entries(values).map(([key, value]) => {
     const options = inspectEnumOptions(node.type, key);
     if (options.length > 0) {
-      return { key, value, kind: "enum", options, unit: "", min: 0, max: 0, timing: false };
+      return { key, value, kind: "enum", options, unit: "", min: 0, max: 0, timing: false, integer: false };
     }
     const range = spec.ranges[key];
     if (range) {
@@ -218,9 +239,10 @@ export function inspectArgFields(node: AstNode): InspectArgField[] {
         min: range.min,
         max: range.max,
         timing: inspectTimingField(key, unit),
+        integer: catalogInteger(node.type, key),
       };
     }
-    return { key, value, kind: "text", options: [], unit: "", min: 0, max: 0, timing: false };
+    return { key, value, kind: "text", options: [], unit: "", min: 0, max: 0, timing: false, integer: false };
   });
 }
 
