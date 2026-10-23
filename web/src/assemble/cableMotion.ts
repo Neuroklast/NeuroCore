@@ -1,10 +1,6 @@
 import { lfoPeriodMs } from "./lfoLamp";
 import { logAmp, PLASMA_PITCH, PLASMA_SPAN } from "./tubeModel";
 
-export type CableKind = "audio" | "mod";
-export type CableStyle = "wave" | "dots";
-export type CableLayer = "lfo" | "wave" | "dots" | "still";
-
 /** One LFO period = one pulse trip down the cable. */
 export function lfoChaseMs(hz: number): number {
   return lfoPeriodMs(hz);
@@ -102,10 +98,6 @@ export function waveAnimMs(patternPx: number, pitch = PLASMA_PITCH): number {
   return Math.max(80, Math.round((len / p) * WAVE_MS_PER_PITCH));
 }
 
-export function dotDash(pitch = 24, size = 2.4): string {
-  return `${size} ${Math.max(8, pitch - size)}`;
-}
-
 /** Linear peak at −60 dBFS. At or below this the beads do not move. */
 export const CABLE_STILL_AMP = 10 ** (-60 / 20);
 export const CABLE_STILL_DB = -60;
@@ -168,13 +160,3 @@ export function plasmaPeriodMs(peak: number): number {
   return Math.round(1100 - a * 880);
 }
 
-export function cableLayer(
-  kind: CableKind,
-  style: CableStyle,
-  motionOn: boolean,
-): CableLayer {
-  if (kind === "mod") {
-    return motionOn ? "lfo" : "still";
-  }
-  return style === "dots" ? "dots" : "wave";
-}
