@@ -67,6 +67,33 @@ bus room:
   filter1: type = lowpass; cutoff = d; resonance = 0.3
 out: main = 1; room = e`,
   { a: k("Trigger", -36, -8, -20), b: k("Room", 0.2, 0.85, 0.45), c: k("Decay", 0.2, 2.5, 0.7), d: k("Tone", 2500, 12000, 6500), e: k("Return", 0.08, 0.7, 0.28) }),
+
+  make("Patterned Delay Throws", "Delay", "Host-synced steps open a delay send while the dry path stays constant. Edit the sequencer in Circuit for the throw pattern. Tone is delay damping.",
+`stepseq1: steps = 8; sync = 1/8; values = 0,0,1,0,0,0,0.7,0; glide = 0.02
+stage1: y = x
+bus throws:
+  send: in = 1
+  stage2: y = x * (a * stepseq1)
+  delay1: time = b; feedback = c; mix = 1; damp = d
+  filter1: type = highpass; cutoff = 160; resonance = 0.3
+out: main = 1; throws = e`,
+  { a: k("Pattern", 0.3, 1, 0.85), b: k("Time", 80, 480, 187.5), c: k("Feedback", 0.1, 0.65, 0.32), d: k("Tone", 2500, 12000, 7000), e: k("Throw Level", 0.1, 0.8, 0.35) }),
+
+  make("Vocal Presence Duck", "Mixing", "External sidechain compresses only the presence band of the insert. Lows and air pass around it. Route a vocal to the sidechain input; without that input there is no ducking.",
+`sidechain1: mix = 1
+xover1: f1 = a; f2 = a + b
+bus mid:
+  comp1: threshold = c; ratio = 1 + e * 5; attack = 0.008; release = d; source = sidechain; makeup = 0
+out: low = 1; mid = 1; high = 1`,
+  { a: k("Frequency", 800, 3500, 1800), b: k("Width", 400, 2500, 900), c: k("Sensitivity", -28, -8, -16), d: k("Recovery", 0.04, 0.35, 0.12), e: k("Duck Amount", 0.2, 1, 0.6) }),
+
+  make("Metered Drive Template", "Utility", "Gain into a peak meter, tape saturator, soft clipper, then a second peak meter. Inspect each Meter chip for input versus output. The meters do not change the audio.",
+`amp1: gain = a; mix = 1
+meter1: mode = peak
+saturate1: mode = tape; drive = b; mix = 1; tone = 0.55; autoGain = off
+clip1: mode = soft; threshold = c; mix = 1
+meter2: mode = peak`,
+  { a: k("Input", -12, 12, 0), b: k("Drive", 0, 18, 6), c: k("Ceiling", -12, 0, -1) }),
 ];
 
 export function applyOverhaul(input) {

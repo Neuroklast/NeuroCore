@@ -20216,5 +20216,170 @@
     "style": "",
     "role": "Send / Return",
     "requiredInputs": []
+  },
+  {
+    "name": "Patterned Delay Throws",
+    "category": "Delay",
+    "description": "Host-synced steps open a delay send while the dry path stays constant. Edit the sequencer in Circuit for the throw pattern. Tone is delay damping.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Patterned Delay Throws\n# Host-synced steps open a delay send while the dry path stays constant. Edit the sequencer in Circuit for the throw pattern. Tone is delay damping.\nparam a = Pattern [0.3, 1]\nparam b = Time [80, 480]\nparam c = Feedback [0.1, 0.65]\nparam d = Tone [2500, 12000]\nparam e = Throw Level [0.1, 0.8]\nstepseq1: steps = 8; sync = 1/8; values = 0,0,1,0,0,0,0.7,0; glide = 0.02\nstage1: y = x\nbus throws:\n  send: in = 1\n  stage2: y = x * (a * stepseq1)\n  delay1: time = b; feedback = c; mix = 1; damp = d\n  filter1: type = highpass; cutoff = 160; resonance = 0.3\nout: main = 1; throws = e\n",
+    "tags": [
+      "bus",
+      "delay",
+      "eq",
+      "equalizer",
+      "filter",
+      "highpass",
+      "parallel",
+      "send"
+    ],
+    "paramA": {
+      "name": "Pattern",
+      "min": 0.3,
+      "max": 1,
+      "default": 0.85
+    },
+    "paramB": {
+      "name": "Time",
+      "min": 80,
+      "max": 480,
+      "default": 187.5
+    },
+    "paramC": {
+      "name": "Feedback",
+      "min": 0.1,
+      "max": 0.65,
+      "default": 0.32
+    },
+    "paramD": {
+      "name": "Tone",
+      "min": 2500,
+      "max": 12000,
+      "default": 7000
+    },
+    "paramE": {
+      "name": "Throw Level",
+      "min": 0.1,
+      "max": 0.8,
+      "default": 0.35
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Filter",
+      "Modulation",
+      "Delay"
+    ],
+    "style": "",
+    "role": "Send / Return",
+    "requiredInputs": []
+  },
+  {
+    "name": "Vocal Presence Duck",
+    "category": "Mixing",
+    "description": "External sidechain compresses only the presence band of the insert. Lows and air pass around it. Route a vocal to the sidechain input; without that input there is no ducking.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Vocal Presence Duck\n# External sidechain compresses only the presence band of the insert. Lows and air pass around it. Route a vocal to the sidechain input; without that input there is no ducking.\nparam a = Frequency [800, 3500]\nparam b = Width [400, 2500]\nparam c = Sensitivity [-28, -8]\nparam d = Recovery [0.04, 0.35]\nparam e = Duck Amount [0.2, 1]\nsidechain1: mix = 1\nxover1: f1 = a; f2 = a + b\nbus mid:\n  comp1: threshold = c; ratio = 1 + e * 5; attack = 0.008; release = d; source = sidechain; makeup = 0\nout: low = 1; mid = 1; high = 1\n",
+    "tags": [
+      "air",
+      "bus",
+      "compressor",
+      "mixing",
+      "parallel",
+      "sidechain",
+      "vocal",
+      "width"
+    ],
+    "paramA": {
+      "name": "Frequency",
+      "min": 800,
+      "max": 3500,
+      "default": 1800
+    },
+    "paramB": {
+      "name": "Width",
+      "min": 400,
+      "max": 2500,
+      "default": 900
+    },
+    "paramC": {
+      "name": "Sensitivity",
+      "min": -28,
+      "max": -8,
+      "default": -16
+    },
+    "paramD": {
+      "name": "Recovery",
+      "min": 0.04,
+      "max": 0.35,
+      "default": 0.12
+    },
+    "paramE": {
+      "name": "Duck Amount",
+      "min": 0.2,
+      "max": 1,
+      "default": 0.6
+    },
+    "soundSources": [
+      "Full Mix",
+      "Vocals"
+    ],
+    "processingTypes": [
+      "Dynamics",
+      "Multi-Band"
+    ],
+    "style": "",
+    "role": "Parallel",
+    "requiredInputs": [
+      "sidechain"
+    ]
+  },
+  {
+    "name": "Metered Drive Template",
+    "category": "Utility",
+    "description": "Gain into a peak meter, tape saturator, soft clipper, then a second peak meter. Inspect each Meter chip for input versus output. The meters do not change the audio.",
+    "inputGain": 0,
+    "outputGain": 0,
+    "mix": 1,
+    "script": "# Metered Drive Template\n# Gain into a peak meter, tape saturator, soft clipper, then a second peak meter. Inspect each Meter chip for input versus output. The meters do not change the audio.\nparam a = Input [-12, 12]\nparam b = Drive [0, 18]\nparam c = Ceiling [-12, 0]\namp1: gain = a; mix = 1\nmeter1: mode = peak\nsaturate1: mode = tape; drive = b; mix = 1; tone = 0.55; autoGain = off\nclip1: mode = soft; threshold = c; mix = 1\nmeter2: mode = peak\n",
+    "tags": [
+      "clipper",
+      "drive",
+      "tape",
+      "utility"
+    ],
+    "paramA": {
+      "name": "Input",
+      "min": -12,
+      "max": 12,
+      "default": 0
+    },
+    "paramB": {
+      "name": "Drive",
+      "min": 0,
+      "max": 18,
+      "default": 6
+    },
+    "paramC": {
+      "name": "Ceiling",
+      "min": -12,
+      "max": 0,
+      "default": -1
+    },
+    "soundSources": [
+      "Any"
+    ],
+    "processingTypes": [
+      "Saturation",
+      "Utility"
+    ],
+    "style": "",
+    "role": "Template",
+    "requiredInputs": []
   }
 ]
