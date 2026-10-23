@@ -6,6 +6,8 @@
 
 ## Circuit connection integrity follow-up (2026-10-23)
 
+Route cache: reproduced stale conductors after a connection edit changes the compact chip/contact geometry. keepXy now reuses routes only when all obstacles and contacts retain their geometry; mute-only updates preserve routes.
+
 Worker budget: reproduced the fixed 2.5 s watchdog discarding a valid 3 s large-graph result and repeating work on the UI thread. The default budget now scales with node/edge count; explicit timeout and worker-error recovery contracts remain covered.
 
 Shared MIDI nets: reproduced routing failure with ten processing chips consuming the same MIDI gate. Hydration now retains one MIDI contact per variable; routing permits shared conductor spans only for that explicitly identical MIDI net. Stress contracts preserve every endpoint and non-overlapping node at 10/25/50/100 chips; factory routing audit covers 363 presets.

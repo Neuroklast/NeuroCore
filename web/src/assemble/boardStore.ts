@@ -3,6 +3,7 @@ import type { AstDocument } from "../bridge/ast";
 import {
   applyPlaced,
   hydrateBoard,
+  portGlobal,
   type BoardCamera,
   type BoardEdge,
   type BoardGraph,
@@ -54,9 +55,24 @@ export const useBoardStore = create<BoardState>((set) => ({
           next.nodes[id] = { ...n, x: p.x, y: p.y };
         }
       }
+      // Any changed obstacle or contact invalidates the old PCB, including routes
+      // that pass a resized chip without terminating on it.
+      const sameGeometry = Object.keys(prev.nodes).length === Object.keys(next.nodes).length
+        && Object.entries(next.nodes).every(([id, n]) => {
+          const p = prev.nodes[id];
+          return p && p.x === n.x && p.y === n.y && p.w === n.w && p.h === n.h;
+        })
+        && Object.keys(prev.ports).length === Object.keys(next.ports).length
+        && Object.entries(next.ports).every(([id, port]) => {
+          const old = prev.ports[id];
+          if (!old || old.nodeId !== port.nodeId || old.face !== port.face) return false;
+          const a = portGlobal(prev.nodes[old.nodeId]!, old);
+          const b = portGlobal(next.nodes[port.nodeId]!, port);
+          return a.x === b.x && a.y === b.y;
+        });
       for (const [id, e] of Object.entries(next.edges)) {
         const p = prev.edges[id];
-        if (p && p.sourcePortId === e.sourcePortId && p.targetPortId === e.targetPortId && p.route.length > 0) {
+        if (sameGeometry && p && p.sourcePortId === e.sourcePortId && p.targetPortId === e.targetPortId && p.route.length > 0) {
           next.edges[id] = { ...e, route: p.route };
         }
       }
