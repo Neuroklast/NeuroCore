@@ -63,7 +63,7 @@ describe("settings dialog", () => {
 
   it("offers a discard warning and displays the license owner", () => {
     const root = settingsView({ discardPrompt: false, licenseEmail: "producer@example.com" });
-    const snapshot = JSON.stringify(root.toJSON());
+    const snapshot = textContent(root);
     expect(snapshot).toContain("Licensed to producer@example.com");
     expect(root.findAllByProps({ "aria-label": "Warn before discarding edits" })).toHaveLength(1);
     expect(buttonNames(root)).toContain("No warning");
