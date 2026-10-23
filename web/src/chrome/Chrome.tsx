@@ -7,7 +7,7 @@ import { nk } from "../theme/tokens";
 import { Knob } from "./Knob";
 import { footerLicenseLabel } from "./footerLicense";
 import { footerBuf, footerSr } from "./footerStatus";
-import { headerClipClass, toolbarSlots, workspaceRowClass, workspaceTabClass } from "./toolbarChrome";
+import { headerClipClass, workspaceRowClass, workspaceTabClass } from "./toolbarChrome";
 
 export function Hud() {
   const licensed = useHostStore((s) => s.licensed);
@@ -49,7 +49,7 @@ export function Toolbar() {
         </span>
       </button>
       <div className="nk-preset-cluster">
-        <button type="button" className={headerClipClass("step")} onClick={() => void requestPresetAction({ action: "prev" })}>
+        <button type="button" className={headerClipClass("step")} aria-label="Previous preset" onClick={() => void requestPresetAction({ action: "prev" })}>
           &lt;
         </button>
         <button
@@ -61,67 +61,57 @@ export function Toolbar() {
         >
           <span className="nk-preset-now-text">{presetTitle(name, false)}</span>
         </button>
-        <button type="button" className={headerClipClass("step")} onClick={() => void requestPresetAction({ action: "next" })}>
+        <button type="button" className={headerClipClass("step")} aria-label="Next preset" onClick={() => void requestPresetAction({ action: "next" })}>
           &gt;
         </button>
       </div>
       <div className="nk-header-right">
-      {toolbarSlots().map((slot) => {
-        if (slot.id === "presetPrev" || slot.id === "presetNow" || slot.id === "presetNext") {
-          return null;
-        }
-        if (slot.id === "mode") {
-          const pick = (next: "LIVE" | "STUDIO") => {
-            useHostStore.setState({ mode: next });
-            void getNativeFunction("setChoice")({ id: "mode", index: next === "LIVE" ? 1 : 0 });
-          };
-          return (
-            <div key={slot.id} className="nk-mode-pair" role="group" aria-label="Mode">
-              <button
-                type="button"
-                className={mode === "LIVE" ? "on" : ""}
-                aria-pressed={mode === "LIVE"}
-                onClick={() => pick("LIVE")}
-              >
-                LIVE
-              </button>
-              <button
-                type="button"
-                className={mode === "STUDIO" || mode === "SAFE" ? "on" : ""}
-                aria-pressed={mode !== "LIVE"}
-                onClick={() => pick("STUDIO")}
-              >
-                STUDIO
-              </button>
-            </div>
-          );
-        }
-        if (slot.id === "bypass") {
-          return (
+        <div className="nk-header-tools">
+          {(["functions", "stages", "settings", "help"] as const).map((id) => (
+            <button key={id} type="button" className={headerClipClass("tool")} onClick={() => setOverlay(id)}>
+              {id === "functions" ? "Functions" : id === "stages" ? "Stages" : id === "settings" ? "Settings" : "Help"}
+            </button>
+          ))}
+        </div>
+        <div className="nk-header-primary">
+          <div className="nk-mode-pair" role="group" aria-label="Mode">
             <button
-              key={slot.id}
               type="button"
-              className={`${headerClipClass("bypass")} ${bypassed ? "on" : ""}`}
+              className={mode === "LIVE" ? "on" : ""}
+              aria-pressed={mode === "LIVE"}
               onClick={() => {
-                const value = useHostStore.getState().toggleBypass();
-                if (hasJuceBridge()) {
-                  void getNativeFunction("setParam")({ id: "dryWet", value, gesture: "change" });
-                }
+                useHostStore.setState({ mode: "LIVE" });
+                void getNativeFunction("setChoice")({ id: "mode", index: 1 });
               }}
             >
-              BYPASS
+              LIVE
             </button>
-          );
-        }
-        const label = slot.id === "functions" ? "Functions"
-          : slot.id === "stages" ? "Stages"
-            : slot.id === "settings" ? "Settings" : "Help";
-        return (
-          <button key={slot.id} type="button" className={headerClipClass("tool")} onClick={() => setOverlay(slot.id)}>
-            {label}
+            <button
+              type="button"
+              className={mode === "STUDIO" || mode === "SAFE" ? "on" : ""}
+              aria-pressed={mode !== "LIVE"}
+              onClick={() => {
+                useHostStore.setState({ mode: "STUDIO" });
+                void getNativeFunction("setChoice")({ id: "mode", index: 0 });
+              }}
+            >
+              STUDIO
+            </button>
+          </div>
+          <button
+            type="button"
+            className={`${headerClipClass("bypass")} ${bypassed ? "on" : ""}`}
+            aria-pressed={bypassed}
+            onClick={() => {
+              const value = useHostStore.getState().toggleBypass();
+              if (hasJuceBridge()) {
+                void getNativeFunction("setParam")({ id: "dryWet", value, gesture: "change" });
+              }
+            }}
+          >
+            BYPASS
           </button>
-        );
-      })}
+        </div>
       </div>
     </header>
   );

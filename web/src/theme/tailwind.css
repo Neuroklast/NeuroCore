@@ -1962,9 +1962,17 @@ html[data-motion="reduced"] [data-dof="on"] .nk-dof-edge[data-focus="soft"] {
   margin-left: auto;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   flex-shrink: 0;
 }
+.nk-header-tools,
+.nk-header-primary {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.nk-header-primary { gap: 8px; }
 
 .nk-ws-row {
   display: flex;
