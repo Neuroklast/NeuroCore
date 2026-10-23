@@ -25,27 +25,17 @@
   background: var(--nk-accent);
 }
 
-[data-tip] {
-  position: relative;
-}
-
-[data-tip]:hover::after,
-[data-tip]:focus-visible::after {
-  content: attr(data-tip);
+.nk-tooltip {
   position: absolute;
-  left: 50%;
-  bottom: calc(100% + 6px);
-  transform: translateX(-50%);
-  z-index: 80;
-  white-space: nowrap;
+  z-index: 90;
+  max-width: 280px;
   padding: 4px 8px;
-  font-family: "Apex", "Segoe UI", sans-serif;
-  font-size: 11px;
-  letter-spacing: 0.08em;
+  pointer-events: none;
   color: var(--nk-cyan);
   background: var(--nk-bg);
   border: 1px solid var(--nk-accent);
-  pointer-events: none;
+  font: 11px/1.35 "Apex", "Segoe UI", sans-serif;
+  letter-spacing: 0.06em;
 }
 
 @font-face {
@@ -122,9 +112,7 @@
 .nk-input-switch,
 .nk-preset-now,
 .nk-chip-expand,
-.nk-overlay,
-[data-tip]:hover::after,
-[data-tip]:focus-visible::after {
+.nk-overlay {
   clip-path: polygon(
     var(--nk-cut-size, var(--nk-cut)) 0,
     100% 0,

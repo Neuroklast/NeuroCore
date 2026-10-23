@@ -49,7 +49,7 @@ export function Toolbar() {
         </span>
       </button>
       <div className="nk-preset-cluster">
-        <button type="button" className={headerClipClass("step")} aria-label="Previous preset" onClick={() => void requestPresetAction({ action: "prev" })}>
+        <button type="button" className={headerClipClass("step")} aria-label="Previous preset" data-tip="Previous preset" onClick={() => void requestPresetAction({ action: "prev" })}>
           &lt;
         </button>
         <button
@@ -61,14 +61,20 @@ export function Toolbar() {
         >
           <span className="nk-preset-now-text">{presetTitle(name, false)}</span>
         </button>
-        <button type="button" className={headerClipClass("step")} aria-label="Next preset" onClick={() => void requestPresetAction({ action: "next" })}>
+        <button type="button" className={headerClipClass("step")} aria-label="Next preset" data-tip="Next preset" onClick={() => void requestPresetAction({ action: "next" })}>
           &gt;
         </button>
       </div>
       <div className="nk-header-right">
         <div className="nk-header-tools">
           {(["functions", "stages", "settings", "help"] as const).map((id) => (
-            <button key={id} type="button" className={headerClipClass("tool")} onClick={() => setOverlay(id)}>
+            <button
+              key={id}
+              type="button"
+              className={headerClipClass("tool")}
+              data-tip={id === "functions" ? "Function plots" : id === "stages" ? "Stage cards" : id === "settings" ? "Settings" : "Operator manual"}
+              onClick={() => setOverlay(id)}
+            >
               {id === "functions" ? "Functions" : id === "stages" ? "Stages" : id === "settings" ? "Settings" : "Help"}
             </button>
           ))}
@@ -79,6 +85,7 @@ export function Toolbar() {
               type="button"
               className={mode === "LIVE" ? "on" : ""}
               aria-pressed={mode === "LIVE"}
+              data-tip="Low-latency live mode"
               onClick={() => {
                 useHostStore.setState({ mode: "LIVE" });
                 void getNativeFunction("setChoice")({ id: "mode", index: 1 });
@@ -90,6 +97,7 @@ export function Toolbar() {
               type="button"
               className={mode === "STUDIO" || mode === "SAFE" ? "on" : ""}
               aria-pressed={mode !== "LIVE"}
+              data-tip="Studio mode"
               onClick={() => {
                 useHostStore.setState({ mode: "STUDIO" });
                 void getNativeFunction("setChoice")({ id: "mode", index: 0 });
@@ -102,6 +110,7 @@ export function Toolbar() {
             type="button"
             className={`${headerClipClass("bypass")} ${bypassed ? "on" : ""}`}
             aria-pressed={bypassed}
+            data-tip="Mix to 0 (dry). Not a DSP bypass."
             onClick={() => {
               const value = useHostStore.getState().toggleBypass();
               if (hasJuceBridge()) {
@@ -182,6 +191,7 @@ export function WorkspaceTabs({
           key={t.id}
           type="button"
           className={workspaceTabClass(workspace === t.id)}
+          data-tip={t.id === "face" ? "Unit view" : t.id === "assemble" ? "Circuit board" : "Terminal editor"}
           onClick={() => setWorkspace(t.id)}
         >
           {t.label}
