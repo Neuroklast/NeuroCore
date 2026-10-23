@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getNativeFunction } from "../bridge/juce";
 import { setCircuitArg } from "../assemble/addBlock";
 import { FunctionsPanel } from "../functions/FunctionsPanel";
@@ -249,6 +249,7 @@ export function SettingsBody() {
   const [bpmDraft, setBpmDraft] = useState(String(Math.round(bpm)));
   const [editingBpm, setEditingBpm] = useState(false);
   const [tempoError, setTempoError] = useState("");
+  const cancelBpmBlur = useRef(false);
 
   useEffect(() => {
     if (! editingBpm) setBpmDraft(String(Math.round(bpm)));
@@ -261,6 +262,10 @@ export function SettingsBody() {
   };
   const commitBpm = () => {
     setEditingBpm(false);
+    if (cancelBpmBlur.current) {
+      cancelBpmBlur.current = false;
+      return;
+    }
     if (tempo !== "USER") return;
     const parsed = Number(bpmDraft);
     if (! bpmDraft.trim() || ! Number.isFinite(parsed)) {
@@ -344,6 +349,7 @@ export function SettingsBody() {
                 if (e.key === "Enter") e.currentTarget.blur();
                 if (e.key === "Escape") {
                   e.stopPropagation();
+                  cancelBpmBlur.current = true;
                   setBpmDraft(String(Math.round(bpm)));
                   setEditingBpm(false);
                   e.currentTarget.blur();
