@@ -6,6 +6,8 @@
 
 ## Circuit connection integrity follow-up (2026-10-23)
 
+Native MIDI regression: added MidiMapperTest to the default headless DSP runner, so the repeated-event counter contract runs with the full integration suite. Locally rebuilt and executed: 0 failures.
+
 Host routing gutter: full regression reproduced competing Sidechain exits in the fixed-width host column. Arrange/Compact now reserves one grid track per distinct outgoing host conductor plus port clearance. Sidechain chains of 2/4/8/12 processors preserve separate conductors.
 
 Route cache: reproduced stale conductors after a connection edit changes the compact chip/contact geometry. keepXy now reuses routes only when all obstacles and contacts retain their geometry; mute-only updates preserve routes.
