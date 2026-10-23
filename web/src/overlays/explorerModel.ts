@@ -7,7 +7,58 @@ export type ExplorerRow = {
   description?: string;
   factory?: boolean;
   tags?: string[];
+  soundSources?: string[];
+  processingTypes?: string[];
+  style?: string;
+  role?: string;
+  requiredInputs?: string[];
 };
+
+export const SOUND_SOURCES = [
+  "Any", "Guitar", "Bass Guitar", "Synth", "Synth Bass", "Drums", "Percussion",
+  "Vocals", "Speech", "Acoustic Instruments", "Full Mix", "FX / Field Recording",
+] as const;
+export const PROCESSING_TYPES = [
+  "Distortion", "Saturation", "Dynamics", "Transient", "EQ", "Filter", "Modulation",
+  "Pitch", "Delay", "Reverb", "Stereo", "Spatial", "Multi-Band", "Glitch", "Utility", "Restoration",
+] as const;
+export const STYLES = [
+  "Rock", "Metal", "Industrial", "Techno", "Hard Dance", "Drum & Bass",
+  "Electronic", "Ambient", "Cinematic", "Lo-Fi",
+] as const;
+
+export type ExplorerFacets = {
+  sources: string[];
+  types: string[];
+  styles: string[];
+};
+
+const CAT_SOURCE: Record<string, string> = {
+  Distortion: "Guitar", Guitar: "Guitar", Metal: "Guitar", Bass: "Bass Guitar",
+  Vocals: "Vocals", Drums: "Drums", Club: "Drums", Synth: "Synth",
+  Mastering: "Full Mix", Mixing: "Full Mix", Master: "Full Mix",
+};
+const CAT_TYPE: Record<string, string> = {
+  Distortion: "Distortion", Delay: "Delay", Reverb: "Reverb", Modulation: "Modulation",
+  EQ: "EQ", Filter: "Filter", Dynamics: "Dynamics", Utility: "Utility",
+};
+
+export function rowSources(p: ExplorerRow): string[] {
+  if (p.soundSources && p.soundSources.length > 0) return p.soundSources;
+  const mapped = CAT_SOURCE[p.category];
+  return mapped ? [mapped] : ["Any"];
+}
+export function rowTypes(p: ExplorerRow): string[] {
+  if (p.processingTypes && p.processingTypes.length > 0) return p.processingTypes;
+  const mapped = CAT_TYPE[p.category];
+  return mapped ? [mapped] : [];
+}
+export function rowStyles(p: ExplorerRow): string[] {
+  return p.style ? [p.style] : [];
+}
+export function toggleFacet(selected: string[], value: string): string[] {
+  return selected.includes(value) ? selected.filter((v) => v !== value) : [...selected, value];
+}
 
 export const PRESET_ROW_PX = 44;
 export const PRESET_LIST_HEADING_PX = 32;
@@ -36,12 +87,20 @@ export function explorerFolders(rows: ExplorerRow[]): Array<{ name: string; labe
   ];
 }
 
-export function filterExplorer(rows: ExplorerRow[], q: string, cat: string): ExplorerRow[] {
+function matchesList(have: string[], selected: string[]): boolean {
+  if (selected.length === 0) return true;
+  return selected.some((s) => have.includes(s));
+}
+
+export function filterExplorer(rows: ExplorerRow[], q: string, cat: string, facets?: ExplorerFacets): ExplorerRow[] {
   const needle = q.trim().toLowerCase();
   const out = rows.filter((p) => {
     if (cat && p.category !== cat) {
       return false;
     }
+    if (facets && ! matchesList(rowSources(p), facets.sources)) return false;
+    if (facets && ! matchesList(rowTypes(p), facets.types)) return false;
+    if (facets && ! matchesList(rowStyles(p), facets.styles)) return false;
     if (! needle) {
       return true;
     }
@@ -50,6 +109,36 @@ export function filterExplorer(rows: ExplorerRow[], q: string, cat: string): Exp
   });
   out.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
   return out;
+}
+
+export function sourceFolders(rows: ExplorerRow[], q: string, facets: ExplorerFacets): Array<{ name: string; label: string; count: number }> {
+  const base = filterExplorer(rows, q, "", { ...facets, sources: [] });
+  return [
+    { name: "", label: "All Presets", count: base.length },
+    ...SOUND_SOURCES.map((name) => ({
+      name,
+      label: name,
+      count: base.filter((p) => rowSources(p).includes(name)).length,
+    })).filter((f) => f.count > 0 || f.name === "Any"),
+  ];
+}
+
+export function typeFolders(rows: ExplorerRow[], q: string, facets: ExplorerFacets): Array<{ name: string; label: string; count: number }> {
+  const base = filterExplorer(rows, q, "", { ...facets, types: [] });
+  return PROCESSING_TYPES.map((name) => ({
+    name,
+    label: name,
+    count: base.filter((p) => rowTypes(p).includes(name)).length,
+  })).filter((f) => f.count > 0);
+}
+
+export function styleFolders(rows: ExplorerRow[], q: string, facets: ExplorerFacets): Array<{ name: string; label: string; count: number }> {
+  const base = filterExplorer(rows, q, "", { ...facets, styles: [] });
+  return STYLES.map((name) => ({
+    name,
+    label: name,
+    count: base.filter((p) => rowStyles(p).includes(name)).length,
+  })).filter((f) => f.count > 0);
 }
 
 export function resolveSelectedName(filtered: ExplorerRow[], selectedName: string): string {

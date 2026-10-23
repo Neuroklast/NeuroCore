@@ -20,6 +20,10 @@ describe("preset explorer layout", () => {
     expect(css).toMatch(/\.nk-preset-row\s*\{[^}]*min-height:\s*44px/s);
     expect(css).toMatch(/\.nk-preset-row\s*\{[^}]*max-height:\s*44px/s);
     expect(src).toContain("nk-preset-folders");
+    expect(src).toContain("data-type");
+    expect(src).toContain("SOURCE");
+    expect(src).toContain("TYPE");
+    expect(css).toMatch(/nk-preset-facet-chip[^{]*\{[^}]*min-height:\s*26px/s);
     expect(src).toContain("nk-preset-list");
     expect(src).toContain("nk-preset-detail");
     expect(src).toContain("nk-preset-body");

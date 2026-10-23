@@ -10,14 +10,17 @@ import {
   scopeRows,
   seedSelectedName,
   selectedRow,
+  sourceFolders,
+  toggleFacet,
+  typeFolders,
 } from "./explorerModel";
 
 const presets = [
-  { name: "Arp Shimmer", category: "Synth", author: "A", description: "shine", factory: true, tags: ["arp"] },
-  { name: "Blues Break OD", category: "Distortion", author: "A", description: "break", factory: true, tags: ["od"] },
-  { name: "Metal Scoop", category: "Distortion", author: "A", description: "scoop", factory: true, tags: ["metal"] },
+  { name: "Arp Shimmer", category: "Synth", author: "A", description: "shine", factory: true, tags: ["arp"], soundSources: ["Synth"], processingTypes: ["Modulation"], style: "Electronic" },
+  { name: "Blues Break OD", category: "Distortion", author: "A", description: "break", factory: true, tags: ["od"], soundSources: ["Guitar"], processingTypes: ["Distortion"], style: "Rock" },
+  { name: "Metal Scoop", category: "Distortion", author: "A", description: "scoop", factory: true, tags: ["metal"], soundSources: ["Guitar"], processingTypes: ["Distortion"], style: "Metal" },
   { name: "My Plate", category: "Reverb", author: "Me", description: "user plate", factory: false, tags: ["plate"] },
-  { name: "Spring Tank", category: "Reverb", author: "A", description: "spring", factory: true, tags: ["spring"] },
+  { name: "Spring Tank", category: "Reverb", author: "A", description: "spring", factory: true, tags: ["spring"], soundSources: ["Any"], processingTypes: ["Reverb"] },
 ];
 
 describe("explorer model", () => {
@@ -53,6 +56,25 @@ describe("explorer model", () => {
     expect(filterExplorer(presets, "spring", "").map((p) => p.name)).toEqual(["Spring Tank"]);
     expect(filterExplorer(presets, "od", "").map((p) => p.name)).toEqual(["Blues Break OD"]);
     expect(explorerFolders(scopeRows(presets, "factory")).find((f) => f.name === "")?.label).toBe("All Presets");
+  });
+
+  it("filters source and type independently and keeps search", () => {
+    const empty = { sources: [] as string[], types: [] as string[], styles: [] as string[] };
+    expect(filterExplorer(presets, "", "", { ...empty, sources: ["Guitar"] }).map((p) => p.name)).toEqual(["Blues Break OD", "Metal Scoop"]);
+    expect(filterExplorer(presets, "", "", { ...empty, sources: ["Synth"], types: ["Modulation"] }).map((p) => p.name)).toEqual(["Arp Shimmer"]);
+    expect(filterExplorer(presets, "", "", { ...empty, sources: ["Guitar"], types: ["Reverb"] })).toEqual([]);
+    expect(filterExplorer(presets, "spring", "", { ...empty, sources: ["Any"] }).map((p) => p.name)).toEqual(["Spring Tank"]);
+    expect(filterExplorer(presets, "", "", { ...empty, types: ["Distortion", "Reverb"] }).map((p) => p.name)).toEqual(["Blues Break OD", "Metal Scoop", "My Plate", "Spring Tank"]);
+    expect(toggleFacet(["Guitar"], "Synth")).toEqual(["Guitar", "Synth"]);
+    const sources = sourceFolders(presets, "", empty);
+    expect(sources[0]?.label).toBe("All Presets");
+    expect(sources.find((f) => f.name === "Guitar")?.count).toBe(2);
+    expect(typeFolders(presets, "", { ...empty, sources: ["Guitar"] }).find((f) => f.name === "Distortion")?.count).toBe(2);
+  });
+
+  it("falls back to category when factory metadata is missing", () => {
+    const empty = { sources: [] as string[], types: [] as string[], styles: [] as string[] };
+    expect(filterExplorer(presets, "", "", { ...empty, types: ["Reverb"] }).map((p) => p.name)).toContain("My Plate");
   });
 
   it("reports Save As against a factory name", () => {

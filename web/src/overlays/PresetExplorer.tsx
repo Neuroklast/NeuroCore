@@ -6,7 +6,6 @@ import { useHostStore } from "../store/hostStore";
 import { explorerSession, patchExplorer, type ExplorerScope } from "./explorerSession";
 import { isPresetFavorite, readPresetStars, togglePresetStar } from "../presets/presetStars";
 import {
-  explorerFolders,
   filterExplorer,
   neighborName,
   resolveSelectedName,
@@ -14,6 +13,11 @@ import {
   scopeRows,
   seedSelectedName,
   selectedRow,
+  sourceFolders,
+  styleFolders,
+  toggleFacet,
+  typeFolders,
+  type ExplorerFacets,
 } from "./explorerModel";
 
 export function PresetExplorer() {
@@ -29,6 +33,9 @@ export function PresetExplorer() {
   const [q, setQ] = useState(explorerSession.q);
   const [scope, setScope] = useState<ExplorerScope>(explorerSession.scope);
   const [cat, setCat] = useState(explorerSession.cat);
+  const [sources, setSources] = useState<string[]>(explorerSession.sources);
+  const [types, setTypes] = useState<string[]>(explorerSession.types);
+  const [styles, setStyles] = useState<string[]>(explorerSession.styles);
   const [selectedName, setSelectedName] = useState(explorerSession.selectedName);
   const [stars, setStars] = useState(readPresetStars);
   const folderRef = useRef<HTMLDivElement>(null);
@@ -39,6 +46,9 @@ export function PresetExplorer() {
     if (partial.q !== undefined) setQ(partial.q);
     if (partial.scope !== undefined) setScope(partial.scope);
     if (partial.cat !== undefined) setCat(partial.cat);
+    if (partial.sources !== undefined) setSources(partial.sources);
+    if (partial.types !== undefined) setTypes(partial.types);
+    if (partial.styles !== undefined) setStyles(partial.styles);
     if (partial.selectedName !== undefined) setSelectedName(partial.selectedName);
   };
 
@@ -50,7 +60,8 @@ export function PresetExplorer() {
 
   useEffect(() => {
     const seeded = seedSelectedName(presets, current, explorerSession.selectedName);
-    const next = filterExplorer(scopeRows(presets, explorerSession.scope), explorerSession.q, explorerSession.cat);
+    const facets: ExplorerFacets = { sources: explorerSession.sources, types: explorerSession.types, styles: explorerSession.styles };
+    const next = filterExplorer(scopeRows(presets, explorerSession.scope), explorerSession.q, explorerSession.cat, facets);
     const name = resolveSelectedName(next, seeded);
     persist({ selectedName: name });
     requestAnimationFrame(() => {
@@ -66,8 +77,11 @@ export function PresetExplorer() {
   }, []);
 
   const inScope = useMemo(() => scopeRows(presets, scope), [presets, scope]);
-  const folders = useMemo(() => explorerFolders(inScope), [inScope]);
-  const filtered = useMemo(() => filterExplorer(inScope, q, cat), [cat, inScope, q]);
+  const facets = useMemo<ExplorerFacets>(() => ({ sources, types, styles }), [sources, styles, types]);
+  const folders = useMemo(() => sourceFolders(inScope, q, facets), [facets, inScope, q]);
+  const typesList = useMemo(() => typeFolders(inScope, q, facets), [facets, inScope, q]);
+  const stylesList = useMemo(() => styleFolders(inScope, q, facets), [facets, inScope, q]);
+  const filtered = useMemo(() => filterExplorer(inScope, q, cat, facets), [cat, facets, inScope, q]);
   const row = selectedRow(filtered, selectedName);
   const fav = row ? isPresetFavorite(row.name, stars) : false;
 
@@ -137,12 +151,24 @@ export function PresetExplorer() {
     }
   };
 
-  const pickFolder = (name: string) => {
-    const next = filterExplorer(inScope, q, name);
-    persist({ cat: name, selectedName: resolveSelectedName(next, selectedName) });
+  const pickSource = (name: string) => {
+    const nextSources = name === "" ? [] : toggleFacet(sources, name);
+    const nextFacets = { sources: nextSources, types, styles };
+    const next = filterExplorer(inScope, q, cat, nextFacets);
+    persist({ sources: nextSources, selectedName: resolveSelectedName(next, selectedName) });
     if (hasJuceBridge()) {
       void getNativeFunction("setUi")({ explorerCat: name }).catch(() => undefined);
     }
+  };
+  const pickType = (name: string) => {
+    const nextTypes = toggleFacet(types, name);
+    const next = filterExplorer(inScope, q, cat, { sources, types: nextTypes, styles });
+    persist({ types: nextTypes, selectedName: resolveSelectedName(next, selectedName) });
+  };
+  const pickStyle = (name: string) => {
+    const nextStyles = toggleFacet(styles, name);
+    const next = filterExplorer(inScope, q, cat, { sources, types, styles: nextStyles });
+    persist({ styles: nextStyles, selectedName: resolveSelectedName(next, selectedName) });
   };
 
   return (
@@ -156,7 +182,7 @@ export function PresetExplorer() {
           value={q}
           onChange={(e) => {
             const nextQ = e.target.value;
-            const next = filterExplorer(inScope, nextQ, cat);
+            const next = filterExplorer(inScope, nextQ, cat, facets);
             persist({ q: nextQ, selectedName: resolveSelectedName(next, selectedName) });
           }}
         />
@@ -168,7 +194,7 @@ export function PresetExplorer() {
             onClick={() => {
               const nextScope = s;
               const nextIn = scopeRows(presets, nextScope);
-              const next = filterExplorer(nextIn, q, cat);
+              const next = filterExplorer(nextIn, q, cat, facets);
               persist({ scope: nextScope, selectedName: resolveSelectedName(next, selectedName) });
             }}
           >
@@ -178,7 +204,7 @@ export function PresetExplorer() {
       </div>
       <div className="nk-preset-body">
         <aside className="nk-preset-folders">
-          <div className="nk-archive-label mb-1 shrink-0">CATEGORIES</div>
+          <div className="nk-archive-label mb-1 shrink-0">SOURCE</div>
           <div
             ref={folderRef}
             className="nk-preset-folder-list"
@@ -186,20 +212,57 @@ export function PresetExplorer() {
           >
             {folders.map((f) => (
               <button
-                key={f.label}
+                key={`src-${f.label}`}
                 type="button"
                 data-folder={f.name || "all"}
-                aria-pressed={cat === f.name}
+                aria-pressed={f.name === "" ? sources.length === 0 : sources.includes(f.name)}
                 className={`flex w-full items-center justify-between px-2 py-[5px] text-left ${
-                  cat === f.name ? "bg-surface-high" : ""
+                  (f.name === "" ? sources.length === 0 : sources.includes(f.name)) ? "bg-surface-high" : ""
                 }`}
-                onClick={() => pickFolder(f.name)}
+                onClick={() => pickSource(f.name)}
               >
                 <span>{f.label}</span>
                 <span className="text-muted">{f.count}</span>
               </button>
             ))}
           </div>
+          <div className="nk-archive-label mb-1 mt-2 shrink-0">TYPE</div>
+          <div className="nk-preset-folder-list nk-preset-facet-list">
+            {typesList.map((f) => (
+              <button
+                key={`type-${f.name}`}
+                type="button"
+                data-type={f.name}
+                aria-pressed={types.includes(f.name)}
+                className={`flex w-full items-center justify-between px-2 py-[5px] text-left ${
+                  types.includes(f.name) ? "bg-surface-high" : ""
+                }`}
+                onClick={() => pickType(f.name)}
+              >
+                <span>{f.label}</span>
+                <span className="text-muted">{f.count}</span>
+              </button>
+            ))}
+          </div>
+          {stylesList.length > 0 ? (
+            <>
+              <div className="nk-archive-label mb-1 mt-2 shrink-0">STYLE</div>
+              <div className="nk-preset-chip-row">
+                {stylesList.map((f) => (
+                  <button
+                    key={`style-${f.name}`}
+                    type="button"
+                    data-style={f.name}
+                    aria-pressed={styles.includes(f.name)}
+                    className="nk-preset-facet-chip"
+                    onClick={() => pickStyle(f.name)}
+                  >
+                    {f.label} {f.count}
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : null}
         </aside>
         <div className="nk-preset-results">
           <div className="nk-archive-heading">
@@ -229,7 +292,7 @@ export function PresetExplorer() {
                 {p.name === current ? <span className="nk-preset-loaded">LOADED</span> : null}
               </button>
             ))}
-            {filtered.length === 0 ? <p className="p-5 text-muted">No matching presets. Change the search or category.</p> : null}
+            {filtered.length === 0 ? <p className="p-5 text-muted">No matching presets. Change the search or filters.</p> : null}
           </div>
         </div>
         <aside className="nk-preset-detail">
@@ -239,7 +302,7 @@ export function PresetExplorer() {
                 <div className="nk-archive-label">SELECTED PRESET</div>
                 <div className="nk-preset-detail-name">{row.name}</div>
                 <div className="nk-preset-detail-meta">
-                  <span>{row.factory === false ? "User" : "Factory"} · {row.category || "Unsorted"}</span>
+                  <span>{row.factory === false ? "User" : "Factory"} · {row.category || "Unsorted"}{(row.soundSources ?? []).length ? ` · ${(row.soundSources ?? []).join(", ")}` : ""}</span>
                   <button
                     type="button"
                     className="nk-preset-fav"
