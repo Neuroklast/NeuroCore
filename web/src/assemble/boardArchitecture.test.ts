@@ -253,3 +253,15 @@ it("retains the real Sidechain mixing processor between main audio contacts", ()
  expect(g.connectionIssues).toEqual([]);
  expect(Object.values(g.edges).some(e=>e.sourceNodeId === "SC" && e.targetNodeId === "sidechain1")).toBe(true);
 });
+
+it.each([
+ ["adsr",{gate:"midi"},"gate"],
+ ["adsr",{source:"both"},"source"],
+ ["mseg",{source:"either"},"source"],
+] as const)("shows implicit %s MIDI gate modes",(type,args,target)=>{
+ const g=hydrateBoard({...emptyAst(),nodes:[node("source1",type,args)]});
+ const midi=Object.values(g.edges).filter(e=>e.dependency==="midi");
+ expect(midi).toHaveLength(1);
+ expect(g.ports[midi[0]!.sourcePortId]!.jackId).toBe("gate");
+ expect(g.ports[midi[0]!.targetPortId]!.jackId).toBe(target);
+});

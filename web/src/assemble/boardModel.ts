@@ -230,7 +230,22 @@ export function hydrateBoard(ast: AstDocument, sidechainOn = false): BoardGraph 
   nodes.IN = makeNode("IN", "in", "io", x, rowY, inJacks, {}, "AUDIO IN", "", true);
   addSidePorts(ports, "IN", inJacks, true);
 
-  const usedMidi = [...new Set(visible.flatMap((n) => midiRefs(n.args)))];
+  const midiDependencies: AstEdge[] = visible.flatMap((node) =>
+    Object.entries(node.args).flatMap(([key, expression]) =>
+      midiRefs({ [key]: expression }).map((name) => ({
+        from: "MIDI", to: node.id, kind: "mod", fromJack: midiJack(name), toJack: key,
+      }))),
+  );
+  for (const node of visible) {
+    const key = node.type === "adsr" ? (node.args.gate != null ? "gate" : "source") : "source";
+    const mode = (node.args[key] ?? "").trim().toLowerCase();
+    const usesMidi = node.type === "adsr" && ["midi", "midi_gate", "either", "both", "audio+midi"].includes(mode)
+      || node.type === "mseg" && ["midi", "either"].includes(mode);
+    if (usesMidi && !midiDependencies.some(e => e.to === node.id && e.toJack === key && e.fromJack === "gate")) {
+      midiDependencies.push({from:"MIDI",to:node.id,kind:"mod",fromJack:"gate",toJack:key});
+    }
+  }
+  const usedMidi = [...new Set(midiDependencies.map(e => `midi_${e.fromJack}`))];
   const midiNames = usedMidi.length > 0 ? usedMidi : ["midi_gate"];
   const midiJacks: AstJack[] = midiNames.map((name) => ({
     id: midiJack(name),
@@ -287,12 +302,6 @@ export function hydrateBoard(ast: AstDocument, sidechainOn = false): BoardGraph 
   };
   x += nodes.IN.w + CHIP_GAP;
 
-  const midiDependencies: AstEdge[] = visible.flatMap((node) =>
-    Object.entries(node.args).flatMap(([key, expression]) =>
-      midiRefs({ [key]: expression }).map((name) => ({
-        from: "MIDI", to: node.id, kind: "mod", fromJack: midiJack(name), toJack: key,
-      }))),
-  );
   const sidechainDependencies: AstEdge[] = visible
     .filter((node) => node.type === "sidechain" || node.type === "sc" || node.type === "scin"
       || ["comp", "noisegate", "gate", "env"].includes(node.type)
