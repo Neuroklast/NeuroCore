@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  EMPTY_FACETS,
+  activeFilterChips,
+  emptyExplorerCopy,
   explorerFolders,
   filterExplorer,
   neighborName,
@@ -12,6 +15,7 @@ import {
   selectedRow,
   SOUND_SOURCES,
   sourceFolders,
+  styleFolders,
   toggleFacet,
   typeFolders,
 } from "./explorerModel";
@@ -87,5 +91,57 @@ describe("explorer model", () => {
     expect(saveAsError("", false)).toBe("Enter a name.");
     expect(saveAsError("Spring Tank", true)).toBe("Factory names are locked. Pick another.");
     expect(saveAsError("My Hall", false)).toBe("");
+  });
+
+  it("keeps an active style visible when another facet zeros its count", () => {
+    const facets = { sources: ["Guitar"], types: [] as string[], styles: ["Electronic"] };
+    expect(filterExplorer(presets, "", "", facets)).toEqual([]);
+    const styles = styleFolders(presets, "", facets);
+    expect(styles.find((f) => f.name === "Electronic")).toEqual({ name: "Electronic", label: "Electronic", count: 0 });
+  });
+
+  it("keeps an active processing type visible so it can be cleared", () => {
+    const facets = { sources: ["Synth"], types: ["Distortion"], styles: [] as string[] };
+    expect(typeFolders(presets, "", facets).find((f) => f.name === "Distortion")).toEqual({
+      name: "Distortion",
+      label: "Distortion",
+      count: 0,
+    });
+  });
+
+  it("clear all restores the full scoped catalog without dropping other facets first", () => {
+    const facets = { sources: ["Guitar"], types: ["Distortion"], styles: ["Metal"] };
+    expect(filterExplorer(presets, "", "", facets).map((p) => p.name)).toEqual(["Metal Scoop"]);
+    expect(filterExplorer(presets, "", "", EMPTY_FACETS).map((p) => p.name)).toEqual([
+      "Arp Shimmer",
+      "Blues Break OD",
+      "Metal Scoop",
+      "My Plate",
+      "Spring Tank",
+    ]);
+    expect(activeFilterChips(facets)).toEqual([
+      { facet: "source", value: "Guitar" },
+      { facet: "type", value: "Distortion" },
+      { facet: "style", value: "Metal" },
+    ]);
+  });
+
+  it("keeps factory and user scope independent of facet chips", () => {
+    expect(scopeRows(presets, "factory").every((p) => p.factory !== false)).toBe(true);
+    expect(scopeRows(presets, "user").map((p) => p.name)).toEqual(["My Plate"]);
+    expect(filterExplorer(scopeRows(presets, "user"), "", "", { ...EMPTY_FACETS, sources: ["Guitar"] })).toEqual([]);
+    expect(filterExplorer(scopeRows(presets, "factory"), "", "", EMPTY_FACETS).map((p) => p.name)).not.toContain("My Plate");
+  });
+
+  it("does not let a leftover category hide facet results", () => {
+    const byCat = filterExplorer(presets, "", "Distortion", EMPTY_FACETS);
+    const visible = filterExplorer(presets, "", "", EMPTY_FACETS);
+    expect(byCat.map((p) => p.name)).toEqual(["Blues Break OD", "Metal Scoop"]);
+    expect(visible.map((p) => p.name)).toContain("Arp Shimmer");
+  });
+
+  it("distinguishes an empty catalog from no filter hits", () => {
+    expect(emptyExplorerCopy(0, 0, false)).toBe("No presets available.");
+    expect(emptyExplorerCopy(5, 0, true)).toBe("No matching presets. Change the search or filters.");
   });
 });

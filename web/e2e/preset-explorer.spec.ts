@@ -58,4 +58,17 @@ test.describe("preset explorer panes", () => {
     }
     expect(await page.locator(".nk-preset-row").count()).toBeGreaterThan(0);
   });
+
+  test("active filters stay visible, removable, and Clear all restores the list", async ({ page }) => {
+    const style = page.locator("[data-style]").first();
+    await expect(style).toBeVisible();
+    const styleName = (await style.getAttribute("data-style")) ?? "";
+    await style.click();
+    await expect(page.locator("[data-active-filters]")).toBeVisible();
+    await expect(page.locator(`[data-chip-facet="style"]`)).toContainText(styleName);
+    await page.locator("[data-folder='Guitar']").click();
+    await expect(page.locator(`[data-style="${styleName}"]`)).toBeVisible();
+    await page.locator("[data-clear-filters]").click();
+    await expect(page.locator("[data-active-filters]")).toHaveCount(0);
+  });
 });

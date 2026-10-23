@@ -28,3 +28,8 @@ export function patchExplorer(partial: Partial<ExplorerSession>): ExplorerSessio
   Object.assign(explorerSession, partial);
   return explorerSession;
 }
+
+export function forgetHiddenCategory(session: ExplorerSession): ExplorerSession {
+  session.cat = "";
+  return session;
+}

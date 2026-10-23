@@ -30,6 +30,9 @@ describe("preset explorer layout", () => {
     expect(src).toContain("nk-preset-body");
     expect(src).toContain("nk-preset-chrome");
     expect(src).toContain("nk-preset-foot");
+    expect(src).toContain("Clear all");
+    expect(src).toContain("data-active-filters");
+    expect(src).toContain("forgetHiddenCategory");
   });
 
   it("keeps detail as a column, not a block under the list", () => {
