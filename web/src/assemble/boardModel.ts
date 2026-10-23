@@ -64,6 +64,16 @@ export function portId(nodeId: string, jackId: string, east: boolean): string {
   return `${nodeId}::${jackId}::${east ? "src" : "dst"}`;
 }
 
+/** Native graphOp node/jack from the semantic port id, not the visual owner. */
+export function graphOpEndpoints(port: Pick<BoardPort, "id" | "jackId">): { nodeId: string; jackId: string } {
+  const parts = port.id.split("::");
+  return { nodeId: parts[0] ?? "", jackId: parts[1] ?? port.jackId };
+}
+
+export function portIsOutput(port: Pick<BoardPort, "id" | "east">): boolean {
+  return port.id.split("::")[2] === "src";
+}
+
 export function portKindOf(jack: AstJack): PortKind {
   if (jack.id === "sc" || jack.kind === "mod" && jack.id === "sc") {
     return "sc";
