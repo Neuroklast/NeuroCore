@@ -1,3 +1,4 @@
+import { horizontalPortBanks } from "./portBanks";
 import { placeHostTerminals } from "./hostTerminalGeometry";
 import type { AstDocument, AstEdge, AstJack, AstNode } from "../bridge/ast";
 import { kindLabel } from "../theme/tokens";
@@ -145,22 +146,16 @@ function addSouthPorts(
   nodeId: string,
   jacks: AstJack[],
 ): void {
-  const south = jacks.filter((j) => j.kind !== "knob" && cableFace(j.kind) === "bottom");
-  south.forEach((j, index) => {
-    const id = portId(nodeId, j.id, false);
-    if (ports[id] && ports[id]!.face !== "s") {
-      return;
-    }
-    ports[id] = {
-      id,
-      nodeId,
-      jackId: j.id,
-      face: "s",
-      index,
-      count: south.length,
-      kind: j.id === "sc" ? "sc" : portKindOf(j),
-    };
-  });
+  const horizontal = jacks.filter((j) => j.kind !== "knob" && cableFace(j.kind) === "bottom");
+  const banks = horizontalPortBanks(horizontal);
+  for (const [face, bank] of [["s", banks.south], ["n", banks.north]] as const) {
+    bank.forEach((j, index) => {
+      const id = portId(nodeId, j.id, false);
+      if (ports[id] && ports[id]!.face !== "s" && ports[id]!.face !== "n") return;
+      ports[id] = { id, nodeId, jackId:j.id, face, index, count:bank.length,
+        kind:j.id === "sc" ? "sc" : portKindOf(j) };
+    });
+  }
 }
 
 const MIDI_VARS = ["midi_note", "midi_freq", "midi_vel", "midi_gate", "midi_bend", "midi_mod"] as const;

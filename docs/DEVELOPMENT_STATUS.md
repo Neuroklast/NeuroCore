@@ -18,7 +18,9 @@ Implemented and covered by reproduced regression contracts:
 
 Validation: all 363 factory presets resolve audio/modulation endpoints in both the browser sketch and native GraphModel/AstJson exports. Native parse/AST round trips are semantically equal. Factory Arrange/Compact conductor-overlap audit passes. Focused web contracts, TypeScript and production web build pass. A standalone production MidiVariableMapper/JUCE event-count contract passes.
 
-Still open: compact north/south connection banks, StepSeq visual finishing, signal-related Unit/Circuit transition, complete UI/performance benchmarks and final regression/DAW validation. The broad Circuit run still reports existing compressor-catalog expectation, NodeFace source-string and BoardChip knob-subscription failures. Full native CMake configuration lacks pkg-config. Chromium download returns invalid archives, so browser geometry/GPU checks remain unrun. No release readiness or full completion claim.
+Compact port banks now distribute connected parameter contacts across north/south, preserve semantic IDs and bound captions. A compressor with all numeric parameters connected shrinks from 1024 px to at most 448 px. Connections search uses supported catalog modulation targets and does not expand or move chips. Fixed the additional 16 px north/south route/paint mismatch by removing global re-snapping. Unit contracts and full factory routing audit pass. Real Chromium geometry checks pass across four themes at 1x/2x pixel density.
+
+Still open: StepSeq visual finishing, signal-related Unit/Circuit transition, complete UI/performance benchmarks and final regression/DAW validation. The broad Circuit run still reports existing compressor-catalog expectation, NodeFace source-string and BoardChip knob-subscription failures. Full native CMake configuration lacks pkg-config. Chromium download returns invalid archives, so browser geometry/GPU checks remain unrun. No release readiness or full completion claim.
 
 
 ## Inspect integers and control cables (2026-10-23)

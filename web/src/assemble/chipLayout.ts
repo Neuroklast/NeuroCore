@@ -1,3 +1,4 @@
+import { COMPACT_CHIP_MAX_W, portBankMinWidth } from "./portBanks";
 import type { AstJack } from "../bridge/ast";
 import { chipSpec, paintedBindKeys, typeCode } from "./chipSpec";
 import {
@@ -212,11 +213,9 @@ export function chipBox(
   const technicalMin = 2 * PIN_LEAD + 2 * CHIP_PAD_X + codeWidth + 8 + controlWidth
     + macroOnly.reduce((sum, key) => sum + Math.max(26, key.length * PARAMETER_CHAR_PX + 12) + 4, 0);
   return {
-    w: captionedChipWidth(
-      _jacks.filter(j => j.kind !== "knob" && ["bottom", "top"].includes(cableFace(j.kind)))
-        .map(j => spec.paramJackLabels[j.id] || j.id),
-      Math.max(CHIP_W, snapSize(technicalMin), snapSize(spec.label.length * 12 + CHIP_PAD_X * 4 + PIN_LEAD * 2)),
-    ),
+    w: Math.max(portBankMinWidth(south.length), Math.min(COMPACT_CHIP_MAX_W,
+      captionedChipWidth(south.slice(0, 4).map(j => spec.paramJackLabels[j.id] || j.id),
+        Math.max(CHIP_W, snapSize(technicalMin), snapSize(spec.label.length * 12 + CHIP_PAD_X * 4 + PIN_LEAD * 2))))),
     h: icStackHeight(Math.max(faces.west, faces.east, 1), CHIP_H),
   };
 }

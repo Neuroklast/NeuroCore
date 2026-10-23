@@ -1,3 +1,4 @@
+import { PortBrowser } from "./PortBrowser";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent, type WheelEvent } from "react";
 import { hasJuceBridge } from "../bridge/juce";
 import { useAstStore } from "../store/astStore";
@@ -107,6 +108,7 @@ const lassoRef = useRef<SelectionRect | null>(null);
   const clearBoardFocus = () => {
     selectNodes([]);
   };
+  const [portBrowserId,setPortBrowserId]=useState<string|null>(null);
   const [menu, setMenu] = useState<BoardMenu | null>(null);
   const overlayOpenRef = useRef(false);
   overlayOpenRef.current = menu != null;
@@ -730,7 +732,7 @@ const lassoRef = useRef<SelectionRect | null>(null);
     <div
       ref={paneRef}
       className="nk-board nk-circuit relative h-full min-h-0 w-full overflow-hidden bg-black"
-      data-overlay={menu ? "1" : undefined}
+      data-overlay={menu || portBrowserId ? "1" : undefined}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
@@ -848,11 +850,13 @@ const lassoRef = useRef<SelectionRect | null>(null);
               selected={selection.includes(n.id)}
               bindOver={bindAim?.id === n.id}
               bindLocal={bindAim?.id === n.id ? bindAim.local : { x: 0, y: 0 }}
+              onPorts={()=>{setMenu(null);setPortBrowserId(n.id);}}
               onInspect={() => inspectChip(n.id, n.type)}
             />
           )
         ))}
       </div>
+      {active && portBrowserId && nodes[portBrowserId] ? <PortBrowser key={portBrowserId} nodeId={portBrowserId} graph={graph} onClose={()=>setPortBrowserId(null)} /> : null}
       {lasso ? (() => {
         const a = screenFromWorld(camLive.current, lasso.x0, lasso.y0);
         const b = screenFromWorld(camLive.current, lasso.x1, lasso.y1);

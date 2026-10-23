@@ -49,14 +49,14 @@ describe("board architecture baseline", () => {
       ],
     };
     const g = hydrateBoard(ast);
-    const south = Object.values(g.ports).filter((p) => p.nodeId === "comp1" && p.face === "s").map((p) => p.jackId);
+    const south = Object.values(g.ports).filter((p) => p.nodeId === "comp1" && (p.face === "s" || p.face === "n")).map((p) => p.jackId);
     expect(south).toContain("threshold");
     expect(south).toContain("ceiling");
     expect(south).not.toContain("lookahead");
     expect(g.ports[portId("comp1", "ceiling", false)]).toBeTruthy();
   });
 
-  it("routes a south param cable to the south jack, not the west audio in", async () => {
+  it("routes a parameter cable to its actual bank, not the west audio in", async () => {
     const ast: AstDocument = {
       ...emptyAst(),
       nodes: [

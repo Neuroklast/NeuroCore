@@ -3932,3 +3932,17 @@ html[data-motion="reduced"] .nk-step-leds > [data-active="on"] { box-shadow: non
 @media (max-width: 540px) {
   .nk-inspect-controls, .nk-inspect-enums { grid-template-columns: repeat(2,minmax(0,1fr)); }
 }
+
+.nk-chip-parameter-label { display: block; overflow: hidden; text-overflow: ellipsis; }
+.nk-chip-ports { min-width: 26px; height: 26px; font-size: 9px; color: var(--nk-ink-soft); pointer-events: auto; }
+.nk-port-browser { position: absolute; z-index: 90; top: 16px; right: 16px; width: min(340px, calc(100% - 32px)); max-height: calc(100% - 32px); display: flex; flex-direction: column; gap: 10px; padding: 14px; border: 1px solid var(--nk-line); background: var(--nk-panel); color: var(--nk-ink); box-shadow: 0 12px 40px var(--nk-black); user-select: text; }
+.nk-port-browser header { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.nk-port-browser label { display: flex; flex-direction: column; gap: 6px; font-size: 11px; }
+.nk-port-browser input, .nk-port-browser select { width: 100%; height: 32px; padding: 4px 8px; background: var(--nk-well); color: var(--nk-ink); border: 1px solid var(--nk-line); }
+.nk-port-browser p { font-size: 11px; color: var(--nk-ink-soft); }
+.nk-port-browser button { min-height: 28px; padding: 4px 8px; border: 1px solid var(--nk-line); }
+.nk-port-browser button:focus-visible, .nk-port-browser input:focus-visible { outline: 1px solid var(--nk-accent); }
+.nk-port-browser-targets { overflow-y: auto; min-height: 0; display: grid; gap: 4px; }
+.nk-port-browser-targets button { display: flex; justify-content: space-between; gap: 12px; text-align: left; }
+.nk-port-browser-targets small { color: var(--nk-ink-soft); overflow: hidden; max-width: 50%; text-overflow: ellipsis; white-space: nowrap; }
+.nk-port-browser button:disabled { opacity: .4; }

@@ -1,5 +1,5 @@
 import { CHIP_PAD_Y, JACK_PITCH, sideJackBand, sideJackPitch, TITLE_H } from "./chipMetrics";
-import { BOARD_GRID, BOARD_HALF, snapToCellCenter, snapToGrid } from "./grid";
+import { BOARD_GRID, BOARD_HALF, snapToCellCenter } from "./grid";
 
 /** Centre of a jack, relative to the node top-left. Never a global. */
 export type PortLocal = { x: number; y: number };
@@ -72,8 +72,8 @@ export function globalPort(
   local: PortLocal,
 ): { x: number; y: number } {
   return {
-    x: snapToGrid(node.x + local.x),
-    y: snapToCellCenter(node.y + local.y),
+    x: node.x + local.x,
+    y: node.y + local.y,
   };
 }
 

@@ -112,6 +112,8 @@ MIDI IN shows dependencies on MIDI variables explicitly used in parameter expres
 
 The browser preview connects modulation to the selected parameter contact. Audio rail edits that require the native editor report this without changing the patch.
 
+Connected parameter contacts use compact banks on the top and bottom of a chip. Their identities stay the same when moving between banks. Captions are bounded; hover or Inspect shows full names. Ports opens a searchable connection list without moving any chip. Choose a modulation source and then a supported target parameter to connect it.
+
 A modulation source used by several parameters on the same chip has a separate connection to each parameter contact.
 
 Circuit always shows one continuous circuit board. Every component and connection stays on that board, including large patches. **Arrange** packs chips into reading-order rows from the input at the upper left toward the output at the lower right. Serial rows reserve a channel for the connection into the next row; branches and modulation remain visible alongside their audio paths. Chips retain their full physical sizes. Manual dragging preserves your placement until you explicitly arrange again.

@@ -35,6 +35,7 @@ export function BoardChip({
   bindOver = false,
   bindLocal = { x: 0, y: 0 },
   onInspect,
+  onPorts,
 }: {
   node: BoardNode;
   ports: BoardPort[];
@@ -43,6 +44,7 @@ export function BoardChip({
   bindOver?: boolean;
   bindLocal?: { x: number; y: number };
   onInspect?: () => void;
+  onPorts?: () => void;
 }) {
   const isMuted = useChipViewStore((s) => s.isMuted(node.id));
   const isSoloed = useChipViewStore((s) => s.isSoloed(node.id));
@@ -116,6 +118,7 @@ export function BoardChip({
       onInspect={onInspect}
       headerStart={headerStart}
       headerEnd={<>
+        <button type="button" className="nk-chip-ports" data-board-control="" aria-label="Connections" title="Connections" onClick={e=>{e.stopPropagation();onPorts?.();}}>Ports</button>
         {macroOnly.map(key => <ChipParameterCaption key={key} nodeId={node.id}
           row={{ key, label: key, formula: node.args[key] ?? "", bindable: true }} />)}
         {canMs ? (
@@ -161,7 +164,7 @@ export function BoardChip({
       <ChipParameters nodeId={node.id} hidden={bindOpen}
         rows={ports.filter(p => p.face === "s").map(p => ({
           key: p.jackId, label: spec.paramJackLabels[p.jackId] || p.jackId,
-          x: portLocal(node, p).x, formula: node.args[p.jackId] ?? "",
+          x: portLocal(node, p).x, maxWidth: Math.min(84, node.w / Math.max(1,p.count) - 8), formula: node.args[p.jackId] ?? "",
           bindable: binds.includes(p.jackId),
         }))} />
       <ChipOverloadMarks node={node} ports={ports} />
