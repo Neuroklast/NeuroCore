@@ -38,7 +38,7 @@ describe("hostStore", () => {
     expect(s.theme).toBe("signal");
     expect(s.frameRate).toBe(60);
     expect(s.discardPrompt).toBe(true);
-    expect(s.cables).toBe("dots");
+    expect(s.cables).toBe("wave"); // matches UiSettings default and hostStore initial state
   });
 
   it("host snapshot applies shared prefs from native UiSettings", () => {
