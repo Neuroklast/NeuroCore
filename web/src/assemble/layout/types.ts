@@ -26,6 +26,8 @@ export type LayoutNode = {
 };
 
 export type LayoutEdge = {
+  /** Only an explicitly shared semantic source may share conductor segments. */
+  net?: string;
   id: string;
   source: string;
   target: string;

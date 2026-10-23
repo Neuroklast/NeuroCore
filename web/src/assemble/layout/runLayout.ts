@@ -140,21 +140,22 @@ export function pathLength(pts: Pt[]): number {
   return n;
 }
 
-type InkLines = Map<string, Array<{lo: number; hi: number}>>;
+type InkLines = Map<string, Array<{lo: number; hi: number; net:string}>>;
 
 /** Reserve final straight or chamfered ink, not just the A* centre cells. */
-function claimInk(lines: InkLines, pts: Pt[]): boolean {
+function claimInk(lines: InkLines, pts: Pt[], net:string): boolean {
   const spans = pts.slice(1).map((b, i) => {
     const a = pts[i]!;
     const vertical = almost(a.x, b.x);
     const slope = vertical ? 0 : (b.y - a.y) / (b.x - a.x);
     return {
+      net,
       key: vertical ? `v:${a.x}` : `${slope}:${a.y - slope * a.x}`,
       lo: Math.min(vertical ? a.y : a.x, vertical ? b.y : b.x),
       hi: Math.max(vertical ? a.y : a.x, vertical ? b.y : b.x),
     };
   });
-  if (spans.some(s => (lines.get(s.key) ?? []).some(p => Math.min(p.hi, s.hi) - Math.max(p.lo, s.lo) > 0.1))) return false;
+  if (spans.some(s => (lines.get(s.key) ?? []).some(p => p.net !== net && Math.min(p.hi, s.hi) - Math.max(p.lo, s.lo) > 0.1))) return false;
   for (const s of spans) {
     const row = lines.get(s.key) ?? [];
     row.push(s); lines.set(s.key, row);
@@ -244,8 +245,8 @@ export async function runLayout(
     const enter = faceStep(toJack.face);
     map.markExitStub(start.c, start.r);
     map.markEntryStub(goal.c, goal.r);
-    map.reserveRunway(e.id, start, leave.dc, leave.dr, 1);
-    map.reserveRunway(e.id, goal, enter.dc, enter.dr, 1);
+    map.reserveRunway(e.net??e.id, start, leave.dc, leave.dr, 1);
+    map.reserveRunway(e.net??e.id, goal, enter.dc, enter.dr, 1);
     return {
       e,
       from,
@@ -269,15 +270,16 @@ export async function runLayout(
     if (tried.has(order)) throw new Error("Cable routing needs more space between blocks.");
     tried.add(order);
     map.cable.clear();
+    map.owners.clear();
     map.turns.clear();
     const nextPaths = { ...edgePaths };
     const ink: InkLines = new Map();
     let failed = -1;
     for (let index = 0; index < jobs.length; ++index) {
       const job = jobs[index]!;
-      const cells = astarRoute(map, job.start, job.goal, job.startDir, false, job.e.id);
+      const cells = astarRoute(map, job.start, job.goal, job.startDir, false, job.e.net??job.e.id);
       if (!cells?.length) { failed = index; break; }
-      map.occupy(cells, pathTurns(cells));
+      map.occupy(cells, pathTurns(cells), job.e.net??job.e.id);
       const pts = collapseColinear([job.from, ...cellsToPoints(map, cells), job.to]);
       const cut = chamferWaypoints(pts);
       const withEnds = (src: Pt[]) => {
@@ -290,9 +292,9 @@ export async function runLayout(
         return out;
       };
       let painted = withEnds(hasLightning(cut) ? pts : cut);
-      if (!claimInk(ink, painted)) {
+      if (!claimInk(ink, painted, job.e.net??job.e.id)) {
         painted = withEnds(pts);
-        if (!claimInk(ink, painted)) { failed = index; break; }
+        if (!claimInk(ink, painted, job.e.net??job.e.id)) { failed = index; break; }
       }
       nextPaths[job.e.id] = waypointToSvgPath(painted);
     }

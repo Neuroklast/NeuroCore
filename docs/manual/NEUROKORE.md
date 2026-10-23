@@ -375,3 +375,5 @@ In Circuit, add **MSEG** under Mod and open Inspect to edit its curve. Drag poin
 The factory catalog now contains 353 active presets. Curved Sync Duck demonstrates a continuous looping MSEG recovery, MIDI Bowed Resonator uses gated sustain/release, and Bipolar Formant Arc sweeps a repeatable bipolar curve on a parallel bandpass. Mesa High Gain is retained unchanged. Removed/replaced original preset objects are backed up in the repository’s `resources/deprecated` catalog; the active browser omits deprecated entries.
 
 ModMix and MSEG Inspect panels also show controls omitted from a short script, using the engine defaults. MSEG’s default loop end follows its actual last point. Macro binding is available for ModMix A/B gain, Mix and Offset, and MSEG Duration. Point lists, loop/sustain indices and common source Depth/Polarity are literal settings.
+
+Circuit uses one physical contact per host MIDI variable. Multiple consumers branch from that contact; only branches carrying the same MIDI variable may share a conductor. Different signals keep separate routes.

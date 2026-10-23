@@ -29,3 +29,12 @@ it("does not snap routed north/south contacts away from their painted local cent
   expect(point).toEqual({x:node.x+local.x,y:node.y+local.y});
  }
 });
+
+it("keeps one physical MIDI variable contact for many true dependencies",()=>{
+ const nodes=Array.from({length:20},(_,i)=>({id:`stage${i+1}`,type:"stage",args:{y:"x * midi_gate"},busName:"main",trailingComment:""}));
+ const graph=hydrateBoard({version:1,params:[],leadingComments:[],nodes,edges:[]});
+ const deps=Object.values(graph.edges).filter(edge=>edge.dependency==="midi");
+ expect(deps).toHaveLength(20);
+ expect(new Set(deps.map(edge=>edge.sourcePortId)).size).toBe(1);
+ expect(graph.nodes.MIDI!.h).toBe(96);
+});

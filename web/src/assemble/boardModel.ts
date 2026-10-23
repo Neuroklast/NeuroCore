@@ -386,6 +386,7 @@ export function hydrateBoard(ast: AstDocument, sidechainOn = false): BoardGraph 
   const useCount = new Map<string, number>();
   for (const edge of Object.values(edges)) {
     for (const field of ["sourcePortId", "targetPortId"] as const) {
+      if(field === "sourcePortId" && edge.dependency === "midi")continue;
       const base = edge[field];
       const count = useCount.get(base) ?? 0;
       useCount.set(base, count + 1);
@@ -475,6 +476,7 @@ export function graphToLayout(graph: BoardGraph): { nodes: LayoutNode[]; edges: 
     target: e.targetNodeId,
     fromJack: e.sourcePortId,
     toJack: e.targetPortId,
+    ...(e.dependency === "midi" ? {net:e.sourcePortId} : {}),
   }));
   return { nodes, edges };
 }

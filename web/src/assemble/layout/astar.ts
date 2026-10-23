@@ -138,7 +138,8 @@ export function astarRoute(
       if (edgeId && map.foreignLane(nc, nr, edgeId)) {
         continue;
       }
-      const occ = map.cable.get(kk) ?? 0;
+      const ownNet = edgeId !== "" && map.owners.get(kk) === edgeId;
+      const occ = ownNet ? 0 : map.cable.get(kk) ?? 0;
       const bit = stepBit(nd);
       const myPort = (nc === goal.c && nr === goal.r) || (nc === start.c && nr === start.r);
       if (! ignoreOverlap && occ !== 0 && ! myPort) {
@@ -146,7 +147,7 @@ export function astarRoute(
           continue;
         }
       }
-      if (! ignoreOverlap && map.turns.has(kk) && nd !== cur.dir) {
+      if (! ignoreOverlap && !ownNet && map.turns.has(kk) && nd !== cur.dir) {
         continue;
       }
       let add = STEP_COST;

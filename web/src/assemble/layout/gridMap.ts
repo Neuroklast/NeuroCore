@@ -12,6 +12,7 @@ export class GridMap {
   solid = new Set<string>();
   halo = new Set<string>();
   cable = new Map<string, number>();
+  owners = new Map<string,string>();
   turns = new Set<string>();
   entryStubs = new Set<string>();
   exitStubs = new Set<string>();
@@ -94,7 +95,11 @@ export class GridMap {
     return owner != null && owner !== edgeId;
   }
 
-  occupy(cells: Cell[], turns: Cell[]): void {
+  occupy(cells: Cell[], turns: Cell[], net = ""): void {
+    for(const cell of cells) {
+      const key=this.key(cell.c,cell.r),owner=this.owners.get(key);
+      this.owners.set(key,owner==null||owner===net?net:"");
+    }
     for (let i = 1; i < cells.length; i += 1) {
       const a = cells[i - 1]!;
       const b = cells[i]!;

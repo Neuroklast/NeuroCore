@@ -6,6 +6,8 @@
 
 ## Circuit connection integrity follow-up (2026-10-23)
 
+Shared MIDI nets: reproduced routing failure with ten processing chips consuming the same MIDI gate. Hydration now retains one MIDI contact per variable; routing permits shared conductor spans only for that explicitly identical MIDI net. Stress contracts preserve every endpoint and non-overlapping node at 10/25/50/100 chips; factory routing audit covers 363 presets.
+
 Implemented and covered by reproduced regression contracts:
 
 - One modulation source produces one edge per supported destination parameter. Legacy source-named sockets resolve using catalog outputs and actual parameter targets.
