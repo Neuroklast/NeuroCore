@@ -23,7 +23,8 @@ it("routes the factory graphs", async () => {
          const lo=Math.min(vertical?a.y:a.x,vertical?b.y:b.x);
          const hi=Math.max(vertical?a.y:a.x,vertical?b.y:b.x);
          const spans=lines.get(key)??[];
-         const clash=spans.find(s=>s.edge!==edge&&Math.min(s.hi,hi)-Math.max(s.lo,lo)>0.1);
+         const net=graph.edges.find(e=>e.id===edge)?.net;
+         const clash=spans.find(s=>s.edge!==edge&&(!net||graph.edges.find(e=>e.id===s.edge)?.net!==net)&&Math.min(s.hi,hi)-Math.max(s.lo,lo)>0.1);
          if(clash) throw new Error(`overlap ${edge} / ${clash.edge}`);
          spans.push({lo,hi,edge}); lines.set(key,spans);
        }

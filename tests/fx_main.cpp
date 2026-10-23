@@ -4,6 +4,7 @@
 #include "TelemetrySamplingTest.h"
 #include "ModulationBlocksTest.h"
 #include "ControlIntegrationTest.h"
+#include "MidiMapperTest.h"
 #include "MsegIntegrationTest.h"
 #include "DelayReverbTest.h"
 #include "EqSidechainTest.h"
@@ -55,6 +56,7 @@ int main(int argc, char** argv)
         for (int i = 0; i < runner.getNumResults(); ++i) failures += runner.getResult(i)->failures;
         return failures ? 1 : 0;
     }
+    MidiMapperTest midiMapper;
     ControlIntegrationTest controlIntegration;
     MsegIntegrationTest msegIntegration;
     ComparisonBankTest comparisonBank;
@@ -69,7 +71,7 @@ int main(int argc, char** argv)
     DynamicsBlocksTest dynamicsBlocksTest;
     IrXoverTest irXoverTest;
     DSLParserTest dslParserTest;
-    runner.runTests ({ &msegIntegration, &controlIntegration, &comparisonBank, &webCompile, &globalPreferences, &telemetrySampling, &test, &modulationBlocksTest, &delayReverbTest, &eqSidechainTest, &dynamicsBlocksTest, &irXoverTest, &dslParserTest }, 12345);
+    runner.runTests ({ &midiMapper, &msegIntegration, &controlIntegration, &comparisonBank, &webCompile, &globalPreferences, &telemetrySampling, &test, &modulationBlocksTest, &delayReverbTest, &eqSidechainTest, &dynamicsBlocksTest, &irXoverTest, &dslParserTest }, 12345);
     int failures = 0;
     for (int i = 0; i < runner.getNumResults(); ++i)
         failures += runner.getResult(i)->failures;

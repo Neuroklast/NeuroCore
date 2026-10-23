@@ -44,7 +44,7 @@ const CATALOG: Array<{
   { id: "join", label: "Join Signal", params: ["mix"] },
   { id: "send", label: "Send", params: ["kanal"] },
   { id: "in", label: "IN", params: [] },
-  { id: "sidechain", label: "Sidechain", params: [] },
+  { id: "sidechain", label: "Sidechain", params: ["mix"] },
   { id: "out", label: "OUT", params: ["gain"] },
 ];
 

@@ -1,3 +1,5 @@
+import { horizontalPortBanks } from "./portBanks";
+import { placeHostTerminals } from "./hostTerminalGeometry";
 import type { AstDocument, AstEdge, AstJack, AstNode } from "../bridge/ast";
 import { kindLabel } from "../theme/tokens";
 import { CHIP_GAP, chipBox } from "./chipLayout";
@@ -45,9 +47,18 @@ export type BoardEdge = {
   targetPortId: string;
   kind: PortKind;
   route: Array<{ x: number; y: number }>;
+  /** Display-only dependency on a host MIDI variable, not an editable event cable. */
+  dependency?: "midi";
+};
+
+export type BoardConnectionIssue = {
+  code: "missing-port";
+  edge: AstEdge;
+  missingPortIds: string[];
 };
 
 export type BoardGraph = {
+  connectionIssues?: BoardConnectionIssue[];
   nodes: Record<string, BoardNode>;
   ports: Record<string, BoardPort>;
   edges: Record<string, BoardEdge>;
@@ -135,22 +146,16 @@ function addSouthPorts(
   nodeId: string,
   jacks: AstJack[],
 ): void {
-  const south = jacks.filter((j) => j.kind !== "knob" && cableFace(j.kind) === "bottom");
-  south.forEach((j, index) => {
-    const id = portId(nodeId, j.id, false);
-    if (ports[id] && ports[id]!.face !== "s") {
-      return;
-    }
-    ports[id] = {
-      id,
-      nodeId,
-      jackId: j.id,
-      face: "s",
-      index,
-      count: south.length,
-      kind: j.id === "sc" ? "sc" : portKindOf(j),
-    };
-  });
+  const horizontal = jacks.filter((j) => j.kind !== "knob" && cableFace(j.kind) === "bottom");
+  const banks = horizontalPortBanks(horizontal);
+  for (const [face, bank] of [["s", banks.south], ["n", banks.north]] as const) {
+    bank.forEach((j, index) => {
+      const id = portId(nodeId, j.id, false);
+      if (ports[id] && ports[id]!.face !== "s" && ports[id]!.face !== "n") return;
+      ports[id] = { id, nodeId, jackId:j.id, face, index, count:bank.length,
+        kind:j.id === "sc" ? "sc" : portKindOf(j) };
+    });
+  }
 }
 
 const MIDI_VARS = ["midi_note", "midi_freq", "midi_vel", "midi_gate", "midi_bend", "midi_mod"] as const;
@@ -176,7 +181,10 @@ function makeNode(
   channel: string,
   locked: boolean,
 ): BoardNode {
-  const box = chipBox(type, jacks, false, args);
+  const box = chipBox(role === "io" && type === "sidechain" ? "in" : type, jacks, false, args);
+  if(role === "io" && (type === "sidechain" || type === "midi")) {
+    box.h=Math.max(BOARD_GRID*3,snapSize(sidePortMinHeight(jacks.length)+BOARD_GRID));
+  }
   return {
     id,
     type,
@@ -220,7 +228,22 @@ export function hydrateBoard(ast: AstDocument, sidechainOn = false): BoardGraph 
   nodes.IN = makeNode("IN", "in", "io", x, rowY, inJacks, {}, "AUDIO IN", "", true);
   addSidePorts(ports, "IN", inJacks, true);
 
-  const usedMidi = [...new Set(visible.flatMap((n) => midiRefs(n.args)))];
+  const midiDependencies: AstEdge[] = visible.flatMap((node) =>
+    Object.entries(node.args).flatMap(([key, expression]) =>
+      midiRefs({ [key]: expression }).map((name) => ({
+        from: "MIDI", to: node.id, kind: "mod", fromJack: midiJack(name), toJack: key,
+      }))),
+  );
+  for (const node of visible) {
+    const key = node.type === "adsr" ? (node.args.gate != null ? "gate" : "source") : "source";
+    const mode = (node.args[key] ?? "").trim().toLowerCase();
+    const usesMidi = node.type === "adsr" && ["midi", "midi_gate", "either", "both", "audio+midi"].includes(mode)
+      || node.type === "mseg" && ["midi", "either"].includes(mode);
+    if (usesMidi && !midiDependencies.some(e => e.to === node.id && e.toJack === key && e.fromJack === "gate")) {
+      midiDependencies.push({from:"MIDI",to:node.id,kind:"mod",fromJack:"gate",toJack:key});
+    }
+  }
+  const usedMidi = [...new Set(midiDependencies.map(e => `midi_${e.fromJack}`))];
   const midiNames = usedMidi.length > 0 ? usedMidi : ["midi_gate"];
   const midiJacks: AstJack[] = midiNames.map((name) => ({
     id: midiJack(name),
@@ -277,7 +300,12 @@ export function hydrateBoard(ast: AstDocument, sidechainOn = false): BoardGraph 
   };
   x += nodes.IN.w + CHIP_GAP;
 
-  const inferred = inferModLinks(visible);
+  const sidechainDependencies: AstEdge[] = visible
+    .filter((node) => node.type === "sidechain" || node.type === "sc" || node.type === "scin"
+      || ["comp", "noisegate", "gate", "env"].includes(node.type)
+        && ["sidechain", "sc", "ext"].includes((node.args.source || node.args.input || node.args.sidechain || "").toLowerCase()))
+    .map((node) => ({ from: "IN", to: node.id, kind: "audio", fromJack: "sc", toJack: "sc" }));
+  const inferred = [...inferModLinks(visible), ...midiDependencies, ...sidechainDependencies];
   const jackEdges = [...(ast.edges ?? []), ...inferred];
 
   for (const n of visible) {
@@ -328,12 +356,15 @@ export function hydrateBoard(ast: AstDocument, sidechainOn = false): BoardGraph 
     merged.push(e);
   }
   const edges: Record<string, BoardEdge> = {};
+  const connectionIssues: BoardConnectionIssue[] = [];
   merged.forEach((e, i) => {
     const fromJack = e.fromJack || (e.kind === "mod" ? "mod" : "out");
     const toJack = e.toJack || (e.kind === "mod" ? e.from : "in");
     const sourcePortId = portId(e.from, fromJack, true);
     const targetPortId = portId(e.to, toJack, false);
-    if (! ports[sourcePortId] || ! ports[targetPortId]) {
+    const missingPortIds = [sourcePortId, targetPortId].filter((id) => !ports[id]);
+    if (missingPortIds.length) {
+      connectionIssues.push({ code: "missing-port", edge: { ...e }, missingPortIds });
       return;
     }
     const kind: PortKind = e.kind === "mod" ? "mod" : (fromJack === "sc" ? "sc" : "audio");
@@ -345,6 +376,7 @@ export function hydrateBoard(ast: AstDocument, sidechainOn = false): BoardGraph 
       targetNodeId: ports[targetPortId]!.nodeId,
       targetPortId,
       kind,
+      ...(e.from === "MIDI" ? { dependency: "midi" as const } : {}),
       route: [],
     };
   });
@@ -354,6 +386,7 @@ export function hydrateBoard(ast: AstDocument, sidechainOn = false): BoardGraph 
   const useCount = new Map<string, number>();
   for (const edge of Object.values(edges)) {
     for (const field of ["sourcePortId", "targetPortId"] as const) {
+      if(field === "sourcePortId" && edge.dependency === "midi")continue;
       const base = edge[field];
       const count = useCount.get(base) ?? 0;
       useCount.set(base, count + 1);
@@ -365,7 +398,7 @@ export function hydrateBoard(ast: AstDocument, sidechainOn = false): BoardGraph 
     }
   }
   recountRails(nodes, ports);
-  return { nodes, ports, edges };
+  return { nodes, ports, edges, connectionIssues };
 }
 
 /** Occupancy is counted per face after every port exists. */
@@ -443,6 +476,7 @@ export function graphToLayout(graph: BoardGraph): { nodes: LayoutNode[]; edges: 
     target: e.targetNodeId,
     fromJack: e.sourcePortId,
     toJack: e.targetPortId,
+    ...(e.dependency === "midi" ? {net:e.sourcePortId} : {}),
   }));
   return { nodes, edges };
 }
@@ -460,23 +494,7 @@ export function applyPlaced(
     }
     nodes[id] = { ...n, x: snapToGrid(p.x), y: snapToGrid(p.y), w: p.w, h: p.h };
   }
-  if (nodes.IN) {
-    const inn = nodes.IN;
-    const hullBottom = Math.max(
-      inn.y + inn.h,
-      ...Object.values(nodes)
-        .filter((n) => n.id !== "MIDI" && n.id !== "SC")
-        .map((n) => n.y + n.h),
-    );
-    let y = hullBottom + CHIP_GAP;
-    if (nodes.MIDI) {
-      nodes.MIDI = { ...nodes.MIDI, x: inn.x, y };
-      y += nodes.MIDI.h + CHIP_GAP;
-    }
-    if (nodes.SC) {
-      nodes.SC = { ...nodes.SC, x: inn.x, y };
-    }
-  }
+  placeHostTerminals(nodes);
   const edges = { ...graph.edges };
   for (const [id, route] of Object.entries(routes)) {
     const e = edges[id];

@@ -2,7 +2,42 @@
 
 **Stand:** 2026-10-23 (0.7.2-beta)
 **Version:** 0.7.2-beta  
-**Branch:** `feat/ui-ux-stabilization`
+**Branch:** `main`
+
+## Circuit connection integrity follow-up (2026-10-23)
+
+Native MIDI regression: added MidiMapperTest to the default headless DSP runner, so the repeated-event counter contract runs with the full integration suite. Locally rebuilt and executed: 0 failures.
+
+Host routing gutter: full regression reproduced competing Sidechain exits in the fixed-width host column. Arrange/Compact now reserves one grid track per distinct outgoing host conductor plus port clearance. Sidechain chains of 2/4/8/12 processors preserve separate conductors.
+
+Route cache: reproduced stale conductors after a connection edit changes the compact chip/contact geometry. keepXy now reuses routes only when all obstacles and contacts retain their geometry; mute-only updates preserve routes.
+
+Worker budget: reproduced the fixed 2.5 s watchdog discarding a valid 3 s large-graph result and repeating work on the UI thread. The default budget now scales with node/edge count; explicit timeout and worker-error recovery contracts remain covered.
+
+Shared MIDI nets: reproduced routing failure with ten processing chips consuming the same MIDI gate. Hydration now retains one MIDI contact per variable; routing permits shared conductor spans only for that explicitly identical MIDI net. Stress contracts preserve every endpoint and non-overlapping node at 10/25/50/100 chips; factory routing audit covers 363 presets.
+
+Implemented and covered by reproduced regression contracts:
+
+- One modulation source produces one edge per supported destination parameter. Legacy source-named sockets resolve using catalog outputs and actual parameter targets.
+- Routing and rendering share stable host-terminal placement. Repeated reroute excludes host plates from their own hull.
+- Unresolved endpoints remain in structured `connectionIssues`. Router rejects unknown ports rather than substituting the first contact. Routing failures publish diagnostics.
+- Web modulation edits preserve the selected argument. Unsupported audio-rail edits report an error without rewriting the patch.
+- Explicit MIDI variable references and ADSR/MSEG MIDI gate modes generate display-only dependencies. MIDI activity uses a lock-free native event counter and a 150 ms frontend pulse.
+- The real Sidechain mixing processor stays visible as a DSP chip, separate from the host SC terminal. Supported detector dependencies and named output-bus contacts are represented.
+- Serial audio shares A* occupancy with host dependencies. Direct serial routing remains only when no extra host dependencies exist.
+
+Validation: all 363 factory presets resolve audio/modulation endpoints in both the browser sketch and native GraphModel/AstJson exports. Native parse/AST round trips are semantically equal. Factory Arrange/Compact conductor-overlap audit passes. Focused web contracts, TypeScript and production web build pass. A standalone production MidiVariableMapper/JUCE event-count contract passes.
+
+Compact port banks now distribute connected parameter contacts across north/south, preserve semantic IDs and bound captions. A compressor with all numeric parameters connected shrinks from 1024 px to at most 448 px. Connections search uses supported catalog modulation targets and does not expand or move chips. Fixed the additional 16 px north/south route/paint mismatch by removing global re-snapping. Unit contracts and full factory routing audit pass. Real Chromium geometry checks pass across four themes at 1x/2x pixel density.
+
+StepSeq now renders an 8-column hardware LED matrix (up to 8 rows), with empty sockets, mute/current/stopped states and theme-lit cores. Host step updates are isolated to memoized ChipFunctionFace; a real React renderer test proves the chip shell does not rerender on a step update or unrelated macro change. Four-theme/1x/2x browser checks cover the 64-step matrix and unchanged chip bounds. The native DSP/integration suite now builds locally and passes (0 failures).
+
+Unit/Circuit now uses a disposable 220 ms SVG handoff anchored to the existing host contact. It reads only fresh measured RMS; stale/silent data and reduced/off motion skip it. No extra Unit renderer is kept alive. Contracts and browser DOM lifecycle/motion checks pass at 1x/2x with WebGL disabled; 1x also passes with software WebGL. The 2x software-WebGL workspace switch exceeds the local test timeout and is not certified.
+
+Host connectors now occupy a reserved left column. MIDI/SC use 96 px housings when their physical ports allow it, instead of extending below the full DSP hull. Arrange/Compact reserve the column before routing; Reroute does not translate chips. Repeated geometry/factory routing and browser host-column checks pass.
+
+Still open: complete UI/performance benchmarks and final regression/DAW validation. The broad Circuit run still reports existing compressor-catalog expectation, NodeFace source-string and BoardChip knob-subscription failures. Full native CMake configuration lacks pkg-config. Chromium download returns invalid archives, so browser geometry/GPU checks remain unrun. No release readiness or full completion claim.
+
 
 ## UI/UX stabilization (2026-10-23)
 
@@ -16,7 +51,7 @@ Inspect step/bit/stage/voice fields snap to whole numbers; dials use a 44×44 ce
 
 ## Circuit board terminals (2026-10-23)
 
-Circuit host I/O is no longer painted as ordinary chips. Hydrate always creates locked `IN`, `MIDI`, `SC` and `OUT` plates. AUDIO IN keeps jack `out`. Sidechain stays semantic `IN::sc::src` on visual node `SC`, so `graphOp` still publishes `IN`/`sc`. MIDI is a host plate; drag-connect is refused and native graphOp never sees node `MIDI`. Compact south rails show `faceParamKeys` plus connected jacks only (StepSeq/Comp ≤ 448 px). Random’s closed face is a stepped range, not an LFO sine. Layout packs IN/chips/OUT; MIDI/SC pin below that hull so they do not overlap wrapped chips. SC edges go through A* from the SC plate. Ports use `face: n|e|s|w` (output is `::src`, not east). Layout ports keep local `x,y,face`; A* leaves/enters on that face so south param cables land on the south rail, not the west audio in. Router endpoints use the same `globalPort` snap as the painted jack. MIDI plate lamps read `midiGate`/`midiVel`/`midiMod` atomics from the host snapshot (timer thread). SC dims when `sidechainOn` is false. Unit/Circuit panes crossfade (`nk-pane`); Unit still unmounts WebGL; Circuit stays mounted. MIDI keeps a display `gate` jack when the patch does not mention MIDI vars.
+Circuit host I/O is no longer painted as ordinary chips. Hydrate always creates locked `IN`, `MIDI`, `SC` and `OUT` plates. AUDIO IN keeps jack `out`. Sidechain stays semantic `IN::sc::src` on visual node `SC`, so `graphOp` still publishes `IN`/`sc`. MIDI is a host plate; drag-connect is refused and native graphOp never sees node `MIDI`. Compact south rails show `faceParamKeys` plus connected jacks only (StepSeq/Comp ≤ 448 px). Random’s closed face is a stepped range, not an LFO sine. Layout packs IN/chips/OUT; MIDI/SC pin below that hull so they do not overlap wrapped chips. SC edges go through A* from the SC plate. Ports use `face: n|e|s|w` (output is `::src`, not east). Layout ports keep local `x,y,face`; A* leaves/enters on that face so south param cables land on the south rail, not the west audio in. Router endpoints use the same `globalPort` snap as the painted jack. MIDI plate lamps read the native event counter from the timer-thread host snapshot. SC dims when `sidechainOn` is false. Unit/Circuit panes crossfade (`nk-pane`); Unit still unmounts WebGL; Circuit stays mounted. MIDI keeps a display `gate` jack when the patch does not mention MIDI vars.
 
 Contracts: `boardArchitecture.test.ts` failed on unlocked IN and missing SC/MIDI, then passed. Focused assemble layout/model checks pass. Pre-existing chipSpec catalog (comp params) and BoardChip knobs-subscription source scans remain.
 

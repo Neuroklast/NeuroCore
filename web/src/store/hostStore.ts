@@ -1,3 +1,4 @@
+import { midiPlateLit } from "../assemble/boardTerminalLive";
 import { create } from "zustand";
 import { applyUiPrefs } from "../chrome/persistUi";
 import { DEFAULT_THEME, isThemeId, type ThemeId } from "../theme/theme";
@@ -77,6 +78,9 @@ export interface HostState {
   /** Host sidechain bus enabled — Sidechain IN plate dims when false. */
   sidechainOn: boolean;
   /** MIDI mapper atomics from the host snapshot. Circuit lamps only. */
+  midiEventCount: number | null;
+  midiLastEventAt: number;
+  midiActive: boolean;
   midiGate: number;
   midiVel: number;
   midiMod: number;
@@ -321,6 +325,9 @@ export const useHostStore = create<HostState>((set) => ({
   scopeGrid: true,
   scopeInvertY: false,
   sidechainOn: false,
+  midiEventCount: null,
+  midiLastEventAt: -Infinity,
+  midiActive: false,
   midiGate: 0,
   midiVel: 0,
   midiMod: 0,
@@ -349,6 +356,11 @@ export const useHostStore = create<HostState>((set) => ({
     bypass: p.bypass != null ? Boolean(p.bypass) : s.bypass,
   })),
   applyHost: (p) => set((s) => {
+    const now = performance.now();
+    const count = typeof p.midiEventCount === "number" && Number.isInteger(p.midiEventCount)
+      ? p.midiEventCount : s.midiEventCount;
+    const lastEventAt = count != null && s.midiEventCount != null && count !== s.midiEventCount
+      ? now : s.midiLastEventAt;
     const prefs = applyUiPrefs(p, {
       motion: s.motion,
       cables: s.cables,
@@ -389,6 +401,9 @@ export const useHostStore = create<HostState>((set) => ({
     scopeInvertY: prefs.scopeInvertY ?? s.scopeInvertY,
     scopeDelta: prefs.scopeDelta ?? s.scopeDelta,
     sidechainOn: p.sidechainOn != null ? Boolean(p.sidechainOn) : s.sidechainOn,
+    midiEventCount: count,
+    midiLastEventAt: lastEventAt,
+    midiActive: midiPlateLit(lastEventAt, now),
     midiGate: p.midiGate != null ? Number(p.midiGate) : s.midiGate,
     midiVel: p.midiVel != null ? Number(p.midiVel) : s.midiVel,
     midiMod: p.midiMod != null ? Number(p.midiMod) : s.midiMod,

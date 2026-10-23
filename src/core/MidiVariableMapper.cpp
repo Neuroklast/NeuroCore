@@ -19,6 +19,7 @@ void MidiVariableMapper::processMidi(const juce::MidiBuffer& midiMessages)
 
 void MidiVariableMapper::processEvent (const juce::MidiMessage& msg) noexcept
 {
+    eventCount.fetch_add (1, std::memory_order_relaxed);
     if (msg.isNoteOn())
         noteOn (msg.getNoteNumber(), msg.getFloatVelocity());
     else if (msg.isNoteOff())

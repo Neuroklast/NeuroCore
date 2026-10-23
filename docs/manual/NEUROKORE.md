@@ -104,6 +104,24 @@ StepSeq chips show up to 64 host-reported steps as eight LEDs per row, with at m
 
 Each chip keeps its full effect name above a separate typecode and control row. The gunmetal housing has lit upper facets, recessed controls and metallic contacts. A bounded central dot field carries a calculated function diagram; it is not a measured waveform. The function diagram remains readable at rest. Selecting or focusing a chip makes it clearer without moving its contacts. Numeric modulation parameters use 17 px captions and contact-aligned guide ticks above the node ID and live level. Enum and routing fields such as TYPE and CHANNEL remain in Inspect. Muting subdues the signal surface while keeping identification readable. Cyan parameter captions indicate macro bindings. Drag a macro onto the chip to choose a binding target, or use Inspect for the full parameter list. Connected audio contacts light from their source's measured signal. Unconnected or silent contacts remain metal. Clipping warnings appear only on a real overload.
 
+Audio, MIDI and sidechain inputs share a fixed column on the left edge of the physical board. Arrange and Compact reserve this space.
+
+SIDECHAIN IN is the host input. A Sidechain processor in a patch remains a separate movable chip because its MIX control blends main and sidechain audio. Supported compressors, gates and envelopes that select the host sidechain show that dependency from the host plate.
+
+The MIDI activity lamp flashes for newly received events. A held controller value does not keep it lit.
+
+MIDI IN shows dependencies on MIDI variables explicitly used in parameter expressions and on the MIDI gate modes of ADSR and MSEG. These lines describe host control values. Change the expression to change the dependency. MIDI IN does not provide an editable event connection or a MIDI output.
+
+The browser preview connects modulation to the selected parameter contact. Audio rail edits that require the native editor report this without changing the patch.
+
+Switching between Unit and Circuit can show a brief signal-coloured cue toward the input or from the output. Both views describe the same processing. Switching is immediate. The cue is skipped for silent/stale measurements, reduced motion and motion-off.
+
+StepSeq shows eight LEDs per row, up to eight rows. Lit cores follow the actual host step. Muted and unused steps stay dim; a stopped host does not run a local animation. The full editor remains in Inspect.
+
+Connected parameter contacts use compact banks on the top and bottom of a chip. Their identities stay the same when moving between banks. Captions are bounded; hover or Inspect shows full names. Ports opens a searchable connection list without moving any chip. Choose a modulation source and then a supported target parameter to connect it.
+
+A modulation source used by several parameters on the same chip has a separate connection to each parameter contact.
+
 Circuit always shows one continuous circuit board. Every component and connection stays on that board, including large patches. **Arrange** packs chips into reading-order rows from the input at the upper left toward the output at the lower right. Serial rows reserve a channel for the connection into the next row; branches and modulation remain visible alongside their audio paths. Chips retain their full physical sizes. Manual dragging preserves your placement until you explicitly arrange again.
 
 **Fit board** shows the entire circuit. Large boards use the same view: zoom in with the wheel and pan with empty left-drag, middle-drag or Space+drag. **Find chip** searches IDs, names and types and focuses the matching chip on that same board. It does not hide neighbours or connections. Switching to Unit and back retains the camera. There are no region cards, nested workspaces or boundary-link navigation.
@@ -357,3 +375,5 @@ In Circuit, add **MSEG** under Mod and open Inspect to edit its curve. Drag poin
 The factory catalog now contains 353 active presets. Curved Sync Duck demonstrates a continuous looping MSEG recovery, MIDI Bowed Resonator uses gated sustain/release, and Bipolar Formant Arc sweeps a repeatable bipolar curve on a parallel bandpass. Mesa High Gain is retained unchanged. Removed/replaced original preset objects are backed up in the repository’s `resources/deprecated` catalog; the active browser omits deprecated entries.
 
 ModMix and MSEG Inspect panels also show controls omitted from a short script, using the engine defaults. MSEG’s default loop end follows its actual last point. Macro binding is available for ModMix A/B gain, Mix and Offset, and MSEG Duration. Point lists, loop/sustain indices and common source Depth/Polarity are literal settings.
+
+Circuit uses one physical contact per host MIDI variable. Multiple consumers branch from that contact; only branches carrying the same MIDI variable may share a conductor. Different signals keep separate routes.

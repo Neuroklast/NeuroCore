@@ -1,5 +1,5 @@
+import { placeHostTerminals, reserveHostColumn } from "../hostTerminalGeometry";
 import { isWrapJack, wrapRailRoute, wrapRailY } from "../boardPath";
-import { CHIP_GAP } from "../chipLayout";
 import { BOARD_GRID } from "../grid";
 import { globalPort, northPortLocals, southPortLocals } from "../portLayout";
 import { astarRoute, cellsToPoints, hvhFallback, pathTurns } from "./astar";
@@ -49,7 +49,8 @@ function jackAt(
   side: "in" | "out",
 ): { pt: Pt; face: LayoutFace } {
   const list = side === "out" ? node?.outs : node?.ins;
-  const port = list?.find((p) => p.id === jackId) ?? list?.[0];
+  const port = list?.find((p) => p.id === jackId);
+  if (!port) throw new Error(`Missing ${side} contact ${node?.id ?? "unknown"}:${jackId}`);
   const face = resolvedFace(port, side);
   const local = resolvedLocal(port, placed.w, placed.h, face);
   return { pt: globalPort({ x: placed.x, y: placed.y }, local), face };
@@ -139,21 +140,22 @@ export function pathLength(pts: Pt[]): number {
   return n;
 }
 
-type InkLines = Map<string, Array<{lo: number; hi: number}>>;
+type InkLines = Map<string, Array<{lo: number; hi: number; net:string}>>;
 
 /** Reserve final straight or chamfered ink, not just the A* centre cells. */
-function claimInk(lines: InkLines, pts: Pt[]): boolean {
+function claimInk(lines: InkLines, pts: Pt[], net:string): boolean {
   const spans = pts.slice(1).map((b, i) => {
     const a = pts[i]!;
     const vertical = almost(a.x, b.x);
     const slope = vertical ? 0 : (b.y - a.y) / (b.x - a.x);
     return {
+      net,
       key: vertical ? `v:${a.x}` : `${slope}:${a.y - slope * a.x}`,
       lo: Math.min(vertical ? a.y : a.x, vertical ? b.y : b.x),
       hi: Math.max(vertical ? a.y : a.x, vertical ? b.y : b.x),
     };
   });
-  if (spans.some(s => (lines.get(s.key) ?? []).some(p => Math.min(p.hi, s.hi) - Math.max(p.lo, s.lo) > 0.1))) return false;
+  if (spans.some(s => (lines.get(s.key) ?? []).some(p => p.net !== net && Math.min(p.hi, s.hi) - Math.max(p.lo, s.lo) > 0.1))) return false;
   for (const s of spans) {
     const row = lines.get(s.key) ?? [];
     row.push(s); lines.set(s.key, row);
@@ -165,26 +167,10 @@ function pinHostTerminals(
   placed: Record<string, { x: number; y: number; w: number; h: number }>,
   pinNodes: LayoutNode[],
 ): void {
-  const inn = placed.IN;
-  if (! inn) {
-    for (const n of pinNodes) {
-      placed[n.id] = { x: n.x ?? 0, y: n.y ?? 0, w: n.w, h: n.h };
-    }
-    return;
+  for (const n of pinNodes) {
+    placed[n.id] = { x: n.x ?? 0, y: n.y ?? 0, w: n.w, h: n.h };
   }
-  const hullBottom = Math.max(
-    inn.y + inn.h,
-    ...Object.values(placed).map((p) => p.y + p.h),
-  );
-  let y = hullBottom + CHIP_GAP;
-  for (const id of ["MIDI", "SC"]) {
-    const n = pinNodes.find((p) => p.id === id);
-    if (! n) {
-      continue;
-    }
-    placed[id] = { x: inn.x, y, w: n.w, h: n.h };
-    y += n.h + CHIP_GAP;
-  }
+  placeHostTerminals(placed);
 }
 
 export async function runLayout(
@@ -198,6 +184,14 @@ export async function runLayout(
   const pinIds = new Set(pinNodes.map((n) => n.id));
   const freeEdges = edges.filter((e) => ! pinIds.has(e.source) && ! pinIds.has(e.target));
   const extraEdges = edges.filter((e) => pinIds.has(e.source) || pinIds.has(e.target));
+  const model = new Map(nodes.map((node) => [node.id, node]));
+  for (const edge of edges) {
+    if (!model.has(edge.source) || !model.has(edge.target)) {
+      throw new Error(`Missing routing node for connection ${edge.id}`);
+    }
+    jackAt({x:0,y:0,w:model.get(edge.source)!.w,h:model.get(edge.source)!.h},model.get(edge.source),edge.fromJack,"out");
+    jackAt({x:0,y:0,w:model.get(edge.target)!.w,h:model.get(edge.target)!.h},model.get(edge.target),edge.toJack,"in");
+  }
 
   const serial = mode === "REROUTE" ? null : placeSerialChain(freeNodes, freeEdges, view);
   const placed = serial ?? (mode === "REROUTE"
@@ -209,10 +203,11 @@ export async function runLayout(
     }]))
     : packRows(freeNodes, freeEdges, view));
   pinHostTerminals(placed, pinNodes);
+  if(mode!=="REROUTE")reserveHostColumn(placed, new Set(edges.filter(e => ["IN", "MIDI", "SC"].includes(e.source)).map(e => e.net ?? e.id)).size);
 
   const byId = new Map(nodes.map((n) => [n.id, n]));
   const edgePaths: Record<string, string> = {};
-  if (serial) {
+  if (serial && extraEdges.length === 0) {
     for (const edge of freeEdges) {
       const s = placed[edge.source]!;
       const t = placed[edge.target]!;
@@ -237,7 +232,7 @@ export async function runLayout(
     map.markNode(n, p.x, p.y);
   }
 
-  const jobs = (serial ? extraEdges : edges).map((e) => {
+  const jobs = edges.map((e) => {
     const s = placed[e.source];
     const t = placed[e.target];
     const fromJack = s ? jackAt(s, byId.get(e.source), e.fromJack, "out") : { pt: { x: 0, y: 0 }, face: "e" as const };
@@ -250,8 +245,8 @@ export async function runLayout(
     const enter = faceStep(toJack.face);
     map.markExitStub(start.c, start.r);
     map.markEntryStub(goal.c, goal.r);
-    map.reserveRunway(e.id, start, leave.dc, leave.dr, 1);
-    map.reserveRunway(e.id, goal, enter.dc, enter.dr, 1);
+    map.reserveRunway(e.net??e.id, start, leave.dc, leave.dr, 1);
+    map.reserveRunway(e.net??e.id, goal, enter.dc, enter.dr, 1);
     return {
       e,
       from,
@@ -275,15 +270,16 @@ export async function runLayout(
     if (tried.has(order)) throw new Error("Cable routing needs more space between blocks.");
     tried.add(order);
     map.cable.clear();
+    map.owners.clear();
     map.turns.clear();
     const nextPaths = { ...edgePaths };
     const ink: InkLines = new Map();
     let failed = -1;
     for (let index = 0; index < jobs.length; ++index) {
       const job = jobs[index]!;
-      const cells = astarRoute(map, job.start, job.goal, job.startDir, false, job.e.id);
+      const cells = astarRoute(map, job.start, job.goal, job.startDir, false, job.e.net??job.e.id);
       if (!cells?.length) { failed = index; break; }
-      map.occupy(cells, pathTurns(cells));
+      map.occupy(cells, pathTurns(cells), job.e.net??job.e.id);
       const pts = collapseColinear([job.from, ...cellsToPoints(map, cells), job.to]);
       const cut = chamferWaypoints(pts);
       const withEnds = (src: Pt[]) => {
@@ -296,9 +292,9 @@ export async function runLayout(
         return out;
       };
       let painted = withEnds(hasLightning(cut) ? pts : cut);
-      if (!claimInk(ink, painted)) {
+      if (!claimInk(ink, painted, job.e.net??job.e.id)) {
         painted = withEnds(pts);
-        if (!claimInk(ink, painted)) { failed = index; break; }
+        if (!claimInk(ink, painted, job.e.net??job.e.id)) { failed = index; break; }
       }
       nextPaths[job.e.id] = waypointToSvgPath(painted);
     }

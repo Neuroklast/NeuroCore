@@ -188,7 +188,7 @@ export function chipChromeVars(role: "io" | "chip" = "chip"): Record<string, str
 }
 
 export function isUtilityIo(id: string): boolean {
-  return id === "in" || id === "out" || id === "sidechain" || id === "midi";
+  return id === "in" || id === "out" || id === "midi";
 }
 
 export const CHIP_KEEP_OPEN_SEL = "[data-chip-keep-open],[data-knob-bind],[data-bind-key],[data-chip-expand]";

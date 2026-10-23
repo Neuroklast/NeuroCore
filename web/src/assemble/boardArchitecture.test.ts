@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 import type { AstDocument, AstNode } from "../bridge/ast";
 import { canDeleteChip } from "./boardEdit";
 import { midiPlateLit, sidechainPlateLive } from "./boardTerminalLive";
-import { graphOpEndpoints, graphToLayout, hydrateBoard, portGlobal, portId } from "./boardModel";
+import { applyPlaced, graphOpEndpoints, graphToLayout, hydrateBoard, portGlobal, portId } from "./boardModel";
 import { parseRoutePath } from "./boardPath";
 import { chipSpec } from "./chipSpec";
-import { compact } from "./layout/runLayout";
+import { compact, reroute } from "./layout/runLayout";
 
 function emptyAst(): AstDocument {
   return {
@@ -49,14 +49,14 @@ describe("board architecture baseline", () => {
       ],
     };
     const g = hydrateBoard(ast);
-    const south = Object.values(g.ports).filter((p) => p.nodeId === "comp1" && p.face === "s").map((p) => p.jackId);
+    const south = Object.values(g.ports).filter((p) => p.nodeId === "comp1" && (p.face === "s" || p.face === "n")).map((p) => p.jackId);
     expect(south).toContain("threshold");
     expect(south).toContain("ceiling");
     expect(south).not.toContain("lookahead");
     expect(g.ports[portId("comp1", "ceiling", false)]).toBeTruthy();
   });
 
-  it("routes a south param cable to the south jack, not the west audio in", async () => {
+  it("routes a parameter cable to its actual bank, not the west audio in", async () => {
     const ast: AstDocument = {
       ...emptyAst(),
       nodes: [
@@ -195,11 +195,11 @@ describe("midi terminal contract", () => {
     expect(Object.values(g.edges).some((e) => e.sourceNodeId === "MIDI")).toBe(false);
   });
 
-  it("lights MIDI from host midiGate/vel/mod, not from a graph edge", () => {
-    expect(midiPlateLit(0, 0, 0)).toBe(false);
-    expect(midiPlateLit(1, 0, 0)).toBe(true);
-    expect(midiPlateLit(0, 0.8, 0)).toBe(true);
-    expect(midiPlateLit(0, 0, 0.4)).toBe(true);
+  it("expires MIDI event activity without inspecting held gate or CC values", () => {
+    expect(midiPlateLit(-Infinity, 1000)).toBe(false);
+    expect(midiPlateLit(1000, 1000)).toBe(true);
+    expect(midiPlateLit(1000, 1149)).toBe(true);
+    expect(midiPlateLit(1000, 1150)).toBe(false);
   });
 });
 
@@ -208,4 +208,60 @@ describe("sidechain terminal live", () => {
     expect(sidechainPlateLive(false)).toBe(false);
     expect(sidechainPlateLive(true)).toBe(true);
   });
+});
+
+
+it("repeated reroute keeps terminal placement and route endpoints stable", async () => {
+ let graph = hydrateBoard({...emptyAst(), nodes:[node("comp1", "comp", chipSpec("comp").defaultArgs)], edges:[
+  {from:"IN",to:"comp1",kind:"audio",fromJack:"out",toJack:"in"},
+  {from:"IN",to:"comp1",kind:"audio",fromJack:"sc",toJack:"in"}
+ ]});
+ const firstLayout = graphToLayout(graph);
+ const first = await reroute(firstLayout.nodes, firstLayout.edges);
+ graph = applyPlaced(graph,first.nodes,{});
+ const initial = {MIDI:graph.nodes.MIDI!.y, SC:graph.nodes.SC!.y};
+ for (let i=0; i<3; ++i) {
+  const layout = graphToLayout(graph);
+  const result = await reroute(layout.nodes, layout.edges);
+  expect(result.nodes.MIDI!.y).toBe(initial.MIDI);
+  expect(result.nodes.SC!.y).toBe(initial.SC);
+  const routes = Object.fromEntries(Object.entries(result.edgePaths).map(([id,path])=>[id,parseRoutePath(path)]));
+  graph = applyPlaced(graph,result.nodes,routes);
+  for (const edge of Object.values(graph.edges)) {
+   const source = portGlobal(graph.nodes[edge.sourceNodeId]!,graph.ports[edge.sourcePortId]!);
+   expect(edge.route[0]).toEqual(source);
+  }
+ }
+});
+
+it("draws each real MIDI variable dependency and no substring matches", () => {
+ const g = hydrateBoard({...emptyAst(),nodes:[node("stage1","stage",{y:"x * midi_vel * midi_gate + not_midi_mod"})]});
+ const edges = Object.values(g.edges).filter(e=>e.sourceNodeId === "MIDI");
+ expect(edges.map(e=>g.ports[e.sourcePortId]!.jackId).sort()).toEqual(["gate","vel"]);
+ expect(edges.every(e=>g.ports[e.targetPortId]!.jackId === "y")).toBe(true);
+ expect(edges.every(e=>e.dependency === "midi")).toBe(true);
+ expect(g.connectionIssues).toEqual([]);
+});
+
+it("retains the real Sidechain mixing processor between main audio contacts", () => {
+ const g = hydrateBoard({...emptyAst(),nodes:[node("sidechain1","sidechain",{mix:"0.5"})],edges:[
+  {from:"IN",to:"sidechain1",fromJack:"out",toJack:"in",kind:"audio"},
+  {from:"sidechain1",to:"OUT",fromJack:"out",toJack:"in",kind:"audio"}
+ ]});
+ expect(g.nodes.sidechain1?.role).toBe("chip");
+ expect(g.nodes.sidechain1?.locked).toBe(false);
+ expect(g.connectionIssues).toEqual([]);
+ expect(Object.values(g.edges).some(e=>e.sourceNodeId === "SC" && e.targetNodeId === "sidechain1")).toBe(true);
+});
+
+it.each([
+ ["adsr",{gate:"midi"},"gate"],
+ ["adsr",{source:"both"},"source"],
+ ["mseg",{source:"either"},"source"],
+] as const)("shows implicit %s MIDI gate modes",(type,args,target)=>{
+ const g=hydrateBoard({...emptyAst(),nodes:[node("source1",type,args)]});
+ const midi=Object.values(g.edges).filter(e=>e.dependency==="midi");
+ expect(midi).toHaveLength(1);
+ expect(g.ports[midi[0]!.sourcePortId]!.jackId).toBe("gate");
+ expect(g.ports[midi[0]!.targetPortId]!.jackId).toBe(target);
 });
