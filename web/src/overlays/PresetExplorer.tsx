@@ -92,17 +92,17 @@ export function PresetExplorer() {
     return () => { loadGen.current += 1; };
   }, []);
 
-  const inScope = useMemo(() => {
-    const rows = scopeRows(presets, scope);
-    return favOnly ? rows.filter((p) => isPresetFavorite(p.name, stars)) : rows;
-  }, [favOnly, presets, scope, stars]);
+  const catalog = useMemo(() => scopeRows(presets, scope), [presets, scope]);
   const facets = useMemo<ExplorerFacets>(() => ({ sources, types, styles }), [sources, styles, types]);
-  const folders = useMemo(() => sourceFolders(inScope, q, facets), [facets, inScope, q]);
-  const typesList = useMemo(() => typeFolders(inScope, q, facets), [facets, inScope, q]);
-  const stylesList = useMemo(() => styleFolders(inScope, q, facets), [facets, inScope, q]);
-  const filtered = useMemo(() => filterExplorer(inScope, q, "", facets), [facets, inScope, q]);
+  const folders = useMemo(() => sourceFolders(catalog, q, facets), [catalog, facets, q]);
+  const typesList = useMemo(() => typeFolders(catalog, q, facets), [catalog, facets, q]);
+  const stylesList = useMemo(() => styleFolders(catalog, q, facets), [catalog, facets, q]);
+  const filtered = useMemo(() => {
+    const rows = filterExplorer(catalog, q, "", facets);
+    return favOnly ? rows.filter((p) => isPresetFavorite(p.name, stars)) : rows;
+  }, [catalog, facets, favOnly, q, stars]);
   const chips = useMemo(() => activeFilterChips(facets), [facets]);
-  const emptyCopy = emptyExplorerCopy(inScope.length, filtered.length, Boolean(q.trim()) || chips.length > 0);
+  const emptyCopy = emptyExplorerCopy(catalog.length, filtered.length, Boolean(q.trim()) || chips.length > 0 || favOnly);
   const row = selectedRow(filtered, selectedName);
   const fav = row ? isPresetFavorite(row.name, stars) : false;
   const blocks = useMemo(
@@ -190,20 +190,21 @@ export function PresetExplorer() {
     }
   };
 
+  const listed = (rows: typeof catalog) => favOnly ? rows.filter((p) => isPresetFavorite(p.name, stars)) : rows;
   const pickSource = (name: string) => {
     const nextSources = name === "" ? [] : toggleFacet(sources, name);
     const nextFacets = { sources: nextSources, types, styles };
-    const next = filterExplorer(inScope, q, "", nextFacets);
+    const next = listed(filterExplorer(catalog, q, "", nextFacets));
     persist({ sources: nextSources, selectedName: resolveSelectedName(next, selectedName) });
   };
   const pickType = (name: string) => {
     const nextTypes = toggleFacet(types, name);
-    const next = filterExplorer(inScope, q, "", { sources, types: nextTypes, styles });
+    const next = listed(filterExplorer(catalog, q, "", { sources, types: nextTypes, styles }));
     persist({ types: nextTypes, selectedName: resolveSelectedName(next, selectedName) });
   };
   const pickStyle = (name: string) => {
     const nextStyles = toggleFacet(styles, name);
-    const next = filterExplorer(inScope, q, "", { sources, types, styles: nextStyles });
+    const next = listed(filterExplorer(catalog, q, "", { sources, types, styles: nextStyles }));
     persist({ styles: nextStyles, selectedName: resolveSelectedName(next, selectedName) });
   };
   const dropChip = (chip: ActiveFilterChip) => {
@@ -212,7 +213,7 @@ export function PresetExplorer() {
     else pickStyle(chip.value);
   };
   const clearFilters = () => {
-    const next = filterExplorer(inScope, q, "", EMPTY_FACETS);
+    const next = listed(filterExplorer(catalog, q, "", EMPTY_FACETS));
     persist({ sources: [], types: [], styles: [], selectedName: resolveSelectedName(next, selectedName) });
   };
 
@@ -227,7 +228,7 @@ export function PresetExplorer() {
           value={q}
           onChange={(e) => {
             const nextQ = e.target.value;
-            const next = filterExplorer(inScope, nextQ, "", facets);
+            const next = listed(filterExplorer(catalog, nextQ, "", facets));
             persist({ q: nextQ, selectedName: resolveSelectedName(next, selectedName) });
           }}
         />
@@ -239,7 +240,7 @@ export function PresetExplorer() {
             onClick={() => {
               const nextScope = s;
               const nextIn = scopeRows(presets, nextScope);
-              const next = filterExplorer(nextIn, q, "", facets);
+              const next = listed(filterExplorer(nextIn, q, "", facets));
               persist({ scope: nextScope, selectedName: resolveSelectedName(next, selectedName) });
             }}
           >
@@ -486,7 +487,7 @@ export function PresetExplorer() {
         </div>
       ) : null}
       <div className="nk-preset-foot">
-        <span className="text-muted">{inScope.length} PRESETS AVAILABLE</span>
+        <span className="text-muted">{catalog.length} PRESETS AVAILABLE</span>
         <div className="flex gap-2">
           <button type="button" className="nk-clip" onClick={openSave}>Save As…</button>
           <button type="button" className="nk-clip" onClick={() => void requestPresetAction({ action: "new" })}>New Blank</button>

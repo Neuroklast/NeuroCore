@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { placeTooltip } from "./tooltipPlace";
+import { placeTooltip, scaleRect } from "./tooltipPlace";
 
 const view = { w: 1280, h: 860 };
 
@@ -20,5 +20,15 @@ describe("tooltip placement", () => {
     const p = placeTooltip({ x: 640, y: 40, w: 80, h: 32 }, { w: 400, h: 48 }, view);
     expect(p.x).toBeGreaterThanOrEqual(4);
     expect(p.x + 400).toBeLessThanOrEqual(view.w - 4);
+  });
+
+  it("converts screen rects back to layout pixels when the stage is scaled", () => {
+    const host = { left: 0, top: 0, width: 1920, height: 1290 };
+    const el = { left: 300, top: 150, width: 48, height: 48 };
+    const box = scaleRect(host, el, 1280, 860);
+    expect(box.trigger.x).toBeCloseTo(200);
+    expect(box.trigger.y).toBeCloseTo(100);
+    expect(box.trigger.w).toBeCloseTo(32);
+    expect(box.view).toEqual({ w: 1280, h: 860 });
   });
 });

@@ -143,5 +143,6 @@ describe("explorer model", () => {
   it("distinguishes an empty catalog from no filter hits", () => {
     expect(emptyExplorerCopy(0, 0, false)).toBe("No presets available.");
     expect(emptyExplorerCopy(5, 0, true)).toBe("No matching presets. Change the search or filters.");
+    expect(emptyExplorerCopy(5, 0, true)).not.toBe("No presets available.");
   });
 });
