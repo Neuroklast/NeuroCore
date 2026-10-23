@@ -19,7 +19,7 @@ let worker: Worker | null = null;
 let nextId = 1;
 const pending = new Map<number, PendingJob>();
 let workerFactory: (() => Worker | null) | null = null;
-let workerTimeoutMs = 2500;
+let workerTimeoutMs: number | null = null;
 
 function fallbackJob(job: PendingJob): void {
   clearTimeout(job.timer);
@@ -46,7 +46,7 @@ export function setLayoutWorkerFactory(factory: (() => Worker | null) | null): v
 }
 
 export function setLayoutWorkerTimeoutMs(ms: number | null): void {
-  workerTimeoutMs = ms == null ? 2500 : ms;
+  workerTimeoutMs = ms;
 }
 
 function failWorker(): void {
@@ -144,7 +144,7 @@ function postGraphLayout(
           pending.delete(reqId);
           failWorker();
           fallbackJob(job);
-        }, workerTimeoutMs),
+        }, workerTimeoutMs ?? Math.max(2500, 500 + nodes.length * 50 + edges.length * 50)),
         mode,
         nodes,
         edges,
