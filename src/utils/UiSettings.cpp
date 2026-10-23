@@ -9,7 +9,6 @@ namespace
     constexpr const char* kLiveKey  = "liveMode";
     constexpr const char* kHostTempoKey = "useHostTempo";
     constexpr const char* kUserBpmKey   = "userBpm";
-    constexpr const char* kCableWaveKey = "cableWaveform";
     constexpr const char* kThemeKey = "theme";
     constexpr const char* kFpsKey = "frameRate";
     constexpr const char* kDiscardKey = "discardPrompt";
@@ -99,7 +98,6 @@ bool UiSettings::applyLoaded()
     const bool nextHostTempo = props->getBoolValue (kHostTempoKey, true);
     const float nextBpm = juce::jlimit (20.f, 400.f,
                                         (float) props->getDoubleValue (kUserBpmKey, Config::kDefaultTempo));
-    const bool nextCable = props->getBoolValue (kCableWaveKey, true);
     const int nextFps = clampFrameRate (props->getIntValue (kFpsKey, 60));
     const bool nextPrompt = props->getBoolValue (kDiscardKey, true);
     const juce::String nextTheme = clampTheme (props->getValue (kThemeKey, "signal"));
@@ -151,7 +149,6 @@ bool UiSettings::applyLoaded()
     putBool (live, nextLive);
     putBool (hostTempo, nextHostTempo);
     putFloat (bpmUser, nextBpm);
-    putBool (cableWave, nextCable);
     putInt (fpsCap, nextFps);
     putBool (unsavedPrompt, nextPrompt);
     putInt (motionValue, nextMotion);
@@ -298,18 +295,6 @@ void UiSettings::setUserBpm (float bpm)
 {
     bpmUser.store (juce::jlimit (20.f, 400.f, bpm), std::memory_order_relaxed);
     persist ({ kUserBpmKey });
-    notifyListeners();
-}
-
-bool UiSettings::cableWaveform() const noexcept
-{
-    return cableWave.load (std::memory_order_relaxed);
-}
-
-void UiSettings::setCableWaveform (bool enabled)
-{
-    cableWave.store (enabled, std::memory_order_relaxed);
-    persist ({ kCableWaveKey });
     notifyListeners();
 }
 
@@ -560,7 +545,6 @@ void UiSettings::persist (std::initializer_list<const char*> changedKeys)
     desired.setValue (kLiveKey, live.load (std::memory_order_relaxed));
     desired.setValue (kHostTempoKey, hostTempo.load (std::memory_order_relaxed));
     desired.setValue (kUserBpmKey, (double) bpmUser.load (std::memory_order_relaxed));
-    desired.setValue (kCableWaveKey, cableWave.load (std::memory_order_relaxed));
     desired.setValue (kThemeKey, theme);
     desired.setValue (kFpsKey, fpsCap.load (std::memory_order_relaxed));
     desired.setValue (kDiscardKey, unsavedPrompt.load (std::memory_order_relaxed));

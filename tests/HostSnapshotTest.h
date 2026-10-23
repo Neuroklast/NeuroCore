@@ -79,7 +79,6 @@ public:
             UiSettings::get().setThemeId ("gold");
             UiSettings::get().setFrameRate (30);
             UiSettings::get().setDiscardPrompt (false);
-            UiSettings::get().setCableWaveform (false);
             UiSettings::get().setMotion (CyberMotion::Reduced);
             NeuroKoreAudioProcessor proc;
             const auto host = bridge::hostVar (proc);
@@ -91,7 +90,7 @@ public:
             expectEquals (hostDigi.getProperty ("theme", "").toString(), juce::String ("digicide"));
             expectEquals ((int) host.getProperty ("frameRate", 0), 30);
             expectEquals ((int) host.getProperty ("discardPrompt", true), 0);
-            expectEquals (host.getProperty ("cables", "").toString(), juce::String ("dots"));
+            expect (host.getProperty ("cables", juce::var()).isVoid());
             expectEquals (host.getProperty ("motion", "").toString(), juce::String ("reduced"));
             UiSettings::get().setThemeId ("signal");
             UiSettings::get().setFrameRate (60);

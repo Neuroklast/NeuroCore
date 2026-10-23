@@ -3,14 +3,13 @@ import { useHostStore } from "../store/hostStore";
 import { applyUiPrefs, clampFrameRate, FRAME_RATES, persistUi } from "./persistUi";
 
 describe("shared UI prefs", () => {
-  it("takes motion, cables, theme, fps, and unsaved prompt from the host snapshot", () => {
+  it("ignores obsolete cable mode while taking current UI preferences from the host snapshot", () => {
     const next = applyUiPrefs(
       { motion: "reduced", cables: "dots", theme: "gold", frameRate: 30, discardPrompt: false },
-      { motion: "full", cables: "wave", theme: "signal", frameRate: 60, discardPrompt: true, live: false },
+      { motion: "full", theme: "signal", frameRate: 60, discardPrompt: true, live: false },
     );
     expect(next).toEqual({
       motion: "reduced",
-      cables: "dots",
       theme: "gold",
       frameRate: 30,
       discardPrompt: false,
@@ -21,7 +20,7 @@ describe("shared UI prefs", () => {
   it("takes LIVE from the host snapshot", () => {
     const next = applyUiPrefs(
       { live: true, mode: "LIVE" },
-      { motion: "full", cables: "dots", theme: "signal", frameRate: 60, discardPrompt: true, live: false },
+      { motion: "full", theme: "signal", frameRate: 60, discardPrompt: true, live: false },
     );
     expect(next.live).toBe(true);
   });
@@ -45,13 +44,12 @@ describe("shared UI prefs", () => {
       },
       removeItem: () => undefined,
     };
-    persistUi({ theme: "azure", frameRate: 30, discardPrompt: false, cables: "dots" });
+    persistUi({ theme: "azure", frameRate: 30, discardPrompt: false });
     expect(writes).toEqual([]);
     const s = useHostStore.getState();
     expect(s.theme).toBe("azure");
     expect(s.frameRate).toBe(30);
     expect(s.discardPrompt).toBe(false);
-    expect(s.cables).toBe("dots");
     if (previous) {
       (globalThis as { localStorage?: Storage }).localStorage = previous;
     } else {
@@ -60,7 +58,7 @@ describe("shared UI prefs", () => {
   });
 
   it("ignores missing keys so a telemetry tick cannot wipe prefs", () => {
-    const cur = { motion: "off" as const, cables: "wave" as const, theme: "azure" as const, frameRate: 60 as const, discardPrompt: true, live: false };
+    const cur = { motion: "off" as const, theme: "azure" as const, frameRate: 60 as const, discardPrompt: true, live: false };
     expect(applyUiPrefs({ cpu: 12 }, cur)).toEqual(cur);
   });
 
@@ -76,7 +74,6 @@ describe("shared UI prefs", () => {
       },
       {
         motion: "full",
-        cables: "dots",
         theme: "signal",
         frameRate: 60,
         discardPrompt: true,

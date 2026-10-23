@@ -16,7 +16,6 @@ export type ScopeYPref = "linear" | "db";
 
 export type UiPrefs = {
   motion?: "full" | "reduced" | "off";
-  cables?: "dots" | "wave";
   theme?: ThemeId;
   frameRate?: FrameRate;
   discardPrompt?: boolean;
@@ -33,9 +32,6 @@ export function applyUiPrefs(p: Record<string, unknown>, current: UiPrefs): UiPr
   const next: UiPrefs = { ...current };
   if (p.motion === "full" || p.motion === "reduced" || p.motion === "off") {
     next.motion = p.motion;
-  }
-  if (p.cables === "dots" || p.cables === "wave") {
-    next.cables = p.cables;
   }
   if (typeof p.theme === "string" && isThemeId(p.theme)) {
     next.theme = p.theme;
@@ -76,9 +72,6 @@ export function persistUi(partial: UiPrefs): void {
   const patch: Record<string, unknown> = {};
   if (partial.motion) {
     patch.motion = partial.motion;
-  }
-  if (partial.cables) {
-    patch.cables = partial.cables;
   }
   if (partial.theme) {
     patch.theme = partial.theme;

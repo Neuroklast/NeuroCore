@@ -90,7 +90,7 @@ function strokePackets(
   core: string, width: number, impulses: CablePacket[], peak: number,
   rms: number, bloom: boolean, animate: boolean, dim: boolean,
   clipColor: string, clipAllowed: boolean, scale: number, _dpr: number,
-  surface: string, dash: number[] = [], baseOnly = false,
+  surface: string, baseOnly = false,
 ): void {
   const pts = path.points;
   if (pts.length < 2) return;
@@ -102,7 +102,7 @@ function strokePackets(
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
   ctx.shadowBlur = 0;
-  ctx.setLineDash(dash.map((v) => v * px));
+  ctx.setLineDash([]);
   if (baseOnly) {
     ctx.globalAlpha = 0.9;
     ctx.strokeStyle = surface;
@@ -283,14 +283,11 @@ export function CableCanvas({
         substrate = resolveColor("var(--nk-surface)", "rgb(20,24,26)");
       }
       const pass = cablePaintPass(gestureRef.current, host.motion);
-      // `wave` = fliessende Signalimpulse, `dots` = statische Punktestrecke.
-      const isDots = host.cables === "dots";
-      const dotDash = isDots ? [2, 8] : [];
       const cableAnimate = pass.animate;
 
       const hot = boardFocusEdgesRef.current;
       const staticStamp = [w, h, dpr, cam.scale, cam.tx, cam.ty, host.theme,
-        host.cables, host.presetName, ...(hot ? [...hot].sort() : [])].join("|");
+        host.presetName, ...(hot ? [...hot].sort() : [])].join("|");
       const dragging = Boolean(chipDragRef.current || chipDragGroupRef.current);
       const repaintBase = !baseCtx || baseGraph !== g || baseStamp !== staticStamp || dragging;
       const base = baseCtx ?? ctx;
@@ -423,14 +420,14 @@ export function CableCanvas({
           const color = isMod && modValue! < 0 ? palette.accent : palette[lane.color];
           if (repaintBase) {
             strokePackets(base, path, palette[lane.color], core, lane.width, [], 0, 0,
-              false, false, Boolean(dim), palette.warn, false, cam.scale, dpr, substrate, dotDash, true);
+              false, false, Boolean(dim), palette.warn, false, cam.scale, dpr, substrate, true);
           }
           dynamicPaint.push(() => strokePackets(
             ctx, path, color, core, lane.width,
             cableAnimate ? state.impulses : [],
             measuredPeak * state.freshness, measuredEnergy * state.freshness,
             pass.glow && cam.scale >= 0.45, cableAnimate, Boolean(dim),
-            palette.warn, e.kind !== "mod", cam.scale, dpr, substrate, dotDash,
+            palette.warn, e.kind !== "mod", cam.scale, dpr, substrate,
           ));
 
         });

@@ -10,7 +10,7 @@ const mounted: ReactTestRenderer[] = [];
 function settingsView(override: Record<string, unknown> = {}) {
   act(() => { useHostStore.setState({
     standalone: false, tempoSource: "HOST", bpm: 128,
-    live: false, licensed: true, licenseEmail: "", cables: "wave",
+    live: false, licensed: true, licenseEmail: "",
     ...override,
   }); });
   let renderer!: ReactTestRenderer;
@@ -42,6 +42,9 @@ describe("settings dialog", () => {
     expect(root.findAllByProps({ "aria-label": "Color theme" })).toHaveLength(1);
     expect(buttonNames(root).filter((label) => label === "Manage license")).toHaveLength(1);
     expect(buttonNames(root)).not.toContain("Install .lic");
+    expect(buttonNames(root)).not.toContain("Dots");
+    expect(buttonNames(root)).not.toContain("Wave");
+    expect(root.findAllByProps({ "aria-label": "Circuit cable animation" })).toHaveLength(0);
     expect(textContent(root)).not.toContain("CPU in the status bar");
   });
 

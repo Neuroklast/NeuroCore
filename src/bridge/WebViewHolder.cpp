@@ -667,9 +667,6 @@ struct WebViewHolder::Impl : private juce::Timer,
                                         else
                                             UiSettings::get().setMotion (CyberMotion::Full);
                                     }
-                                    if (! o.getProperty ("cables", juce::var()).isVoid())
-                                        UiSettings::get().setCableWaveform (
-                                            o.getProperty ("cables", "wave").toString() == "wave");
                                     if (! o.getProperty ("theme", juce::var()).isVoid())
                                         UiSettings::get().setThemeId (o.getProperty ("theme", "signal").toString());
                                     if (! o.getProperty ("frameRate", juce::var()).isVoid())

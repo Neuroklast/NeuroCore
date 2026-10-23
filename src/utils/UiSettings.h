@@ -40,10 +40,6 @@ public:
     float userBpm() const noexcept;
     void setUserBpm (float bpm);
 
-    /** Circuit cables: false = static dots, true = source-emitted signal impulses. */
-    bool cableWaveform() const noexcept;
-    void setCableWaveform (bool enabled);
-
     juce::String themeId() const;
     void setThemeId (const juce::String& id);
 
@@ -116,7 +112,6 @@ private:
     std::atomic<bool>  live { false };
     std::atomic<bool>  hostTempo { true };
     std::atomic<float> bpmUser { 120.f };
-    std::atomic<bool>  cableWave { true };
     std::atomic<int>   fpsCap { 60 };
     std::atomic<bool>  unsavedPrompt { true };
     std::atomic<int>   editorW { 0 };

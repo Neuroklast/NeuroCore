@@ -12,7 +12,6 @@ import {
   proximityPairFromJacks,
   scriptAfterConnect,
   scriptAfterDisconnect,
-  shouldPulse,
   zoomTier,
 } from "./connectModel";
 
@@ -86,13 +85,6 @@ describe("circuit connect model", () => {
     expect(zoomTier(0.5)).toBe("label");
     expect(zoomTier(1)).toBe("letters");
     expect(zoomTier(1.4)).toBe("detail");
-  });
-
-  it("pulses only for wave cables when motion is allowed", () => {
-    expect(shouldPulse("wave", "full", false)).toBe(true);
-    expect(shouldPulse("dots", "full", false)).toBe(false);
-    expect(shouldPulse("wave", "off", false)).toBe(false);
-    expect(shouldPulse("wave", "full", true)).toBe(false);
   });
 
   it("ignores temp proximity edges when checking an existing link", () => {

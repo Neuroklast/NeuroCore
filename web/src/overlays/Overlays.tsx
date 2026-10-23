@@ -238,7 +238,6 @@ export function SettingsBody() {
   const tempo = useHostStore((s) => s.tempoSource);
   const bpm = useHostStore((s) => s.bpm);
   const motion = useHostStore((s) => s.motion);
-  const cables = useHostStore((s) => s.cables);
   const theme = useHostStore((s) => s.theme) ?? "signal";
   const live = useHostStore((s) => s.live);
   const licensed = useHostStore((s) => s.licensed);
@@ -319,12 +318,6 @@ export function SettingsBody() {
           <Seg label="Color theme" value={theme}
             options={themeIds().map((id) => ({ id, label: themeOf(id).label }))}
             onPick={(id) => { if (isThemeId(id)) persistUi({ theme: id }); }} />
-        </section>
-        <section className="nk-settings-panel">
-          <h3>CIRCUIT SIGNAL</h3>
-          <Seg label="Circuit cable animation" value={cables}
-            options={[{ id: "dots", label: "Dots" }, { id: "wave", label: "Wave" }]}
-            onPick={(id) => persistUi({ cables: id as typeof cables })} />
         </section>
         <section className="nk-settings-panel">
           <h3>UNSAVED CHANGES</h3>

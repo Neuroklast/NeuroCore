@@ -142,7 +142,7 @@ Hinzufügen und löschen
 Kabel
 - Beim Ziehen eine freie Kurve zum Zeiger. Nach dem Loslassen orthogonale Leiterbahn mit 45°-Ecken.
 - Stereo: zwei parallele Lanes (L cyan, R rot). Pakete laufen Quelle → Ziel, Abstände unregelmäßig — kein sich wiederholendes Raster, damit ein lautes, schnelles Signal nicht rückwärts wirkt. RMS setzt Dichte und Tempo, Peak die Helligkeit. Unter −60 dB steht der Zug.
-- Settings → Circuit cables: Dots oder Wave. LFO-Spur steht still; ein Impuls läuft in Hz.
+- Es gibt nur noch eine Kabeldarstellung mit signalabhängigen Impulsen. Animation Full/Reduced/Off steuert die Bewegung.
 
 Anordnen
 - Ctrl/Cmd+A Arrange: Kette links→rechts mit Luft.

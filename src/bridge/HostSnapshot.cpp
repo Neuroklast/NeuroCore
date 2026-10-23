@@ -411,7 +411,6 @@ juce::var hostVar (NeuroKoreAudioProcessor& proc)
     root->setProperty ("standalone", proc.wrapperType == juce::AudioProcessor::wrapperType_Standalone);
     root->setProperty ("os", os);
     root->setProperty ("motion", juce::String (UiSettings::motionKey (UiSettings::get().motion())));
-    root->setProperty ("cables", UiSettings::get().cableWaveform() ? "wave" : "dots");
     root->setProperty ("theme", UiSettings::get().themeId());
     root->setProperty ("frameRate", UiSettings::get().frameRate());
     root->setProperty ("discardPrompt", UiSettings::get().discardPrompt());
