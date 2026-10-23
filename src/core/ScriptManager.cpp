@@ -119,9 +119,9 @@ bool ScriptManager::applyFormula(const juce::String& text, juce::String& error)
         }
     }
 
-    // Hold processLock so the audio thread cannot process while delay/reverb
-    // buffers are reallocated (Cubase instability with complex delay presets).
-    const juce::ScopedLock pl (processLock);
+    // New graph is prepared on unused Block objects, then published with
+    // atomic_store. Audio keeps processing the previous shared_ptr. Do not
+    // hold processLock for compile/alloc — that forced lock-miss dropouts.
     const bool ok = signalChain.loadScript(text, error) && previewSignalChain.loadScript(text, error);
     if (ok)
     {
@@ -129,10 +129,6 @@ bool ScriptManager::applyFormula(const juce::String& text, juce::String& error)
             const juce::SpinLock::ScopedLockType sl(variableLock);
             dslScript = text;
         }
-        // Hard-clear delay/reverb/y_prev so rapid preset browsing can't leave
-        // self-osc or echo trash ringing into the next formula.
-        signalChain.clearRuntimeState();
-        previewSignalChain.clearRuntimeState();
         LookupTables::prepareFromScript(text);
         return true;
     }

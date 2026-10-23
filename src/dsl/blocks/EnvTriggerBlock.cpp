@@ -82,6 +82,10 @@ void SignalChain::EnvTrigger::processBlock (juce::AudioBuffer<float>& buffer)
     const float* input = buffer.getReadPointer (0);
     const float rmsCoeff = 1.0f - std::exp (-1.0f / (0.01f * sampleRate));
     int live = 0;
+    float cachedThr = 1.0e30f;
+    float cachedHyst = 1.0e30f;
+    float triggerLevel = 0.0f;
+    float releaseLevel = 0.0f;
 
     for (int i = 0; i < laneN; ++i)
     {
@@ -94,7 +98,7 @@ void SignalChain::EnvTrigger::processBlock (juce::AudioBuffer<float>& buffer)
         const float holdoffMs = juce::jlimit (0.0f, 1000.0f, holdoffSm.getNextValue());
         const float level = juce::jlimit (0.0f, 10.0f, levelSm.getNextValue());
 
-        const float x = input[i];
+        const float x = std::isfinite (input[i]) ? input[i] : 0.0f;
         float detector;
         if (useRms)
         {
@@ -106,13 +110,22 @@ void SignalChain::EnvTrigger::processBlock (juce::AudioBuffer<float>& buffer)
             detector = std::abs (x);
         }
         detector *= 1.0f + sensitivity * 4.0f;
-        const float triggerLevel = thresholdDb
-                                       ? std::pow (10.0f, threshold / 20.0f)
-                                       : juce::jlimit (-10.0f, 10.0f, threshold);
-        const float releaseLevel = thresholdDb
-                                       ? triggerLevel * std::pow (10.0f, -hysteresis / 20.0f)
-                                       : juce::jmax (0.0f, triggerLevel
-                                                           * std::pow (10.0f, -hysteresis / 20.0f));
+        if (std::abs (threshold - cachedThr) > 1.0e-4f || std::abs (hysteresis - cachedHyst) > 1.0e-4f)
+        {
+            cachedThr = threshold;
+            cachedHyst = hysteresis;
+            if (thresholdDb)
+            {
+                triggerLevel = juce::Decibels::decibelsToGain (threshold);
+                releaseLevel = juce::Decibels::decibelsToGain (threshold - hysteresis);
+            }
+            else
+            {
+                triggerLevel = threshold;
+                releaseLevel = juce::jmax (0.0f, triggerLevel
+                                                 * juce::Decibels::decibelsToGain (-hysteresis));
+            }
+        }
 
         if (holdoffRemaining > 0.0f)
             holdoffRemaining = juce::jmax (0.0f, holdoffRemaining - 1.0f);

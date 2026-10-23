@@ -53,6 +53,9 @@ void SignalChain::Utility::processBlock (juce::AudioBuffer<float>& buffer)
     float* L = buffer.getWritePointer (0);
     float* R = nCh > 1 ? buffer.getWritePointer (1) : nullptr;
     constexpr float halfPi = 1.57079633f;
+    float cachedPan = 1.0e30f;
+    float gL = 1.f;
+    float gR = 1.f;
 
     for (int i = 0; i < nS; ++i)
     {
@@ -66,12 +69,16 @@ void SignalChain::Utility::processBlock (juce::AudioBuffer<float>& buffer)
                 lin = 1.f;
         }
         float g = polarity ? -lin : lin;
-        float gL = 1.f;
-        float gR = 1.f;
-        if (pan <= 0.f)
-            gR = std::cos (-pan * halfPi);
-        else
-            gL = std::cos (pan * halfPi);
+        if (std::abs (pan - cachedPan) > 1.0e-4f)
+        {
+            cachedPan = pan;
+            gL = 1.f;
+            gR = 1.f;
+            if (pan <= 0.f)
+                gR = std::cos (-pan * halfPi);
+            else
+                gL = std::cos (pan * halfPi);
+        }
         const float xL = std::isfinite (L[i]) ? L[i] : 0.f;
         L[i] = xL * g * gL;
         if (R != nullptr)

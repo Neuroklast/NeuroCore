@@ -23,6 +23,7 @@
 #include "../utils/Log.h"
 #include "../utils/Localiser.h"
 #include "../dsp/LookupTables.h"
+#include "../dsp/DSPUtils.h"
 #include "../core/Config.h"
 #include "../core/DemoClock.h"
 #include "../utils/UiSettings.h"
@@ -316,6 +317,7 @@ void NeuroKoreAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
     continuityCh = 0;
     continuityDecay = 0.f;
     fadeInRemain = 0;
+    fadeInTotal = 0;
     dspEngine.setLiveMode (UiSettings::get().liveMode());
     updateProcessingSpec(sampleRate, samplesPerBlock);
 }
@@ -335,7 +337,7 @@ void NeuroKoreAudioProcessor::reset()
     continuityDecay = 0.f;
     // Issue 4: apply a short fade-in so the oversampler filter's initial-state
     // transient (caused by the reset) is masked rather than heard as a click.
-    fadeInRemain = 256;
+    beginFadeIn (256);
 }
 
 void NeuroKoreAudioProcessor::setNonRealtime (bool isNonRealtimeProc) noexcept
@@ -420,21 +422,15 @@ void NeuroKoreAudioProcessor::replayContinuity (juce::AudioBuffer<float>& dest) 
     }
 }
 
+void NeuroKoreAudioProcessor::beginFadeIn (int n) noexcept
+{
+    fadeInTotal = juce::jmax (32, n);
+    fadeInRemain = fadeInTotal;
+}
+
 void NeuroKoreAudioProcessor::fadeInAfterGap (juce::AudioBuffer<float>& dest) noexcept
 {
-    if (fadeInRemain <= 0)
-        return;
-    const int n = dest.getNumSamples();
-    const int ch = dest.getNumChannels();
-    const int total = juce::jmax (32, fadeInRemain);
-    int left = fadeInRemain;
-    for (int i = 0; i < n && left > 0; ++i, --left)
-    {
-        const float g = 1.f - (float) left / (float) total;
-        for (int c = 0; c < ch; ++c)
-            dest.getWritePointer (c)[i] *= g;
-    }
-    fadeInRemain = left;
+    DSPUtils::applyLinearFadeIn (dest, fadeInRemain, fadeInTotal);
 }
 
 void NeuroKoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
@@ -497,7 +493,7 @@ void NeuroKoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         midiVariableMapper.processMidi (midiMessages);
         cpuProtect.noteHoldDisplay();
         replayContinuity (main);
-        fadeInRemain = juce::jmax (fadeInRemain, nSamp);
+        beginFadeIn (nSamp);
         dspEngine.publishOutputMeter (main);
         telemetryPump.publish (main, cpuProtect.getSmoothedLoad());
         return;
@@ -566,7 +562,7 @@ void NeuroKoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         else
         {
             replayContinuity (main);
-            fadeInRemain = juce::jmax (fadeInRemain, nSamp);
+            beginFadeIn (nSamp);
             dspEngine.publishOutputMeter (main);
         }
     }
@@ -625,7 +621,7 @@ void NeuroKoreAudioProcessor::processBlockBypassed (juce::AudioBuffer<float>& bu
     else
     {
         replayContinuity (main);
-        fadeInRemain = juce::jmax (fadeInRemain, main.getNumSamples());
+        beginFadeIn (main.getNumSamples());
     }
 
     telemetryPump.publish (main, cpuProtect.getSmoothedLoad());

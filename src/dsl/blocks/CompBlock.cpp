@@ -189,6 +189,8 @@ void SignalChain::Comp::processBlock (juce::AudioBuffer<float>& buffer)
             detL = out[0][i];
             detR = useCh > 1 ? out[1][i] : detL;
         }
+        if (! std::isfinite (detL)) detL = 0.f;
+        if (! std::isfinite (detR)) detR = 0.f;
 
         if (hpf > 8.f)
         {
@@ -227,8 +229,8 @@ void SignalChain::Comp::processBlock (juce::AudioBuffer<float>& buffer)
 
         const float g = juce::Decibels::decibelsToGain (-envDb) * makeupLin;
         const float dryG = 1.f - mix;
-        float dryL = out[0][i];
-        float dryR = useCh > 1 ? out[1][i] : dryL;
+        float dryL = std::isfinite (out[0][i]) ? out[0][i] : 0.f;
+        float dryR = useCh > 1 && std::isfinite (out[1][i]) ? out[1][i] : dryL;
         if (latencySamples >= 2 && delayL != nullptr)
         {
             dryL = DSPUtils::delayRead (delayL, writePos, (float) latencySamples, delayN);

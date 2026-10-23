@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-22 (0.7.2-beta)
+**Stand:** 2026-10-23 (0.7.2-beta)
 **Version:** 0.7.2-beta  
 **Branch:** `feat/dsp-expansion-a03-c05` (PR #326)
+
+## Audio-thread correctness (2026-10-23)
+
+Fade-in after reset/gap keeps a frozen length so the ramp does not restart at every block boundary. EnvTrigger RMS and SampleHold ignore non-finite input instead of latching it. StepSeq host-sync across MIDI-sized splits is locked by contract (existing PPQ advance). EnvTrigger converts threshold/hysteresis to linear only when those values move, same cache as Gate. SampleHold/Random/StepSeq cache slew-exp and Utility caches pan-cos the same way. Comp RMS ignores non-finite detector/audio instead of latching GR at zero. `applyFormula` prepares the next graph off `processLock` and publishes with `atomic_store`; variables stay add-only after prepare (`reserve(1024)` / `try_emplace`). Native: `CrackleFixes` lock-miss + applyFormula contract.
 
 ## Inspect defaults for expanded controls (2026-10-22)
 

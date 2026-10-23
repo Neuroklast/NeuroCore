@@ -397,6 +397,22 @@ namespace DSPUtils
         }
     }
 
+    static inline void applyLinearFadeIn (juce::AudioBuffer<float>& dest, int& remain, int total) noexcept
+    {
+        if (remain <= 0 || total <= 0)
+            return;
+        const int n = dest.getNumSamples();
+        const int ch = dest.getNumChannels();
+        int left = remain;
+        for (int i = 0; i < n && left > 0; ++i, --left)
+        {
+            const float g = 1.f - (float) left / (float) total;
+            for (int c = 0; c < ch; ++c)
+                dest.getWritePointer (c)[i] *= g;
+        }
+        remain = left;
+    }
+
     /**
         Sample-accurate dry/wet crossfade (linear rule).
         dry and wet must share timeline (latency-aligned). wetInOut is overwritten.

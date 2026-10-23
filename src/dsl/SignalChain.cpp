@@ -12,6 +12,8 @@ using namespace dsl;
 
 SignalChain::SignalChain()
 {
+    variables.max_load_factor (0.5f);
+    variables.reserve (1024);
     chain   = std::make_shared<Chain>();
     aliases = std::make_shared<AliasMap>();
     busGraph = std::make_shared<BusGraph>();
@@ -2647,7 +2649,6 @@ bool SignalChain::loadScript(const juce::String& script, juce::String& error)
             if (auto* mod = dynamic_cast<Modulator*> (node.get()))
                 if (mod->name.isNotEmpty())
                     variables.try_emplace (mod->name, 0.0f);
-        // Aliases must exist before Stage::prepare creates its pointer cache.
         for (const auto& kv : newAliases)
             if (kv.second.isNotEmpty())
                 variables.try_emplace (kv.second, 0.0f);

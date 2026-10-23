@@ -95,6 +95,8 @@ void SignalChain::SampleHold::processBlock (juce::AudioBuffer<float>& buffer)
     const float* audioIn = buffer.getReadPointer (0);
     const float* controlIn = inputSlots.empty() ? nullptr : inputSlots.front();
     const Modulator* controlSource = inputSources.empty() ? nullptr : inputSources.front();
+    float cachedSlew = 1.0e30f;
+    float slewCoeff = 1.0f;
 
     for (int i = 0; i < laneN; ++i)
     {
@@ -121,6 +123,8 @@ void SignalChain::SampleHold::processBlock (juce::AudioBuffer<float>& buffer)
                     input = controlSource->controlAt (i);
                 else if (controlIn != nullptr)
                     input = *controlIn;
+                if (! std::isfinite (input))
+                    input = 0.0f;
                 held = quantizeValue (input, quantize);
                 holdRemaining = hold * sampleRate;
             }
@@ -131,9 +135,13 @@ void SignalChain::SampleHold::processBlock (juce::AudioBuffer<float>& buffer)
             slewValue = target;
         else
         {
-            const float tc = juce::jmax (0.001f, slew * 0.5f);
-            const float coeff = 1.0f - std::exp (-1.0f / (tc * sampleRate));
-            slewValue += (target - slewValue) * coeff;
+            if (std::abs (slew - cachedSlew) > 1.0e-4f)
+            {
+                cachedSlew = slew;
+                const float tc = juce::jmax (0.001f, slew * 0.5f);
+                slewCoeff = 1.0f - std::exp (-1.0f / (tc * sampleRate));
+            }
+            slewValue += (target - slewValue) * slewCoeff;
         }
 
         modLane[(size_t) i] = slewValue;

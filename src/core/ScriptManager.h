@@ -15,8 +15,9 @@
 
     Thread safety:
     - variableNames and parameterActive are protected by variableLock (SpinLock).
-    - signalChain process vs loadScript is guarded by processLock (CriticalSection).
-      Hosts (e.g. Cubase) crash if delay buffers are reallocated mid-processBlock.
+    - prepare() vs processBlock uses processLock (CriticalSection).
+    - applyFormula prepares a new graph off that lock and publishes with atomic_store.
+      The previous graph stays in retiredChain until the next message-thread load.
 */
 
 #include <JuceHeader.h>

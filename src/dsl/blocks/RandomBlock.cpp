@@ -88,6 +88,8 @@ void SignalChain::Random::processBlock (juce::AudioBuffer<float>& buffer)
     const double syncHz = syncEnabled
                               ? bpm / (juce::jmax (1.0 / 64.0, (double) syncWhole) * 240.0)
                               : 0.0;
+    float cachedSmooth = 1.0e30f;
+    float slewCoeff = 1.0f;
 
     for (int i = 0; i < laneN; ++i)
     {
@@ -128,9 +130,13 @@ void SignalChain::Random::processBlock (juce::AudioBuffer<float>& buffer)
             smoothed = current;
         else
         {
-            const float tc = juce::jmax (0.001f, smooth * 0.5f);
-            const float coeff = 1.0f - std::exp (-1.0f / (tc * sampleRate));
-            smoothed += (current - smoothed) * coeff;
+            if (std::abs (smooth - cachedSmooth) > 1.0e-4f)
+            {
+                cachedSmooth = smooth;
+                const float tc = juce::jmax (0.001f, smooth * 0.5f);
+                slewCoeff = 1.0f - std::exp (-1.0f / (tc * sampleRate));
+            }
+            smoothed += (current - smoothed) * slewCoeff;
         }
 
         modLane[(size_t) i] = smoothed * mix;
