@@ -82,8 +82,8 @@ public:
             UiSettings::get().setMotion (CyberMotion::Reduced);
             NeuroKoreAudioProcessor proc;
             const auto host = bridge::hostVar (proc);
-            expectEquals ((bool) host.getProperty ("standalone", false),
-                          proc.wrapperType == juce::AudioProcessor::wrapperType_Standalone);
+            expect ((bool) host.getProperty ("standalone", false)
+                    == (proc.wrapperType == juce::AudioProcessor::wrapperType_Standalone));
             expectEquals (host.getProperty ("theme", "").toString(), juce::String ("gold"));
             UiSettings::get().setThemeId ("digicide");
             const auto hostDigi = bridge::hostVar (proc);
