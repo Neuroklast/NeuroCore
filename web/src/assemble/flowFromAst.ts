@@ -20,17 +20,18 @@ function modulatorOutJack(src: AstNode): string {
   return entryById(spec.id)?.modOuts[0] ?? spec.audioOuts[0] ?? "out";
 }
 
-function destJackFor(dest: AstNode, src: AstNode): string {
+function destJacksFor(dest: AstNode, src: AstNode): string[] {
+  const targets: string[] = [];
   const spec = chipSpec(dest.type, dest.args);
   for (const [key, raw] of Object.entries(dest.args)) {
     if (! tokenInExpr(raw, src.id)) {
       continue;
     }
     if (spec.modIns.includes(key) || (spec.paramJacks.includes(key) && spec.ranges[key])) {
-      return key;
+      targets.push(key);
     }
   }
-  return dest.jacks?.find((j) => ! j.output && j.kind === "mod" && j.id === src.id)?.id ?? src.id;
+  return targets.length ? targets : [dest.jacks?.find((j) => ! j.output && j.kind === "mod" && j.id === src.id)?.id ?? src.id];
 }
 
 export { CHIP_GAP, CHIP_H, CHIP_W, IO_W, chipHeight, ioHeight } from "./chipLayout";
@@ -81,7 +82,10 @@ export function inferModLinks(nodes: AstNode[]): AstEdge[] {
       if (! byId.has(j.id)) {
         continue;
       }
-      push({ from: j.id, to: dest.id, kind: "mod", fromJack: "mod", toJack: j.id });
+      const src = byId.get(j.id)!;
+      for (const toJack of destJacksFor(dest, src)) {
+        push({ from: src.id, to: dest.id, kind: "mod", fromJack: modulatorOutJack(src), toJack });
+      }
     }
     for (const src of mods) {
       if (src.id === dest.id) {
@@ -91,13 +95,15 @@ export function inferModLinks(nodes: AstNode[]): AstEdge[] {
       if (! hit) {
         continue;
       }
-      push({
-        from: src.id,
-        to: dest.id,
-        kind: "mod",
-        fromJack: modulatorOutJack(src),
-        toJack: destJackFor(dest, src),
-      });
+      for (const toJack of destJacksFor(dest, src)) {
+        push({
+          from: src.id,
+          to: dest.id,
+          kind: "mod",
+          fromJack: modulatorOutJack(src),
+          toJack,
+        });
+      }
     }
   }
   return out;
@@ -146,19 +152,11 @@ function channelOf(node: AstNode): string {
   return bus.toUpperCase();
 }
 
-function isSidechainType(type: string): boolean {
-  const t = type.toLowerCase();
-  return t === "sidechain" || t === "sc" || t === "scin";
-}
-
 export function visibleNodes(ast: AstDocument, _sidechainOn = false): AstNode[] {
   return ast.nodes.filter((n) => {
     if (n.type === "bus") {
       const name = (n.args.name || n.id || "").toLowerCase();
       return name !== "__park";
-    }
-    if (isSidechainType(n.type)) {
-      return false;
     }
     return true;
   });
@@ -200,11 +198,11 @@ export function flowFromAst(ast: AstDocument, opts: FlowOpts = {}): { nodes: Nod
     const custom = n.id.toLowerCase().startsWith("custom") || n.type.toLowerCase() === "custom";
     nodes.push({
       id: n.id,
-      type: n.type === "out" || isSidechainType(n.type) ? "io" : "chip",
+      type: n.type === "out" ? "io" : "chip",
       position: { x: px, y: py },
       data: {
-        label: custom ? n.id : (isSidechainType(n.type) ? "Sidechain" : kindLabel(n.type)),
-        type: isSidechainType(n.type) ? "sidechain" : n.type,
+        label: custom ? n.id : (kindLabel(n.type)),
+        type: n.type,
         jacks,
         letters: lettersOn(n),
         args: n.args,
@@ -217,7 +215,7 @@ export function flowFromAst(ast: AstDocument, opts: FlowOpts = {}): { nodes: Nod
       height: box.h,
       sourcePosition: Position.Right,
       targetPosition: Position.Left,
-      draggable: isSidechainType(n.type) ? false : undefined,
+      draggable: undefined,
     });
     x = px + box.w + CHIP_GAP;
   }

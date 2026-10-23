@@ -290,6 +290,7 @@ public:
         return scriptManager.signalChain.copyMeterReading (id, destDb);
     }
 
+    std::uint32_t getMidiEventCount() const noexcept { return midiVariableMapper.getEventCount(); }
     float getMidiGate() const noexcept { return midiVariableMapper.getMidiGate(); }
     float getMidiVel()  const noexcept { return midiVariableMapper.getMidiVel(); }
     float getMidiMod()  const noexcept { return midiVariableMapper.getMidiMod(); }

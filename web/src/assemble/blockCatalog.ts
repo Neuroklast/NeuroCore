@@ -868,12 +868,12 @@ export const BLOCK_CATALOG: BlockCatalogEntry[] = [
   },
   {
     id: "sidechain", typeCodePrefix: "SC", label: "Sidechain", category: "IO",
-    description: "Host-Sidechain-Eingang.",
+    description: "Mischt Hauptsignal und Host-Sidechain.",
     dspType: "sidechain",
-    audioIns: [], audioOuts: ["out"], modIns: [], modOuts: [],
-    params: [],
+    audioIns: ["in", "sc"], audioOuts: ["out"], modIns: [], modOuts: [],
+    params: [{key:"mix",...percent(0,1,1),automatable:true,modulatable:true}],
     resources: ["dsp"], latencyClass: "none", schemaVersion: SCHEMA_VERSION,
-    uiFamily: "io", dslTemplate: "",
+    uiFamily: "io", dslTemplate: "mix = 1",
   },
   {
     id: "out", typeCodePrefix: "OU", label: "OUT", category: "IO",

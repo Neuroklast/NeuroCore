@@ -141,3 +141,13 @@ it("keeps an unreachable search inside its prepared board bounds", () => {
   expect(astarRoute(map,{c:0,r:0},{c:8,r:8})).toBeNull();
   expect([map.minC,map.minR,map.maxC,map.maxR]).toEqual(bounds);
 });
+
+it("shares an identical signal net and refuses a foreign conductor on the same contacts",()=>{
+ const map=new GridMap();
+ const cells=[0,1,2,3].map(c=>({c,r:0}));
+ map.occupy(cells,[],"MIDI::gate::src");
+ const own=astarRoute(map,cells[0]!,cells[3]!,undefined,false,"MIDI::gate::src");
+ const other=astarRoute(map,cells[0]!,cells[3]!,undefined,false,"MIDI::vel::src");
+ expect(own).toEqual(cells);
+ expect(other).toBeNull();
+});

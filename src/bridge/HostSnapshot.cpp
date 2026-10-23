@@ -424,6 +424,7 @@ juce::var hostVar (NeuroKoreAudioProcessor& proc)
     if (auto* scBus = proc.getBus (true, 1))
         sidechainOn = scBus->isEnabled();
     root->setProperty ("sidechainOn", sidechainOn);
+    root->setProperty ("midiEventCount", (juce::int64) proc.getMidiEventCount());
     root->setProperty ("midiGate", proc.getMidiGate());
     root->setProperty ("midiVel", proc.getMidiVel());
     root->setProperty ("midiMod", proc.getMidiMod());

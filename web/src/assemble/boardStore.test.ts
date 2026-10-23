@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import type { AstDocument } from "../bridge/ast";
+import { parseDslSketch } from "../presets/parseDslSketch";
 import { useBoardStore } from "./boardStore";
 
 function chain(): AstDocument {
@@ -147,6 +148,17 @@ describe("octaver ports", () => {
     const ports = Object.values(useBoardStore.getState().ports).filter((p) => p.nodeId === "octaver1");
     const west = ports.filter((p) => p.face === "w");
     expect(west.map((p) => p.jackId)).toEqual(["in"]);
-    expect(ports.filter((p) => p.face === "s").map((p) => p.jackId)).toEqual(["sub", "up", "mix", "tone", "thresh"]);
+    expect(ports.filter((p) => p.face === "s" || p.face === "n").map((p) => p.jackId)).toEqual(["sub", "up", "mix", "tone", "thresh"]);
   });
+});
+
+it("invalidates cached cables when a connection edit changes chip geometry", () => {
+  const initial = parseDslSketch("random1: rate = 2\ncomp1: threshold = random1").doc;
+  useBoardStore.getState().hydrate(initial);
+  const stamped = Object.fromEntries(Object.entries(useBoardStore.getState().edges).map(([id, e]) =>
+    [id, { ...e, route: [{ x: 0, y: 0 }, { x: 80, y: 0 }] }]));
+  useBoardStore.getState().setEdges(stamped);
+  const edited = parseDslSketch("random1: rate = 2\ncomp1: threshold = random1; ratio = random1; attack = random1; release = random1; knee = random1; makeup = random1; hpf = random1; mix = random1; ceiling = random1").doc;
+  useBoardStore.getState().hydrate(edited, false, true);
+  expect(Object.values(useBoardStore.getState().edges).every(e => e.route.length === 0)).toBe(true);
 });

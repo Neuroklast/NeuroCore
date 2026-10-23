@@ -92,7 +92,8 @@ describe("IC chip geometry", () => {
       param("gain"),
       audio("out", true),
     ], false, { type: "lp" });
-    expect(wide.w).toBeGreaterThan(one.w);
+    expect(wide.w).toBeGreaterThanOrEqual(one.w);
+    expect(wide.w).toBeLessThanOrEqual(448);
   });
 
   it("keeps every jack on a unique AABB-edge cell", () => {

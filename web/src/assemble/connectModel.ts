@@ -1,4 +1,4 @@
-import { sourceBlock } from "./dslSource";
+import { replaceSourceArg, sourceBlock } from "./dslSource";
 import type { AstJack } from "../bridge/ast";
 import { handleId } from "./handles";
 
@@ -206,7 +206,19 @@ export function parkNodeInScript(script: string, nodeId: string): string {
  * OUT destination → park source; otherwise park target.
  */
 /** Place `nodeId` immediately after `afterId` (unpark / serial reconnect). */
-export function scriptAfterConnect(script: string, from: string, to: string): string {
+export function scriptAfterConnect(
+  script: string, from: string, to: string,
+  ports?: { fromJack: string; toJack: string; kind: string },
+): string {
+  if (ports?.kind === "mod") {
+    return replaceSourceArg(script, to, ports.toJack, from);
+  }
+  if (ports?.toJack === "sc") {
+    return replaceSourceArg(script, to, "source", "sidechain");
+  }
+  if (ports && (ports.fromJack !== "out" || ports.toJack !== "in")) {
+    throw new Error("This connection requires the native plugin editor.");
+  }
   const moveId = isOutId(to) ? from : to;
   const afterId = moveId === from ? (isOutId(to) ? "" : from) : from;
   if (! moveId || isIoTerminal(moveId)) {

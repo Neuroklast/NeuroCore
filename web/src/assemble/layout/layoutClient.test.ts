@@ -1,9 +1,10 @@
-import { describe, expect, it, afterEach } from "vitest";
+import { describe, expect, it, afterEach, vi } from "vitest";
 import { requestGraphLayout, requestLayout, setLayoutWorkerFactory, setLayoutWorkerTimeoutMs } from "./layoutClient";
 import type { Node, Edge } from "../flowTypes";
 import type { ChipData } from "../flowFromAst";
 
 afterEach(() => {
+  vi.useRealTimers();
   setLayoutWorkerFactory(null);
   setLayoutWorkerTimeoutMs(null);
 });
@@ -133,4 +134,22 @@ describe("requestLayout stays off the UI thread when a worker exists", () => {
     expect(posted).toBe(2);
     expect(laid.nodes.IN).toEqual({ x: 8, y: 16, w: 96, h: 96 });
   });
+});
+
+it("lets a large layout finish in its worker after the small-graph timeout", async () => {
+  vi.useFakeTimers();
+  const fake = {
+    postMessage(msg: { reqId: number }) {
+      setTimeout(() => (fake as { onmessage?: (ev: { data: unknown }) => void }).onmessage?.({
+        data: { reqId: msg.reqId, ok: true, nodes: { workerResult: { x: 32, y: 64, w: 96, h: 96 } }, edgePaths: {} },
+      }), 3000);
+    },
+    terminate: vi.fn(),
+  };
+  setLayoutWorkerFactory(() => fake as unknown as Worker);
+  const nodes = Array.from({ length: 100 }, (_, i) => ({ id: `n${i}`, ins: [], outs: [], w: 96, h: 96 }));
+  const result = requestGraphLayout("REROUTE", nodes, []);
+  await vi.advanceTimersByTimeAsync(3500);
+  expect((await result).nodes.workerResult).toEqual({ x: 32, y: 64, w: 96, h: 96 });
+  expect(fake.terminate).not.toHaveBeenCalled();
 });

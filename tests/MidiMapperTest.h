@@ -12,6 +12,22 @@ public:
 
     void runTest() override
     {
+        beginTest ("event counter distinguishes repeated controller events from held values");
+        {
+            MidiVariableMapper mapper;
+            expectEquals ((int) mapper.getEventCount(), 0);
+            mapper.processEvent (juce::MidiMessage::controllerEvent (1, 1, 90));
+            mapper.processEvent (juce::MidiMessage::controllerEvent (1, 1, 90));
+            expectEquals ((int) mapper.getEventCount(), 2);
+            juce::MidiBuffer empty;
+            mapper.processMidi (empty);
+            expectEquals ((int) mapper.getEventCount(), 2);
+            mapper.processEvent (juce::MidiMessage::noteOn (1, 60, (juce::uint8) 100));
+            mapper.processEvent (juce::MidiMessage::noteOff (1, 60));
+            mapper.processEvent (juce::MidiMessage::pitchWheel (1, 9000));
+            expectEquals ((int) mapper.getEventCount(), 5);
+        }
+
         beginTest ("last-note priority keeps gate when an earlier key is released");
         {
             MidiVariableMapper mapper;

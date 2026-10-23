@@ -94,7 +94,7 @@ describe("flowFromAst", () => {
     const mod = edges.find((e) => e.source === "lfo1" && e.target === "filter1");
     expect(mod).toBeTruthy();
     expect(mod?.sourceHandle).toBe("src::mod");
-    expect(mod?.targetHandle).toBe("dst::lfo1");
+    expect(mod?.targetHandle).toBe("dst::cutoff");
     expect((mod?.data as { kind?: string } | undefined)?.kind).toBe("mod");
     const chip = nodes.find((n) => n.id === "filter1");
     expect(chip?.data.jacks.some((j) => j.id === "lfo1" && j.kind === "mod")).toBe(true);

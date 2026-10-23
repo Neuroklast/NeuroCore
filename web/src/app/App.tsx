@@ -1,4 +1,7 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import {useTelemetryStore} from "../store/telemetryStore";
+import {handoffPlan} from "./workspaceHandoff";
+import {WorkspaceHandoff,type HandoffVisual} from "./WorkspaceHandoff";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { getNativeFunction, hasJuceBridge, onNativeEvent } from "../bridge/juce";
 import type { AstEventPayload, CompileResultPayload, Origin } from "../bridge/ast";
 import { shouldHydrate } from "../bridge/ast";
@@ -34,6 +37,22 @@ const HackView = lazy(() => import("../hack/HackView"));
 
 export function App() {
   const [workspace, setWorkspace] = useState<Workspace>("face");
+  const [handoff,setHandoff]=useState<HandoffVisual|null>(null);
+  const frameRef=useRef<HTMLDivElement>(null);
+  const finishHandoff=useCallback(()=>setHandoff(null),[]);
+  const changeWorkspace=(next:Workspace)=>{
+    const plan=handoffPlan(workspace,next,useHostStore.getState().motion,
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches,useTelemetryStore.getState(),performance.now());
+    const frame=frameRef.current?.getBoundingClientRect();
+    const contact=document.querySelector(plan?.direction==="out"?'[data-terminal="out"] [data-port-id]':'[data-terminal="in"] [data-port-id]')?.getBoundingClientRect();
+    if(plan&&frame&&contact&&frame.width>0&&frame.height>0) {
+      const scaleX=frameRef.current!.clientWidth/frame.width,scaleY=frameRef.current!.clientHeight/frame.height;
+      const x=(contact.x+contact.width*.5-frame.x)*scaleX,y=(contact.y+contact.height*.5-frame.y)*scaleY;
+      setHandoff(x>=0&&y>=0&&x<=frameRef.current!.clientWidth&&y<=frameRef.current!.clientHeight?
+        {id:performance.now(),direction:plan.direction,opacity:plan.opacity,x,y,w:frameRef.current!.clientWidth,h:frameRef.current!.clientHeight}:null);
+    } else setHandoff(null);
+    setWorkspace(next);
+  };
   const telemetryPath = useHostStore((s) => s.telemetryPath);
   const frameRate = useHostStore((s) => s.frameRate);
   const theme = useHostStore((s) => s.theme) ?? "signal";
@@ -187,9 +206,9 @@ export function App() {
     <main data-ws={workspace} className="nk-os relative flex h-[860px] w-[1280px] flex-col overflow-hidden font-mono text-ink">
       <Hud />
       <Toolbar />
-      <WorkspaceTabs workspace={workspace} setWorkspace={setWorkspace} />
+      <WorkspaceTabs workspace={workspace} setWorkspace={changeWorkspace} />
         <div className="nk-bind-host nk-chrome-x relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-        <div className="nk-frame relative min-h-0 flex-1 overflow-hidden border border-[var(--nk-line)]">
+        <div ref={frameRef} className="nk-frame relative min-h-0 flex-1 overflow-hidden border border-[var(--nk-line)]">
           <div className="nk-panes">
           {workspace === "face" ? (
             <div className={workspacePaneClass(true)} data-pane="face">
@@ -197,7 +216,7 @@ export function App() {
             </div>
           ) : null}
           <div className={workspacePaneClass(workspace === "assemble")} data-pane="assemble">
-            <AssembleView active={workspace === "assemble"} onOpenTerminal={() => setWorkspace("hack")} />
+            <AssembleView active={workspace === "assemble"} onOpenTerminal={() => changeWorkspace("hack")} />
           </div>
           {terminalMounted(workspace) ? (
             <div className={workspacePaneClass(true)} data-pane="hack">
@@ -207,6 +226,7 @@ export function App() {
             </div>
           ) : null}
           </div>
+          {handoff ? <WorkspaceHandoff key={handoff.id} visual={handoff} onFinish={finishHandoff} /> : null}
           <PaneVignette />
         </div>
         <MixOs />

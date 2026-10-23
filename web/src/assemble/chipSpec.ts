@@ -1137,10 +1137,12 @@ add({
   id: "sidechain",
   label: "Sidechain",
   typeCodePrefix: "SC",
-  audioIns: [],
+  audioIns: ["in", "sc"],
   audioOuts: ["out"],
-  paramJacks: [],
-  blurb: "Host sidechain input.",
+  paramJacks: ["mix"],
+  ranges: { mix: { min: 0, max: 1 } },
+  defaultArgs: { mix: "1" },
+  blurb: "Mixes main audio with the host sidechain.",
 });
 
 add({

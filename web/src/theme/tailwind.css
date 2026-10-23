@@ -3851,32 +3851,31 @@ html[data-motion="reduced"] *::after {
 /* Hardware indicators occupy the existing face well; no changes to pin geometry. */
 .nk-node-face.nk-live-face { opacity: 1; }
 .nk-step-leds {
-  position: absolute; inset: 8px 12px; display: grid;
+  position: absolute; inset: 6px 12px; display: grid;
   grid-template-columns: repeat(8, minmax(0, 1fr));
   grid-template-rows: repeat(var(--nk-step-rows), minmax(0, 1fr));
-  gap: 5px; max-width: 360px; margin-inline: auto;
+  gap: 3px; max-width: 360px; margin-inline: auto;
   align-items: center; justify-items: center;
 }
 .nk-step-leds > span {
-  width: 10px; height: 10px; max-width: 100%; max-height: 100%;
-  border-radius: 50%; border: 1px solid var(--nk-line);
-  background: color-mix(in srgb, var(--nk-accent) 16%, var(--nk-well));
-  box-shadow: inset 0 1px 2px var(--nk-black);
+  width: 15px; height: 15px; max-width: 100%; max-height: 100%;
+  position: relative; border-radius: 50%; border: 1px solid var(--nk-line);
+  background: var(--nk-well); box-shadow: inset 0 1px 3px var(--nk-black);
+}
+.nk-step-leds > span > i {
+  position: absolute; inset: 2px; border-radius: 50%;
+  background: color-mix(in srgb, var(--nk-accent) 55%, var(--nk-well));
   opacity: var(--nk-step-level);
-  transition: background-color 55ms linear, box-shadow 90ms linear, opacity 90ms linear;
+  box-shadow: inset 0 1px 2px color-mix(in srgb, var(--nk-accent) 45%, var(--nk-white));
 }
-.nk-step-leds > [data-active="on"] {
-  background: var(--nk-accent); opacity: 1;
-  border-color: color-mix(in srgb, var(--nk-accent) 65%, var(--nk-white));
-  box-shadow: 0 0 5px var(--nk-accent), 0 0 13px rgba(var(--nk-accent-rgb), .65),
-    inset 0 1px 2px rgba(255,255,255,.65);
+.nk-step-leds > [data-state="current"] > i {
+  background: radial-gradient(circle at 45% 35%, var(--nk-white), var(--nk-accent) 55%);
+  opacity: 1; box-shadow: 0 0 4px var(--nk-accent), 0 0 9px rgba(var(--nk-accent-rgb), .5);
 }
-.nk-step-leds > [data-muted="on"] { opacity: .12; box-shadow: none; }
-.nk-step-leds > [data-muted="on"][data-active="on"] { opacity: .4; }
-html[data-motion="off"] .nk-step-leds > span,
-html[data-motion="reduced"] .nk-step-leds > span { transition: none; }
-html[data-motion="off"] .nk-step-leds > [data-active="on"],
-html[data-motion="reduced"] .nk-step-leds > [data-active="on"] { box-shadow: none; }
+.nk-step-leds > [data-state="unused"] > i { opacity: 0; box-shadow: none; }
+.nk-step-leds > [data-muted="on"] > i { opacity: .16; box-shadow: none; }
+html[data-motion="off"] .nk-step-leds > [data-state="current"] > i,
+html[data-motion="reduced"] .nk-step-leds > [data-state="current"] > i { box-shadow: none; }
 .nk-meter-screen {
   position: absolute; inset: 8px 10px; padding: 12px; display: flex;
   flex-direction: column; justify-content: center; gap: 9px;
@@ -3939,3 +3938,23 @@ html[data-motion="reduced"] .nk-step-leds > [data-active="on"] { box-shadow: non
 @media (max-width: 540px) {
   .nk-inspect-controls, .nk-inspect-enums { grid-template-columns: repeat(2,minmax(0,1fr)); }
 }
+
+.nk-chip-parameter-label { display: block; overflow: hidden; text-overflow: ellipsis; }
+.nk-chip-ports { min-width: 26px; height: 26px; font-size: 9px; color: var(--nk-ink-soft); pointer-events: auto; }
+.nk-port-browser { position: absolute; z-index: 90; top: 16px; right: 16px; width: min(340px, calc(100% - 32px)); max-height: calc(100% - 32px); display: flex; flex-direction: column; gap: 10px; padding: 14px; border: 1px solid var(--nk-line); background: var(--nk-panel); color: var(--nk-ink); box-shadow: 0 12px 40px var(--nk-black); user-select: text; }
+.nk-port-browser header { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.nk-port-browser label { display: flex; flex-direction: column; gap: 6px; font-size: 11px; }
+.nk-port-browser input, .nk-port-browser select { width: 100%; height: 32px; padding: 4px 8px; background: var(--nk-well); color: var(--nk-ink); border: 1px solid var(--nk-line); }
+.nk-port-browser p { font-size: 11px; color: var(--nk-ink-soft); }
+.nk-port-browser button { min-height: 28px; padding: 4px 8px; border: 1px solid var(--nk-line); }
+.nk-port-browser button:focus-visible, .nk-port-browser input:focus-visible { outline: 1px solid var(--nk-accent); }
+.nk-port-browser-targets { overflow-y: auto; min-height: 0; display: grid; gap: 4px; }
+.nk-port-browser-targets button { display: flex; justify-content: space-between; gap: 12px; text-align: left; }
+.nk-port-browser-targets small { color: var(--nk-ink-soft); overflow: hidden; max-width: 50%; text-overflow: ellipsis; white-space: nowrap; }
+.nk-port-browser button:disabled { opacity: .4; }
+
+.nk-workspace-handoff { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 35; overflow: hidden; }
+.nk-workspace-handoff path { fill: none; stroke: var(--nk-accent); stroke-width: 2; stroke-linecap: round; stroke-dasharray: .14 1; animation: nk-view-handoff 220ms ease-out both; }
+@keyframes nk-view-handoff { from { stroke-dashoffset: .15; opacity: .1; } 30% { opacity: 1; } to { stroke-dashoffset: -1; opacity: 0; } }
+html[data-motion="off"] .nk-workspace-handoff, html[data-motion="reduced"] .nk-workspace-handoff { display: none; }
+@media (prefers-reduced-motion: reduce) { .nk-workspace-handoff { display: none; } }

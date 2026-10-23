@@ -16,6 +16,8 @@ describe("calculated io jacks", () => {
     expect(out[0]!.east).toBe(false);
     expect(ioJackPath("in")).not.toBe(ioJackPath("out"));
     expect(ioJackDots("sidechain")).toEqual([
+      expect.objectContaining({ id: "in", east: false }),
+      expect.objectContaining({ id: "sc", east: false }),
       expect.objectContaining({ id: "out", east: true }),
     ]);
   });
