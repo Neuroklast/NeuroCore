@@ -112,6 +112,8 @@ MIDI IN shows dependencies on MIDI variables explicitly used in parameter expres
 
 The browser preview connects modulation to the selected parameter contact. Audio rail edits that require the native editor report this without changing the patch.
 
+StepSeq shows eight LEDs per row, up to eight rows. Lit cores follow the actual host step. Muted and unused steps stay dim; a stopped host does not run a local animation. The full editor remains in Inspect.
+
 Connected parameter contacts use compact banks on the top and bottom of a chip. Their identities stay the same when moving between banks. Captions are bounded; hover or Inspect shows full names. Ports opens a searchable connection list without moving any chip. Choose a modulation source and then a supported target parameter to connect it.
 
 A modulation source used by several parameters on the same chip has a separate connection to each parameter contact.

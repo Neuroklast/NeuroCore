@@ -3844,32 +3844,31 @@ html[data-motion="reduced"] *::after {
 /* Hardware indicators occupy the existing face well; no changes to pin geometry. */
 .nk-node-face.nk-live-face { opacity: 1; }
 .nk-step-leds {
-  position: absolute; inset: 8px 12px; display: grid;
+  position: absolute; inset: 6px 12px; display: grid;
   grid-template-columns: repeat(8, minmax(0, 1fr));
   grid-template-rows: repeat(var(--nk-step-rows), minmax(0, 1fr));
-  gap: 5px; max-width: 360px; margin-inline: auto;
+  gap: 3px; max-width: 360px; margin-inline: auto;
   align-items: center; justify-items: center;
 }
 .nk-step-leds > span {
-  width: 10px; height: 10px; max-width: 100%; max-height: 100%;
-  border-radius: 50%; border: 1px solid var(--nk-line);
-  background: color-mix(in srgb, var(--nk-accent) 16%, var(--nk-well));
-  box-shadow: inset 0 1px 2px var(--nk-black);
+  width: 15px; height: 15px; max-width: 100%; max-height: 100%;
+  position: relative; border-radius: 50%; border: 1px solid var(--nk-line);
+  background: var(--nk-well); box-shadow: inset 0 1px 3px var(--nk-black);
+}
+.nk-step-leds > span > i {
+  position: absolute; inset: 2px; border-radius: 50%;
+  background: color-mix(in srgb, var(--nk-accent) 55%, var(--nk-well));
   opacity: var(--nk-step-level);
-  transition: background-color 55ms linear, box-shadow 90ms linear, opacity 90ms linear;
+  box-shadow: inset 0 1px 2px color-mix(in srgb, var(--nk-accent) 45%, var(--nk-white));
 }
-.nk-step-leds > [data-active="on"] {
-  background: var(--nk-accent); opacity: 1;
-  border-color: color-mix(in srgb, var(--nk-accent) 65%, var(--nk-white));
-  box-shadow: 0 0 5px var(--nk-accent), 0 0 13px rgba(var(--nk-accent-rgb), .65),
-    inset 0 1px 2px rgba(255,255,255,.65);
+.nk-step-leds > [data-state="current"] > i {
+  background: radial-gradient(circle at 45% 35%, var(--nk-white), var(--nk-accent) 55%);
+  opacity: 1; box-shadow: 0 0 4px var(--nk-accent), 0 0 9px rgba(var(--nk-accent-rgb), .5);
 }
-.nk-step-leds > [data-muted="on"] { opacity: .12; box-shadow: none; }
-.nk-step-leds > [data-muted="on"][data-active="on"] { opacity: .4; }
-html[data-motion="off"] .nk-step-leds > span,
-html[data-motion="reduced"] .nk-step-leds > span { transition: none; }
-html[data-motion="off"] .nk-step-leds > [data-active="on"],
-html[data-motion="reduced"] .nk-step-leds > [data-active="on"] { box-shadow: none; }
+.nk-step-leds > [data-state="unused"] > i { opacity: 0; box-shadow: none; }
+.nk-step-leds > [data-muted="on"] > i { opacity: .16; box-shadow: none; }
+html[data-motion="off"] .nk-step-leds > [data-state="current"] > i,
+html[data-motion="reduced"] .nk-step-leds > [data-state="current"] > i { box-shadow: none; }
 .nk-meter-screen {
   position: absolute; inset: 8px 10px; padding: 12px; display: flex;
   flex-direction: column; justify-content: center; gap: 9px;

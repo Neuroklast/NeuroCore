@@ -1,26 +1,20 @@
 import type { CSSProperties } from "react";
 import type { FaceProps } from "./faceKind";
-import { readStepMutes, readStepValues, stepCountFromArgs } from "../stepSeqModel";
+import { stepLedMatrix } from "../stepSeqModel";
 import { parseFaceNumber } from "./faceArgs";
 import { lfoFaceModel, lfoWaveformPath } from "./lfoWaveform";
 
 export function LfoFace({ type, args, host }: FaceProps) {
   if (type === "stepseq") {
-    const count = Math.max(1, Math.min(64, Math.round(host?.stepCount ?? stepCountFromArgs(args))));
-    const live = host?.step ?? -1;
-    const values = readStepValues(args, count);
-    const mutes = readStepMutes(args, count);
-    return (
-      <div className="nk-node-face nk-live-face" data-glyph="steps" data-step-live={live} aria-label="Live sequencer steps">
-        <div className="nk-step-leds" style={{ "--nk-step-rows": Math.ceil(count / 8) } as CSSProperties}>
-          {values.map((v, i) => (
-            <span key={i} data-step-tick={i} data-active={i === live ? "on" : "off"}
-              data-muted={mutes[i] ? "on" : "off"} title={`Step ${i + 1}: ${v}`}
-              style={{ "--nk-step-level": 0.2 + Math.abs(v) * 0.35 } as CSSProperties} />
-          ))}
-        </div>
+    const matrix=stepLedMatrix(args,host?.step??-1);
+    return <div className="nk-node-face nk-live-face" data-glyph="steps" data-step-live={host?.step??-1} aria-label="Live sequencer steps">
+      <div className="nk-step-leds" data-step-count={matrix.count} style={{"--nk-step-rows":matrix.rows} as CSSProperties}>
+        {matrix.cells.map(cell=><span key={cell.index} data-step-tick={cell.index} data-state={cell.state}
+          data-active={cell.active?"on":"off"} data-muted={cell.muted?"on":"off"}
+          title={cell.state==="unused"?"Unused step":`Step ${cell.index+1}: ${cell.value}${cell.muted?" (muted)":""}`}
+          style={{"--nk-step-level":.55+Math.abs(cell.value)*.3} as CSSProperties}><i /></span>)}
       </div>
-    );
+    </div>;
   }
 
   if (type === "random") {

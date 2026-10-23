@@ -46,3 +46,19 @@ export function stepIndexFromPointer(clientX: number, left: number, width: numbe
   }
   return Math.max(0, Math.min(count - 1, Math.floor(((clientX - left) / width) * count)));
 }
+
+export type StepLedState = "unused" | "muted" | "current" | "ready" | "stopped";
+
+/** A host playhead is a measurement. Invalid/stopped values never animate locally. */
+export function stepLedMatrix(args:Record<string,string>,liveStep:number) {
+  const count=stepCountFromArgs(args);
+  const rows=Math.ceil(count/8);
+  const values=readStepValues(args,count);
+  const mutes=readStepMutes(args,count);
+  const current=Number.isInteger(liveStep)&&liveStep>=0&&liveStep<count?liveStep:-1;
+  return {columns:8,rows,count,cells:Array.from({length:rows*8},(_,index)=>{
+    const used=index<count;
+    const state:StepLedState=!used?"unused":mutes[index]?"muted":index===current?"current":current<0?"stopped":"ready";
+    return {index,value:values[index]??0,state,active:used&&index===current,muted:used&&mutes[index]};
+  })};
+}

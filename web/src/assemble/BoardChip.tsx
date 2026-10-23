@@ -15,17 +15,19 @@ import {
 } from "./chipFace";
 import { chipChromeVars, ioBodyInset } from "./chipLayout";
 import { chipSpec, collapsedFace, paintedBindKeys } from "./chipSpec";
-import { stepCountFromArgs } from "./stepSeqModel";
+import { ChipFunctionFace } from "./ChipFunctionFace";
+import { useFaceKnobs } from "./useFaceKnobs";
 import { isFlowBlockId } from "./muteSolo";
 import { toggleChipMute, toggleChipSolo, toggleGroupMute, toggleGroupSolo } from "./muteSoloApply";
 import { BOARD_HIT, portIsOutput, portLocal, type BoardNode, type BoardPort } from "./boardModel";
 import { lfoLampClass, lfoPeriodMs, parseLfoShape, resolveLfoHz } from "./lfoLamp";
 import { ChipParameters, ChipParameterCaption } from "./ChipParameters";
 import { ChipShell } from "./nodeFace/ChipShell";
-import { NodeFace } from "./nodeFace/NodeFace";
 import { chipDepth } from "./nodeFace/chipDepth";
 import { faceKindForType } from "./nodeFace/faceKind";
 import { usePatchSelectionStore } from "../store/patchSelectionStore";
+
+const NO_ARGS: Record<string,string> = {};
 
 export function BoardChip({
   node,
@@ -49,14 +51,8 @@ export function BoardChip({
   const isMuted = useChipViewStore((s) => s.isMuted(node.id));
   const isSoloed = useChipViewStore((s) => s.isSoloed(node.id));
   const isAudible = useChipViewStore((s) => s.isAudible(node.id));
-  const knobs = useHostStore((s) => s.knobs);
-  const bpm = useHostStore((s) => s.bpm);
-  const sr = useHostStore((s) => s.sr);
-  const liveStep = useHostStore((s) => s.clipsStep[node.id] ?? -1);
-  const liveTrigger = useHostStore((s) => s.clipsTrigger[node.id] ?? 0);
-  const controlA = useHostStore((s) => node.type === "modmix" ? s.mods[node.args.ina ?? node.args.inA ?? ""] : undefined);
-  const controlB = useHostStore((s) => node.type === "modmix" ? s.mods[node.args.inb ?? node.args.inB ?? ""] : undefined);
-  const controlOut = useHostStore((s) => node.type === "modmix" ? s.mods[node.id] : undefined);
+  const knobs = useFaceKnobs(node.type === "osc" ? node.args : NO_ARGS);
+  const bpm = useHostStore((s) => node.type === "osc" ? s.bpm : 120);
   const theme = useHostStore((s) => s.theme);
   const inspectOpen = useHostStore((s) => s.inspectId === node.id);
   const selection = usePatchSelectionStore((s) => s.nodeIds);
@@ -146,20 +142,7 @@ export function BoardChip({
           : {}),
       }}
     >
-      <NodeFace
-        kind={kind}
-        type={node.type}
-        args={node.args}
-        id={node.id}
-        host={{
-          knobs, controlA, controlB, controlOut,
-          bpm,
-          sr,
-          step: liveStep,
-          stepCount: node.type === "stepseq" ? stepCountFromArgs(node.args) : undefined,
-          trigger: liveTrigger,
-        }}
-      />
+      <ChipFunctionFace node={node} />
       {ports.map(p => <ChipPort key={p.id} node={node} port={p} />)}
       <ChipParameters nodeId={node.id} hidden={bindOpen}
         rows={ports.filter(p => p.face === "s").map(p => ({

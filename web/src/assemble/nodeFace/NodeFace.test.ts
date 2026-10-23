@@ -16,6 +16,7 @@ const cabFace = readFileSync(new URL("./CabFace.tsx", import.meta.url), "utf8");
 const ioFace = readFileSync(new URL("./IoFace.tsx", import.meta.url), "utf8");
 const utilityFace = readFileSync(new URL("./UtilityFace.tsx", import.meta.url), "utf8");
 const nodeFace = readFileSync(new URL("./NodeFace.tsx", import.meta.url), "utf8");
+const functionFace = readFileSync(new URL("../ChipFunctionFace.tsx", import.meta.url), "utf8");
 const boardChip = readFileSync(new URL("../BoardChip.tsx", import.meta.url), "utf8");
 
 describe("reference NodeFaces", () => {
@@ -88,10 +89,10 @@ describe("reference NodeFaces", () => {
     expect(utilityFace).toContain("utilityParamsPath");
     expect(utilityFace).toContain('data-curve="params"');
     expect(nodeFace).toContain("args");
-    expect(boardChip).toContain("args={node.args}");
-    expect(boardChip).toContain("id={node.id}");
-    expect(boardChip).toContain("type={node.type}");
-    expect(boardChip).toContain("host={{ knobs, bpm, sr }}");
+    expect(functionFace).toContain("args={node.args}");
+    expect(functionFace).toContain("id={node.id}");
+    expect(functionFace).toContain("type={node.type}");
+    expect(functionFace).toContain("host={{knobs,bpm,sr,");
     expect(nodeFace).toContain("host={host}");
     expect(reverbFace).toContain("data-size");
     expect(filterFace).toContain("host");

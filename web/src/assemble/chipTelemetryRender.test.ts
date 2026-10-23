@@ -1,0 +1,30 @@
+import {createElement} from "react";
+import {act,create,type ReactTestRenderer} from "react-test-renderer";
+import {expect,it,vi} from "vitest";
+import {BoardChip} from "./BoardChip";
+import {ChipShell} from "./nodeFace/ChipShell";
+import {NodeFace} from "./nodeFace/NodeFace";
+import {hydrateBoard} from "./boardModel";
+import {useHostStore} from "../store/hostStore";
+vi.mock("./nodeFace/ChipShell",()=>({ChipShell:vi.fn(({children})=>createElement("div",null,children))}));
+vi.mock("./nodeFace/NodeFace",async original=>{
+ const module=await original<typeof import("./nodeFace/NodeFace")>();
+ return {...module,NodeFace:vi.fn(module.NodeFace)};
+});
+it("step updates repaint the LED well without rerendering the chip shell or geometry",()=>{
+ useHostStore.setState({clipsStep:{},clipsTrigger:{}});
+ const graph=hydrateBoard({version:1,params:[],leadingComments:[],nodes:[{id:"stepseq1",type:"stepseq",args:{steps:"64"},busName:"mod",trailingComment:""}]});
+ const node=graph.nodes.stepseq1!;
+ let root:ReactTestRenderer;
+ act(()=>{root=create(createElement(BoardChip,{node,ports:Object.values(graph.ports).filter(p=>p.nodeId===node.id),selected:false}));});
+ const shells=vi.mocked(ChipShell).mock.calls.length;
+ const faces=vi.mocked(NodeFace).mock.calls.length;
+ act(()=>useHostStore.setState({clipsStep:{stepseq1:3}}));
+ expect(vi.mocked(ChipShell).mock.calls.length).toBe(shells);
+ expect(vi.mocked(NodeFace).mock.calls.length).toBe(faces+1);
+ expect(root!.root.findAllByProps({"data-active":"on"})[0]!.props["data-step-tick"]).toBe(3);
+ const before=vi.mocked(NodeFace).mock.calls.length;
+ act(()=>useHostStore.setState(s=>({knobs:s.knobs.map(k=>({...k,value:.7}))})));
+ expect(vi.mocked(NodeFace).mock.calls.length).toBe(before);
+ act(()=>root!.unmount());
+});
