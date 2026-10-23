@@ -162,7 +162,7 @@ const lassoRef = useRef<SelectionRect | null>(null);
   }, [origin, ast]);
 
   useEffect(() => {
-    if (hasJuceBridge()) {
+    if (hasJuceBridge() || !active) {
       return;
     }
     let lastDemo = 0;
@@ -197,7 +197,7 @@ const lassoRef = useRef<SelectionRect | null>(null);
         clipsPeaks: parsed.peaks,
       });
     });
-  }, []);
+  }, [active]);
 
   useEffect(() => {
     const place = placeRef.current;

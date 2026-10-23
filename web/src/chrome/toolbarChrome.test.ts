@@ -115,6 +115,16 @@ describe("header clip size", () => {
     expect(css).toMatch(/\.nk-foot\s*\{[^}]*max-content/s);
   });
 
+  it("keeps secondary tools grouped and bypass pressed state explicit", () => {
+    expect(chromeSrc).toContain("nk-header-tools");
+    expect(chromeSrc).toContain("nk-header-primary");
+    expect(chromeSrc).toContain("aria-pressed={bypassed}");
+    expect(chromeSrc).toContain('aria-label="Previous preset"');
+    expect(chromeSrc).toContain('aria-label="Next preset"');
+    expect(chromeSrc).toContain("toggleBypass");
+    expect(chromeSrc).toContain('id: "dryWet"');
+  });
+
   it("uses one clip class — no 12px/13px split", () => {
     expect(headerClipClass("tool")).toBe("nk-clip shrink-0");
     expect(headerClipClass("bypass")).toBe("nk-clip nk-alert shrink-0");

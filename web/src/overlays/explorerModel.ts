@@ -25,6 +25,28 @@ export type ExplorerFacets = {
   styles: string[];
 };
 
+export type ActiveFilterChip = { facet: "source" | "type" | "style"; value: string };
+
+export const EMPTY_FACETS: ExplorerFacets = { sources: [], types: [], styles: [] };
+
+export function activeFilterChips(facets: ExplorerFacets): ActiveFilterChip[] {
+  return [
+    ...facets.sources.map((value) => ({ facet: "source" as const, value })),
+    ...facets.types.map((value) => ({ facet: "type" as const, value })),
+    ...facets.styles.map((value) => ({ facet: "style" as const, value })),
+  ];
+}
+
+export function emptyExplorerCopy(inScopeCount: number, filteredCount: number, hasQueryOrFacets: boolean): string {
+  if (filteredCount > 0) {
+    return "";
+  }
+  if (inScopeCount === 0 || ! hasQueryOrFacets) {
+    return "No presets available.";
+  }
+  return "No matching presets. Change the search or filters.";
+}
+
 const CAT_SOURCE: Record<string, string> = {
   Distortion: "Guitar", Guitar: "Guitar", Metal: "Guitar", Bass: "Bass Guitar",
   Vocals: "Vocals", Drums: "Drums", Club: "Drums", Synth: "Synth",
@@ -111,7 +133,7 @@ export function sourceFolders(rows: ExplorerRow[], q: string, facets: ExplorerFa
       name,
       label: name,
       count: base.filter((p) => rowSources(p).includes(name)).length,
-    })).filter((f) => f.count > 0 || f.name === "Any"),
+    })).filter((f) => f.count > 0 || f.name === "Any" || facets.sources.includes(f.name)),
   ];
 }
 
@@ -121,7 +143,7 @@ export function typeFolders(rows: ExplorerRow[], q: string, facets: ExplorerFace
     name,
     label: name,
     count: base.filter((p) => rowTypes(p).includes(name)).length,
-  })).filter((f) => f.count > 0);
+  })).filter((f) => f.count > 0 || facets.types.includes(f.name));
 }
 
 export function styleFolders(rows: ExplorerRow[], q: string, facets: ExplorerFacets): Array<{ name: string; label: string; count: number }> {
@@ -130,7 +152,7 @@ export function styleFolders(rows: ExplorerRow[], q: string, facets: ExplorerFac
     name,
     label: name,
     count: base.filter((p) => rowStyles(p).includes(name)).length,
-  })).filter((f) => f.count > 0);
+  })).filter((f) => f.count > 0 || facets.styles.includes(f.name));
 }
 
 export function resolveSelectedName(filtered: ExplorerRow[], selectedName: string): string {

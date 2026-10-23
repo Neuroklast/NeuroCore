@@ -3,7 +3,6 @@ import { useAstStore } from "../store/astStore";
 import { useHostStore } from "../store/hostStore";
 import { factoryExplorerRows, factoryRows, findFactory } from "./factoryCatalog";
 import { stepPresetName } from "./presetStep";
-import { explorerSession } from "../overlays/explorerSession";
 import { knobsFromSketch, parseDslSketch } from "./parseDslSketch";
 import { stripMuteComments } from "../assemble/muteSolo";
 import { resetMuteSolo, withCleanScriptForSave } from "../assemble/muteSoloApply";
@@ -31,10 +30,10 @@ export function seedFactoryPresets(): void {
   }
 }
 
-function applyLocal(name: string): void {
+function applyLocal(name: string): boolean {
   const preset = findFactory(name);
   if (preset == null) {
-    return;
+    return false;
   }
   const { doc } = parseDslSketch(preset.script);
   useHostStore.getState().applyPresets({
@@ -58,6 +57,25 @@ function applyLocal(name: string): void {
     astJson: JSON.stringify(doc),
     diagnostics: [],
   });
+  return true;
+}
+
+function loadLocal(name: string): boolean {
+  const user = userSnaps.get(name);
+  if (user && findFactory(name) == null) {
+    const { doc } = parseDslSketch(user.script);
+    const list = useHostStore.getState().presets;
+    useHostStore.getState().applyPresets({ name: user.name, list });
+    useHostStore.getState().applyParams({ knobs: knobsFromSketch(user.script), mix: user.mix });
+    useAstStore.getState().applyAstEvent({
+      origin: "preset",
+      script: user.script,
+      astJson: JSON.stringify(doc),
+      diagnostics: [],
+    });
+    return true;
+  }
+  return applyLocal(name);
 }
 
 export async function requestPresetAction(cmd: {
@@ -79,13 +97,20 @@ export async function requestPresetAction(cmd: {
 }
 
 export async function confirmDiscard(): Promise<void> {
-  const pending = useHostStore.getState().pendingPreset;
+  const host = useHostStore.getState();
+  const pending = host.pendingPreset;
+  const ret = host.overlayReturn;
   useHostStore.setState({ overlay: null, overlayReturn: null, pendingPreset: null });
-  if (pending) {
-    const result = await presetAction(pending);
-    if (result.ok) {
-      useHostStore.setState({ presetDirty: false });
-    }
+  if (! pending) {
+    return;
+  }
+  const result = await presetAction(pending);
+  if (result.ok) {
+    useHostStore.setState({ presetDirty: false });
+    return;
+  }
+  if (ret) {
+    useHostStore.setState({ overlay: ret });
   }
 }
 
@@ -161,22 +186,10 @@ export async function presetAction(cmd: {
     return { ok: true };
   }
   if (cmd.action === "load" && cmd.name) {
-    const user = userSnaps.get(cmd.name);
-    if (user && findFactory(cmd.name) == null) {
-      const { doc } = parseDslSketch(user.script);
-      const list = useHostStore.getState().presets;
-      useHostStore.getState().applyPresets({ name: user.name, list });
-      useHostStore.getState().applyParams({ knobs: knobsFromSketch(user.script), mix: user.mix });
-      useAstStore.getState().applyAstEvent({
-        origin: "preset",
-        script: user.script,
-        astJson: JSON.stringify(doc),
-        diagnostics: [],
-      });
-      return { ok: true };
-    }
     resetMuteSolo();
-    applyLocal(cmd.name);
+    if (! loadLocal(cmd.name)) {
+      return { ok: false, error: "Unknown preset" };
+    }
     return { ok: true };
   }
   if ((cmd.action === "prev" || cmd.action === "next") && names.length > 0) {
@@ -184,12 +197,14 @@ export async function presetAction(cmd: {
     const walk = rows.length > 0 ? rows : factoryRows();
     resetMuteSolo();
     const host = useHostStore.getState();
-    applyLocal(stepPresetName(
+    const name = stepPresetName(
       walk,
       originForStep(host.originName, host.presetName),
       cmd.action === "next" ? 1 : -1,
-      explorerSession.cat,
-    ));
+    );
+    if (! loadLocal(name)) {
+      return { ok: false, error: "Unknown preset" };
+    }
     return { ok: true };
   }
   if (cmd.action === "new") {
