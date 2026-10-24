@@ -39,6 +39,9 @@ jobs:
       - name: Settings regression contracts
         working-directory: web
         run: npx vitest run src/overlays/settingsBody.test.ts src/store/hostStore.test.ts src/chrome/persistUi.test.ts src/assemble/connectModel.test.ts src/assemble/cableMotion.test.ts src/assemble/cableSignal.test.ts
+      - name: Preset pack builder contracts
+        working-directory: web
+        run: npx vitest run src/overlays/packBuilderModel.test.ts
       - name: Upload layout evidence
         if: always()
         uses: actions/upload-artifact@v4
