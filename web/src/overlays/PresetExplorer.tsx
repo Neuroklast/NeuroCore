@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
-import { getNativeFunction, hasJuceBridge, onNativeEvent } from "../bridge/juce";
+import { getNativeFunction, onNativeEvent } from "../bridge/juce";
 import { presetAction, requestPresetAction } from "../presets/presetActions";
 import { analyzeImport, installImport, libraryAction, type PackPreview } from "../presets/presetLibrary";
 import { migrateStarKeys, rowKey, starKey } from "../presets/presetIdentity";
