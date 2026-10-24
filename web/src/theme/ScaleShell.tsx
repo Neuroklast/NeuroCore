@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 
 import { hasUsableViewport, layoutForViewport } from "./fit";
 
 type ShellMetrics = ReturnType<typeof layoutForViewport>;
-const INITIAL: ShellMetrics = { mode: "wide", scale: 1, width: "100%", height: "100%", x: 0, y: 0 };
+const INITIAL: ShellMetrics = { mode: "wide", density: "regular", scale: 1, width: "100%", height: "100%", x: 0, y: 0 };
 
 /**
  * Normal editor sizes reflow in real CSS pixels. Only ultra-small browser
@@ -18,7 +18,7 @@ export function ScaleShell({ children }: { children: ReactNode }) {
     const apply = (width: number, height: number) => {
       if (!hasUsableViewport(width, height)) return;
       const next = layoutForViewport(width, height);
-      setLayout((prev) => prev.mode === next.mode && prev.scale === next.scale
+      setLayout((prev) => prev.mode === next.mode && prev.density === next.density && prev.scale === next.scale
         && prev.width === next.width && prev.height === next.height
         && prev.x === next.x && prev.y === next.y ? prev : next);
     };
@@ -46,7 +46,7 @@ export function ScaleShell({ children }: { children: ReactNode }) {
   return (
     <div ref={host} className="nk-scale-host relative h-full w-full overflow-hidden">
       <div className="nk-scale-stage" data-layout={scaled ? "tight" : layout.mode}
-        data-scaled={scaled ? "true" : "false"} style={style}>
+        data-scaled={scaled ? "true" : "false"} data-height={layout.density} style={style}>
         {children}
       </div>
     </div>

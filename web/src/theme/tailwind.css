@@ -4163,3 +4163,78 @@ html[data-motion="off"] .nk-workspace-handoff, html[data-motion="reduced"] .nk-w
 .nk-scale-stage[data-layout="tight"] .nk-face-hud {
   grid-template-rows: 98px minmax(0, 1fr);
 }
+
+/* Visual polish: window aspect and vertical density are independent.
+ * A 1600×700 host keeps the wide, single-row toolbar; only vertical chrome
+ * is tightened. At 900×600, the 3 diagnostics in each Unit column no longer
+ * get squashed into ~50px cards with clipped graphs: they scroll in place. */
+.nk-scale-stage[data-height="short"][data-layout="wide"] .nk-knob-rail {
+  height: 128px;
+  padding-block: 6px;
+}
+.nk-scale-stage[data-height="short"][data-layout="compact"] .nk-knob-rail {
+  height: 122px;
+  padding-block: 5px;
+}
+.nk-scale-stage[data-height="short"] .nk-macro-rule {
+  min-height: 34px;
+}
+.nk-scale-stage[data-layout="tight"] .nk-face-diag {
+  grid-template-rows: repeat(3, minmax(116px, auto));
+  overflow-x: hidden;
+  overflow-y: auto;
+  pointer-events: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--nk-line) transparent;
+  padding-right: 3px;
+}
+.nk-scale-stage[data-layout="tight"] .nk-face-mod {
+  padding: 6px 7px;
+}
+.nk-scale-stage[data-layout="tight"] .nk-face-mod-head {
+  margin-bottom: 5px;
+  padding-bottom: 3px;
+}
+.nk-scale-stage[data-layout="tight"] .nk-face-mod-svg {
+  min-height: 44px;
+}
+.nk-scale-stage[data-layout="tight"] .nk-face-mod-svg-lg {
+  min-height: 0;
+}
+.nk-scale-stage[data-layout="tight"] .nk-face-mod-round {
+  width: 60px;
+  height: 60px;
+}
+.nk-scale-stage[data-layout="tight"] .nk-prm-svg {
+  height: 54px;
+  max-height: 54px;
+  flex: 0 1 auto;
+}
+.nk-scale-stage[data-layout="tight"] .nk-prm-meta-row {
+  font-size: 8px;
+  letter-spacing: 0;
+  gap: 3px;
+}
+.nk-scale-stage[data-layout="tight"] .nk-prm-meta-row span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.nk-scale-stage[data-layout="tight"] .nk-prm > .nk-knob-head {
+  min-height: 16px;
+}
+.nk-scale-stage:is([data-layout="compact"], [data-layout="tight"]) .nk-foot > span:last-child {
+  position: sticky;
+  right: 0;
+  z-index: 1;
+  margin-left: auto;
+  padding-left: 12px;
+  background: var(--nk-bg);
+  box-shadow: -8px 0 12px var(--nk-bg);
+}
+/* Clear focus indicators regardless of dark theme, including overflow rails. */
+.nk-scale-stage :is(.nk-ws-tab, .nk-preset-now, .nk-clip, .nk-knob-plug, .nk-knob-jack):focus-visible {
+  outline: 2px solid var(--nk-cyan);
+  outline-offset: -2px;
+}

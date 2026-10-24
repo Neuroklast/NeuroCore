@@ -19,6 +19,7 @@ describe("responsive editor contracts", () => {
     expect(app).toMatch(/nk-os[^"]*h-full w-full/);
     expect(app).not.toContain("h-[860px] w-[1280px]");
     expect(shell).toContain('data-scaled={scaled ? "true" : "false"}');
+    expect(shell).toContain('data-height={layout.density}');
     expect(shell).toContain('position: "relative", width: "100%", height: "100%"');
   });
   it("reflows critical chrome without hiding actions in compact and tight modes", () => {
@@ -32,6 +33,8 @@ describe("responsive editor contracts", () => {
     }
     expect(css).toMatch(/data-layout="compact"\], \[data-layout="tight"\]/);
     expect(css).toContain('data-layout="tight"');
+    expect(css).toContain('data-height="short"');
+    expect(css).toContain("overscroll-behavior: contain");
     expect(css).toContain("overflow-x: auto");
   });
   it("allows native independent aspect and persistence down to 900x600", () => {
