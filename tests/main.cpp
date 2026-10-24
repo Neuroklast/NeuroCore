@@ -3,6 +3,7 @@
 #include "FxRuntimeTest.h"
 #include "FxBench.h"
 #include "HostCallbackBench.h"
+#include "FactoryReport.h"
 #include "DSLParserTest.h"
 #include "dsp/ClipTest.h"
 #include "dsp/DspExpansionTest.h"
@@ -58,6 +59,8 @@ int main (int argc, char* argv[])
       return runDensePerformanceBenchmark();
   if (argc == 2 && std::string (argv[1]) == "--bench-host")
       return runHostCallbackBenchmark();
+  if (argc == 3 && std::string (argv[1]) == "--factory-report")
+      return runFactoryReport (argv[2]);
 
   FxRuntimeTest fxRuntimeTest;
   DSLParserTest parserTest;

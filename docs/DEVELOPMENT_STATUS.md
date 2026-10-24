@@ -2,7 +2,11 @@
 
 **Stand:** 2026-10-24 (0.7.2-beta)
 **Version:** 0.7.2-beta  
-**Branch:** `feat/dsp-host-callback-baseline`
+**Branch:** `feat/factory-listening-report`
+
+## Factory listening prep (2026-10-24)
+
+`NeuroKoreTests --factory-report` applies all 363 factory presets on the live processor (48 kHz / 512, sine+pink, no MIDI/SC). Snapshot `docs/presets/2026-10-24-factory-render.json`: 0 apply errors, 0 nonfinite. Listening queue in `docs/presets/2026-10-24-listening-prep.md`. Factory scripts unchanged. `FactoryLoudnessTest` still flags Ambient Swell Guitar, MIDI Swell Return, Vocal Presence Duck; Vocal Presence Duck is silent without sidechain (`FactoryUseCaseTest` duck/open both 0 on a 3.2 kHz tone). Python: `tests.test_factory_listening_prep` 2/0. Not a DAW or ear sign-off.
 
 ## VST3 moduleinfo CID vs factory (2026-10-24)
 

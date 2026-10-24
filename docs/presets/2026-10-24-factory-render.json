@@ -1,0 +1,2550 @@
+{
+  "block": 512,
+  "blocks": 40,
+  "count": 363,
+  "failures": 0,
+  "presets": [
+    {
+      "category": "Distortion",
+      "name": "Airy Clean",
+      "nonfinite": 0,
+      "peak": 0.1574457585811615,
+      "rms": 0.07867818140876048
+    },
+    {
+      "category": "Distortion",
+      "name": "Plexi Crunch",
+      "nonfinite": 0,
+      "peak": 0.47641512751579285,
+      "rms": 0.37813903626046713
+    },
+    {
+      "category": "Distortion",
+      "name": "Mesa High Gain",
+      "nonfinite": 0,
+      "peak": 0.35379135608673096,
+      "rms": 0.20398080976880462
+    },
+    {
+      "category": "Distortion",
+      "name": "Top Boost Chime",
+      "nonfinite": 0,
+      "peak": 0.4631800651550293,
+      "rms": 0.2318008758439029
+    },
+    {
+      "category": "Distortion",
+      "name": "Mid Boost OD",
+      "nonfinite": 0,
+      "peak": 0.31467771530151367,
+      "rms": 0.10972066261892137
+    },
+    {
+      "category": "Distortion",
+      "name": "Transparent Blend",
+      "nonfinite": 0,
+      "peak": 0.3841910660266876,
+      "rms": 0.2018903217911784
+    },
+    {
+      "category": "Distortion",
+      "name": "Filter Dist",
+      "nonfinite": 0,
+      "peak": 0.293194055557251,
+      "rms": 0.2086083303285956
+    },
+    {
+      "category": "Distortion",
+      "name": "Germanium Fuzz",
+      "nonfinite": 0,
+      "peak": 0.2878134250640869,
+      "rms": 0.14650503851677388
+    },
+    {
+      "category": "Distortion",
+      "name": "Cyberpunk Drive",
+      "nonfinite": 0,
+      "peak": 0.47251951694488525,
+      "rms": 0.3260580230789776
+    },
+    {
+      "category": "Modulation",
+      "name": "Classic Tremolo",
+      "nonfinite": 0,
+      "peak": 0.406973272562027,
+      "rms": 0.1586911008497299
+    },
+    {
+      "category": "Modulation",
+      "name": "Chopper",
+      "nonfinite": 0,
+      "peak": 0.1561942994594574,
+      "rms": 0.06273006751976418
+    },
+    {
+      "category": "Modulation",
+      "name": "Optical Vibe",
+      "nonfinite": 0,
+      "peak": 0.4893478751182556,
+      "rms": 0.18757429544859514
+    },
+    {
+      "category": "Modulation",
+      "name": "Chorus Delay",
+      "nonfinite": 0,
+      "peak": 0.3934037387371063,
+      "rms": 0.186378084537326
+    },
+    {
+      "category": "Filter",
+      "name": "Low Pass Sweep",
+      "nonfinite": 0,
+      "peak": 0.4307771325111389,
+      "rms": 0.26527124434636257
+    },
+    {
+      "category": "Filter",
+      "name": "Bandpass Vocal",
+      "nonfinite": 0,
+      "peak": 0.32573139667510986,
+      "rms": 0.139894421841283
+    },
+    {
+      "category": "Dynamics",
+      "name": "Transient Bite",
+      "nonfinite": 0,
+      "peak": 0.5334572792053223,
+      "rms": 0.3735765851909136
+    },
+    {
+      "category": "Guitar",
+      "name": "Metal Gate",
+      "nonfinite": 0,
+      "peak": 0.2242092341184616,
+      "rms": 0.11379563874715282
+    },
+    {
+      "category": "Vocals",
+      "name": "Vocal Grit",
+      "nonfinite": 0,
+      "peak": 0.47770124673843384,
+      "rms": 0.29198124355443233
+    },
+    {
+      "category": "Vocals",
+      "name": "Whisper Edge",
+      "nonfinite": 0,
+      "peak": 0.552225649356842,
+      "rms": 0.22020020142672805
+    },
+    {
+      "category": "Vocals",
+      "name": "Doubler AM",
+      "nonfinite": 0,
+      "peak": 0.3679842948913574,
+      "rms": 0.18470697538805558
+    },
+    {
+      "category": "Synth",
+      "name": "Acid Line",
+      "nonfinite": 0,
+      "peak": 0.43815770745277405,
+      "rms": 0.2713830919567501
+    },
+    {
+      "category": "Ambient",
+      "name": "Shimmer Drive",
+      "nonfinite": 0,
+      "peak": 0.40902000665664673,
+      "rms": 0.18420961580812903
+    },
+    {
+      "category": "Ambient",
+      "name": "Wide Motion",
+      "nonfinite": 0,
+      "peak": 0.46541938185691833,
+      "rms": 0.21350082169351622
+    },
+    {
+      "category": "Sound Design",
+      "name": "Formant Crush",
+      "nonfinite": 0,
+      "peak": 0.4399978518486023,
+      "rms": 0.18079266416446307
+    },
+    {
+      "category": "Sound Design",
+      "name": "Comb Taste",
+      "nonfinite": 0,
+      "peak": 0.3877808749675751,
+      "rms": 0.1855854638212454
+    },
+    {
+      "category": "Guitar",
+      "name": "Preamp Regen Stack",
+      "nonfinite": 0,
+      "peak": 0.42376071214675903,
+      "rms": 0.31330210703899414
+    },
+    {
+      "category": "Guitar",
+      "name": "Slapback Drive",
+      "nonfinite": 0,
+      "peak": 0.410092830657959,
+      "rms": 0.2366712014988794
+    },
+    {
+      "category": "Distortion",
+      "name": "Cascade Loop Dirt",
+      "nonfinite": 0,
+      "peak": 0.40910840034484863,
+      "rms": 0.32312074599020796
+    },
+    {
+      "category": "Bass",
+      "name": "Bass Regen Growl",
+      "nonfinite": 0,
+      "peak": 0.4161613881587982,
+      "rms": 0.2545355132814501
+    },
+    {
+      "category": "Vocals",
+      "name": "Vocal Warm Loop",
+      "nonfinite": 0,
+      "peak": 0.4684683382511139,
+      "rms": 0.30960847486414134
+    },
+    {
+      "category": "Drums",
+      "name": "Drum Bus Regen",
+      "nonfinite": 0,
+      "peak": 0.4207763671875,
+      "rms": 0.29849496216019955
+    },
+    {
+      "category": "Synth",
+      "name": "Synth Feedback Lead",
+      "nonfinite": 0,
+      "peak": 0.43332576751708984,
+      "rms": 0.3394378926301791
+    },
+    {
+      "category": "Guitar",
+      "name": "Tight Metal Regen",
+      "nonfinite": 0,
+      "peak": 0.2561771273612976,
+      "rms": 0.21224711770646257
+    },
+    {
+      "category": "Guitar",
+      "name": "Stereo Guitar Wall",
+      "nonfinite": 0,
+      "peak": 0.451910138130188,
+      "rms": 0.28752728375122455
+    },
+    {
+      "category": "Lo-Fi",
+      "name": "Tape Echo Dirt",
+      "nonfinite": 0,
+      "peak": 0.4499097764492035,
+      "rms": 0.24351136838160928
+    },
+    {
+      "category": "Reverb",
+      "name": "Dark Ambient Verb",
+      "nonfinite": 0,
+      "peak": 0.4310509264469147,
+      "rms": 0.2173037943842855
+    },
+    {
+      "category": "Mastering",
+      "name": "MS Side Air",
+      "nonfinite": 0,
+      "peak": 0.45245361328125,
+      "rms": 0.19729621493750144
+    },
+    {
+      "category": "Mastering",
+      "name": "Studio Channel Strip",
+      "nonfinite": 0,
+      "peak": 0.3685986399650574,
+      "rms": 0.22533014795403888
+    },
+    {
+      "category": "Reverb",
+      "name": "Cinematic Space",
+      "nonfinite": 0,
+      "peak": 0.4804369807243347,
+      "rms": 0.28831098552359335
+    },
+    {
+      "category": "Modulation",
+      "name": "Phaser Lab",
+      "nonfinite": 0,
+      "peak": 0.33851563930511475,
+      "rms": 0.10466328746378155
+    },
+    {
+      "category": "Modulation",
+      "name": "Analog Flanger",
+      "nonfinite": 0,
+      "peak": 0.2528342306613922,
+      "rms": 0.07903181490024709
+    },
+    {
+      "category": "Vocals",
+      "name": "Vocal Chain Pro",
+      "nonfinite": 0,
+      "peak": 0.2768856883049011,
+      "rms": 0.14468243793877464
+    },
+    {
+      "category": "Bass",
+      "name": "Bass Architect",
+      "nonfinite": 0,
+      "peak": 0.2829563617706299,
+      "rms": 0.17426954655664306
+    },
+    {
+      "category": "Creative",
+      "name": "Glitch Laboratory",
+      "nonfinite": 0,
+      "peak": 0.2796216905117035,
+      "rms": 0.17450435187678445
+    },
+    {
+      "category": "Distortion",
+      "name": "Neon Clip",
+      "nonfinite": 0,
+      "peak": 0.5302188396453857,
+      "rms": 0.39451424695235443
+    },
+    {
+      "category": "Distortion",
+      "name": "Chrome Fold",
+      "nonfinite": 0,
+      "peak": 0.21350671350955963,
+      "rms": 0.05643212368096328
+    },
+    {
+      "category": "Distortion",
+      "name": "Data Mosher",
+      "nonfinite": 0,
+      "peak": 0.43914616107940674,
+      "rms": 0.2846457893044206
+    },
+    {
+      "category": "Club",
+      "name": "Kick Rumble",
+      "nonfinite": 0,
+      "peak": 0.4776473343372345,
+      "rms": 0.1996993751067731
+    },
+    {
+      "category": "Club",
+      "name": "Warehouse Rumble",
+      "nonfinite": 0,
+      "peak": 0.22518278658390045,
+      "rms": 0.11724750809374165
+    },
+    {
+      "category": "Club",
+      "name": "Techno Kick Clipping Core",
+      "nonfinite": 0,
+      "peak": 0.5674537420272827,
+      "rms": 0.35206793177749274
+    },
+    {
+      "category": "Club",
+      "name": "Techno Serrated Front",
+      "nonfinite": 0,
+      "peak": 0.3843808174133301,
+      "rms": 0.31528361366859886
+    },
+    {
+      "category": "Club",
+      "name": "Techno Acid Fracture",
+      "nonfinite": 0,
+      "peak": 0.4750465750694275,
+      "rms": 0.3883932004257138
+    },
+    {
+      "category": "Club",
+      "name": "Sub Zero Pummel",
+      "nonfinite": 0,
+      "peak": 0.21326777338981628,
+      "rms": 0.08799196273875794
+    },
+    {
+      "category": "Club",
+      "name": "Hardcore Clip",
+      "nonfinite": 0,
+      "peak": 0.25091150403022766,
+      "rms": 0.13899951563553434
+    },
+    {
+      "category": "Club",
+      "name": "Gabber Drive",
+      "nonfinite": 0,
+      "peak": 0.40803849697113037,
+      "rms": 0.1873796752994856
+    },
+    {
+      "category": "Club",
+      "name": "Acid Hash",
+      "nonfinite": 0,
+      "peak": 0.6071786880493164,
+      "rms": 0.48628662630147323
+    },
+    {
+      "category": "Club",
+      "name": "Tekno Comb",
+      "nonfinite": 0,
+      "peak": 0.3036629557609558,
+      "rms": 0.11821829128255087
+    },
+    {
+      "category": "Club",
+      "name": "Industrial Gate",
+      "nonfinite": 0,
+      "peak": 0.39852580428123474,
+      "rms": 0.3219832604218447
+    },
+    {
+      "category": "Club",
+      "name": "Hoover Dirt",
+      "nonfinite": 0,
+      "peak": 0.3883243501186371,
+      "rms": 0.23238583107106275
+    },
+    {
+      "category": "Delay",
+      "name": "Side Delay",
+      "nonfinite": 0,
+      "peak": 0.42328858375549316,
+      "rms": 0.19681423601067938
+    },
+    {
+      "category": "Reverb",
+      "name": "Side Hall",
+      "nonfinite": 0,
+      "peak": 0.4476621747016907,
+      "rms": 0.19759124971892414
+    },
+    {
+      "category": "Vocals",
+      "name": "Vocal Send",
+      "nonfinite": 0,
+      "peak": 0.4262125492095947,
+      "rms": 0.1624118072652514
+    },
+    {
+      "category": "Drums",
+      "name": "NY Drum Bus",
+      "nonfinite": 0,
+      "peak": 0.3762627840042114,
+      "rms": 0.1907732208068084
+    },
+    {
+      "category": "Mastering",
+      "name": "MS Mix Desk",
+      "nonfinite": 0,
+      "peak": 0.3408309817314148,
+      "rms": 0.19322487313775533
+    },
+    {
+      "category": "Mastering",
+      "name": "Mono Below",
+      "nonfinite": 0,
+      "peak": 0.44274717569351196,
+      "rms": 0.19959857223691074
+    },
+    {
+      "category": "Vocals",
+      "name": "Slap Double",
+      "nonfinite": 0,
+      "peak": 0.2961669862270355,
+      "rms": 0.10714636744055979
+    },
+    {
+      "category": "Guitar",
+      "name": "MS Guitar Spread",
+      "nonfinite": 0,
+      "peak": 0.3672911524772644,
+      "rms": 0.23324674870604836
+    },
+    {
+      "category": "Mastering",
+      "name": "MS Imager",
+      "nonfinite": 0,
+      "peak": 0.42172008752822876,
+      "rms": 0.1936124901791642
+    },
+    {
+      "category": "Reverb",
+      "name": "Plate Send",
+      "nonfinite": 0,
+      "peak": 0.26373186707496643,
+      "rms": 0.09152532559979726
+    },
+    {
+      "category": "Drums",
+      "name": "MS Kit Punch",
+      "nonfinite": 0,
+      "peak": 0.4082421660423279,
+      "rms": 0.2564068475601576
+    },
+    {
+      "category": "Vocals",
+      "name": "MS Presence",
+      "nonfinite": 0,
+      "peak": 0.46328967809677124,
+      "rms": 0.20159534474853885
+    },
+    {
+      "category": "Delay",
+      "name": "Width Delay",
+      "nonfinite": 0,
+      "peak": 0.3304451107978821,
+      "rms": 0.126574620348344
+    },
+    {
+      "category": "Psychoacoustic",
+      "name": "Haas Width",
+      "nonfinite": 0,
+      "peak": 0.2947515547275543,
+      "rms": 0.17592933981348507
+    },
+    {
+      "category": "Psychoacoustic",
+      "name": "Speech Band",
+      "nonfinite": 0,
+      "peak": 0.33425945043563843,
+      "rms": 0.1319004011920954
+    },
+    {
+      "category": "Cinematic",
+      "name": "Trailer Impact",
+      "nonfinite": 0,
+      "peak": 0.41845589876174927,
+      "rms": 0.2066008588027237
+    },
+    {
+      "category": "Cinematic",
+      "name": "Score Hall",
+      "nonfinite": 0,
+      "peak": 0.40365684032440186,
+      "rms": 0.15779636729491123
+    },
+    {
+      "category": "Cinematic",
+      "name": "Dialogue Seat",
+      "nonfinite": 0,
+      "peak": 0.3670889139175415,
+      "rms": 0.15269267149283938
+    },
+    {
+      "category": "Cinematic",
+      "name": "Far Plane",
+      "nonfinite": 0,
+      "peak": 0.276714950799942,
+      "rms": 0.08514807323083108
+    },
+    {
+      "category": "Cinematic",
+      "name": "Boom Tail",
+      "nonfinite": 0,
+      "peak": 0.37503916025161743,
+      "rms": 0.18799620824992533
+    },
+    {
+      "category": "Cinematic",
+      "name": "Wide Canvas",
+      "nonfinite": 0,
+      "peak": 0.4397209584712982,
+      "rms": 0.198637013486304
+    },
+    {
+      "category": "Cinematic",
+      "name": "Tension Bed",
+      "nonfinite": 0,
+      "peak": 0.416428804397583,
+      "rms": 0.14769824880937626
+    },
+    {
+      "category": "Distortion",
+      "name": "Hot British Lead",
+      "nonfinite": 0,
+      "peak": 0.29482901096343994,
+      "rms": 0.09092633195394395
+    },
+    {
+      "category": "Distortion",
+      "name": "American Crunch",
+      "nonfinite": 0,
+      "peak": 0.29219305515289307,
+      "rms": 0.246055806667349
+    },
+    {
+      "category": "Distortion",
+      "name": "British Mid Grind",
+      "nonfinite": 0,
+      "peak": 0.43820512294769287,
+      "rms": 0.2976962833317977
+    },
+    {
+      "category": "Bass",
+      "name": "Foldback Bass",
+      "nonfinite": 0,
+      "peak": 0.32759231328964233,
+      "rms": 0.15111295878101522
+    },
+    {
+      "category": "Vocals",
+      "name": "Vocoder Bank",
+      "nonfinite": 0,
+      "peak": 0.22332483530044556,
+      "rms": 0.12306349049870893
+    },
+    {
+      "category": "Vocals",
+      "name": "Vocoder Lite",
+      "nonfinite": 0,
+      "peak": 0.3580634891986847,
+      "rms": 0.22218295501832705
+    },
+    {
+      "category": "Distortion",
+      "name": "Chime Combo",
+      "nonfinite": 0,
+      "peak": 0.17858749628067017,
+      "rms": 0.04941829473419208
+    },
+    {
+      "category": "Distortion",
+      "name": "Tight Lead Stack",
+      "nonfinite": 0,
+      "peak": 0.36968204379081726,
+      "rms": 0.22420632472973853
+    },
+    {
+      "category": "Distortion",
+      "name": "Deluxe Sparkle",
+      "nonfinite": 0,
+      "peak": 0.34327906370162964,
+      "rms": 0.19363356885868666
+    },
+    {
+      "category": "Bass",
+      "name": "Tweed Bass Grind",
+      "nonfinite": 0,
+      "peak": 0.48266392946243286,
+      "rms": 0.3709417173064419
+    },
+    {
+      "category": "Bass",
+      "name": "Flip-Top Bass",
+      "nonfinite": 0,
+      "peak": 0.3307380676269531,
+      "rms": 0.2079893132213167
+    },
+    {
+      "category": "Bass",
+      "name": "Envelope Bass Filter",
+      "nonfinite": 0,
+      "peak": 0.2789210081100464,
+      "rms": 0.13414629006941
+    },
+    {
+      "category": "Dynamics",
+      "name": "Multiband Glue",
+      "nonfinite": 0,
+      "peak": 0.2696441411972046,
+      "rms": 0.1360892590216773
+    },
+    {
+      "category": "Dynamics",
+      "name": "Envelope Shaper",
+      "nonfinite": 0,
+      "peak": 0.12413257360458374,
+      "rms": 0.06132358150413425
+    },
+    {
+      "category": "Dynamics",
+      "name": "FET Peak Comp",
+      "nonfinite": 0,
+      "peak": 0.2807592749595642,
+      "rms": 0.1640597795290316
+    },
+    {
+      "category": "Dynamics",
+      "name": "All Buttons Comp",
+      "nonfinite": 0,
+      "peak": 0.2005520612001419,
+      "rms": 0.12549657442552226
+    },
+    {
+      "category": "Dynamics",
+      "name": "Optical Leveler Comp",
+      "nonfinite": 0,
+      "peak": 0.38656651973724365,
+      "rms": 0.21307591282773425
+    },
+    {
+      "category": "Dynamics",
+      "name": "VCA Bus Glue",
+      "nonfinite": 0,
+      "peak": 0.42959725856781006,
+      "rms": 0.19634637341728864
+    },
+    {
+      "category": "Dynamics",
+      "name": "Vari-Mu Bus",
+      "nonfinite": 0,
+      "peak": 0.2746465802192688,
+      "rms": 0.1360610773205432
+    },
+    {
+      "category": "Dynamics",
+      "name": "VCA Punch Comp",
+      "nonfinite": 0,
+      "peak": 0.3402267396450043,
+      "rms": 0.13769641752335438
+    },
+    {
+      "category": "Dynamics",
+      "name": "Tube Opto Vocal",
+      "nonfinite": 0,
+      "peak": 0.385519802570343,
+      "rms": 0.1545229828632699
+    },
+    {
+      "category": "Dynamics",
+      "name": "Diode Bridge Bus",
+      "nonfinite": 0,
+      "peak": 0.2742254137992859,
+      "rms": 0.14582587394106786
+    },
+    {
+      "category": "Dynamics",
+      "name": "Punch Comp",
+      "nonfinite": 0,
+      "peak": 0.22849369049072266,
+      "rms": 0.1289419242501617
+    },
+    {
+      "category": "Delay",
+      "name": "Tape Echo Heads",
+      "nonfinite": 0,
+      "peak": 0.42543596029281616,
+      "rms": 0.155337051848312
+    },
+    {
+      "category": "Delay",
+      "name": "Analog Bucket Echo",
+      "nonfinite": 0,
+      "peak": 0.33862143754959106,
+      "rms": 0.1755799431735654
+    },
+    {
+      "category": "Delay",
+      "name": "Tape Slap Echo",
+      "nonfinite": 0,
+      "peak": 0.3370237350463867,
+      "rms": 0.15397881007699232
+    },
+    {
+      "category": "Delay",
+      "name": "Digital Grid Delay",
+      "nonfinite": 0,
+      "peak": 0.33356690406799316,
+      "rms": 0.1390098963007891
+    },
+    {
+      "category": "Reverb",
+      "name": "Foil Plate",
+      "nonfinite": 0,
+      "peak": 0.26321905851364136,
+      "rms": 0.06663873971082768
+    },
+    {
+      "category": "Reverb",
+      "name": "Large Hall",
+      "nonfinite": 0,
+      "peak": 0.2795315384864807,
+      "rms": 0.10837528581707657
+    },
+    {
+      "category": "Reverb",
+      "name": "Nonlinear Snap",
+      "nonfinite": 0,
+      "peak": 0.18511201441287994,
+      "rms": 0.07541253528161353
+    },
+    {
+      "category": "Reverb",
+      "name": "Spring Tank",
+      "nonfinite": 0,
+      "peak": 0.3831433057785034,
+      "rms": 0.17412004277296683
+    },
+    {
+      "category": "Vocals",
+      "name": "FET Peak Catch",
+      "nonfinite": 0,
+      "peak": 0.5303164720535278,
+      "rms": 0.2365938735680961
+    },
+    {
+      "category": "Vocals",
+      "name": "Opto Leveler",
+      "nonfinite": 0,
+      "peak": 0.4958609342575073,
+      "rms": 0.22094316869930733
+    },
+    {
+      "category": "Vocals",
+      "name": "Serial Vocal Stack",
+      "nonfinite": 0,
+      "peak": 0.5509653687477112,
+      "rms": 0.23835686165144182
+    },
+    {
+      "category": "Vocals",
+      "name": "Rap Punch Chain",
+      "nonfinite": 0,
+      "peak": 0.5556149482727051,
+      "rms": 0.24360641205490657
+    },
+    {
+      "category": "Vocals",
+      "name": "De-Ess Shelf",
+      "nonfinite": 0,
+      "peak": 0.4578053951263428,
+      "rms": 0.199641873926423
+    },
+    {
+      "category": "Vocals",
+      "name": "Slap And Booth",
+      "nonfinite": 0,
+      "peak": 0.35015031695365906,
+      "rms": 0.12359179494597383
+    },
+    {
+      "category": "Vocals",
+      "name": "Dotted Eighth Throw",
+      "nonfinite": 0,
+      "peak": 0.40096306800842285,
+      "rms": 0.17407262308493393
+    },
+    {
+      "category": "Vocals",
+      "name": "Quarter Note Halo",
+      "nonfinite": 0,
+      "peak": 0.4178026020526886,
+      "rms": 0.20847021558695078
+    },
+    {
+      "category": "Vocals",
+      "name": "Dual Throw Lattice",
+      "nonfinite": 0,
+      "peak": 0.4109249711036682,
+      "rms": 0.19208743647516732
+    },
+    {
+      "category": "Vocals",
+      "name": "Radio Band Vocal",
+      "nonfinite": 0,
+      "peak": 0.1954493224620819,
+      "rms": 0.08959344736250939
+    },
+    {
+      "category": "Vocals",
+      "name": "Telephone Cup",
+      "nonfinite": 0,
+      "peak": 0.20584353804588318,
+      "rms": 0.10243563810241717
+    },
+    {
+      "category": "Vocals",
+      "name": "Haas Vocal Double",
+      "nonfinite": 0,
+      "peak": 0.44015252590179443,
+      "rms": 0.19125586069808534
+    },
+    {
+      "category": "Vocals",
+      "name": "Air Only Vocal",
+      "nonfinite": 0,
+      "peak": 0.36172768473625183,
+      "rms": 0.13582214909910337
+    },
+    {
+      "category": "Vocals",
+      "name": "Presence Pocket",
+      "nonfinite": 0,
+      "peak": 0.4794875979423523,
+      "rms": 0.20818943755601982
+    },
+    {
+      "category": "Vocals",
+      "name": "Breath Gate",
+      "nonfinite": 0,
+      "peak": 0.43194544315338135,
+      "rms": 0.17593236203875567
+    },
+    {
+      "category": "Vocals",
+      "name": "Choir Widen Hall",
+      "nonfinite": 0,
+      "peak": 0.4935005307197571,
+      "rms": 0.23224451680104227
+    },
+    {
+      "category": "Vocals",
+      "name": "Shout Clip Vocal",
+      "nonfinite": 0,
+      "peak": 0.44408777356147766,
+      "rms": 0.2828631075951068
+    },
+    {
+      "category": "Vocals",
+      "name": "Narration Seat",
+      "nonfinite": 0,
+      "peak": 0.5084313750267029,
+      "rms": 0.22647603639996627
+    },
+    {
+      "category": "Vocals",
+      "name": "Mid Word Side Bloom",
+      "nonfinite": 0,
+      "peak": 0.4501654803752899,
+      "rms": 0.19864642791344658
+    },
+    {
+      "category": "Vocals",
+      "name": "Vocal Plate Throw",
+      "nonfinite": 0,
+      "peak": 0.3587934374809265,
+      "rms": 0.1386698950020845
+    },
+    {
+      "category": "Vocals",
+      "name": "Side Air Only",
+      "nonfinite": 0,
+      "peak": 0.4549826383590698,
+      "rms": 0.19894801123565606
+    },
+    {
+      "category": "Vocals",
+      "name": "Parallel Vocal Smash",
+      "nonfinite": 0,
+      "peak": 0.44414153695106506,
+      "rms": 0.21543591738201986
+    },
+    {
+      "category": "Vocals",
+      "name": "Track Then Slap",
+      "nonfinite": 0,
+      "peak": 0.4972400367259979,
+      "rms": 0.2077349957348578
+    },
+    {
+      "category": "Vocals",
+      "name": "Talk Formant",
+      "nonfinite": 0,
+      "peak": 0.28145620226860046,
+      "rms": 0.11173010208370454
+    },
+    {
+      "category": "Vocals",
+      "name": "Widen Then Slap",
+      "nonfinite": 0,
+      "peak": 0.3829236626625061,
+      "rms": 0.1556576494099705
+    },
+    {
+      "category": "Vocals",
+      "name": "Air Band Polish",
+      "nonfinite": 0,
+      "peak": 0.4894874691963196,
+      "rms": 0.2059674952889041
+    },
+    {
+      "category": "Vocals",
+      "name": "Pop Lead Desk",
+      "nonfinite": 0,
+      "peak": 0.526055097579956,
+      "rms": 0.22812676714151142
+    },
+    {
+      "category": "Vocals",
+      "name": "Intimate Whisper",
+      "nonfinite": 0,
+      "peak": 0.4134885370731354,
+      "rms": 0.1468894210144862
+    },
+    {
+      "category": "Guitar",
+      "name": "Green Mid Into Amp",
+      "nonfinite": 0,
+      "peak": 0.4436267614364624,
+      "rms": 0.15053020187667704
+    },
+    {
+      "category": "Guitar",
+      "name": "Tall Stack Fuzz",
+      "nonfinite": 0,
+      "peak": 0.46999260783195496,
+      "rms": 0.2260213510823586
+    },
+    {
+      "category": "Guitar",
+      "name": "Scooped Rhythm Wall",
+      "nonfinite": 0,
+      "peak": 0.6326413750648499,
+      "rms": 0.36785745765663125
+    },
+    {
+      "category": "Guitar",
+      "name": "Tight Gate Lead",
+      "nonfinite": 0,
+      "peak": 0.6437187194824219,
+      "rms": 0.25755173662101105
+    },
+    {
+      "category": "Guitar",
+      "name": "Edge Of Breakup",
+      "nonfinite": 0,
+      "peak": 0.3760104775428772,
+      "rms": 0.2055461404224456
+    },
+    {
+      "category": "Guitar",
+      "name": "Vibe Rotary Guitar",
+      "nonfinite": 0,
+      "peak": 0.1397513449192047,
+      "rms": 0.05110529542263062
+    },
+    {
+      "category": "Guitar",
+      "name": "Country Slap Guitar",
+      "nonfinite": 0,
+      "peak": 0.19671955704689026,
+      "rms": 0.05776445445362868
+    },
+    {
+      "category": "Guitar",
+      "name": "Surf Spring Crash",
+      "nonfinite": 0,
+      "peak": 0.5079281330108643,
+      "rms": 0.2334327881014106
+    },
+    {
+      "category": "Guitar",
+      "name": "Jazz Box Warm",
+      "nonfinite": 0,
+      "peak": 0.22468310594558716,
+      "rms": 0.1302472153534346
+    },
+    {
+      "category": "Guitar",
+      "name": "Metal Scoop Cab",
+      "nonfinite": 0,
+      "peak": 0.49571800231933594,
+      "rms": 0.23498020864855873
+    },
+    {
+      "category": "Guitar",
+      "name": "British Crunch Stack",
+      "nonfinite": 0,
+      "peak": 0.44993096590042114,
+      "rms": 0.19089304784179553
+    },
+    {
+      "category": "Guitar",
+      "name": "American Clean Cab",
+      "nonfinite": 0,
+      "peak": 0.2609609365463257,
+      "rms": 0.11745686823888496
+    },
+    {
+      "category": "Guitar",
+      "name": "Lead Presence Stack",
+      "nonfinite": 0,
+      "peak": 0.6642299890518188,
+      "rms": 0.3057373837541951
+    },
+    {
+      "category": "Guitar",
+      "name": "Rhythm Mid Scoop",
+      "nonfinite": 0,
+      "peak": 0.6140868067741394,
+      "rms": 0.28076819657526403
+    },
+    {
+      "category": "Guitar",
+      "name": "Single Coil Bright",
+      "nonfinite": 0,
+      "peak": 0.37014132738113403,
+      "rms": 0.11640100952559153
+    },
+    {
+      "category": "Guitar",
+      "name": "Humbucker Thick",
+      "nonfinite": 0,
+      "peak": 0.40690743923187256,
+      "rms": 0.1290639313649274
+    },
+    {
+      "category": "Guitar",
+      "name": "Acoustic Sim Box",
+      "nonfinite": 0,
+      "peak": 0.23388120532035828,
+      "rms": 0.07555912339026259
+    },
+    {
+      "category": "Guitar",
+      "name": "Twelve String Chorus",
+      "nonfinite": 0,
+      "peak": 0.4270516633987427,
+      "rms": 0.1648992623822243
+    },
+    {
+      "category": "Guitar",
+      "name": "Slide Dirt Bed",
+      "nonfinite": 0,
+      "peak": 0.4165493845939636,
+      "rms": 0.23704666533300714
+    },
+    {
+      "category": "Guitar",
+      "name": "Ambient Swell Guitar",
+      "nonfinite": 0,
+      "peak": 0.13641123473644257,
+      "rms": 0.03786430183107412
+    },
+    {
+      "category": "Guitar",
+      "name": "Volume Bloom Lead",
+      "nonfinite": 0,
+      "peak": 0.2932671904563904,
+      "rms": 0.07264611190772809
+    },
+    {
+      "category": "Bass",
+      "name": "Pick Attack Bass",
+      "nonfinite": 0,
+      "peak": 0.44164037704467773,
+      "rms": 0.18562079011300428
+    },
+    {
+      "category": "Bass",
+      "name": "Fretless Warm Bass",
+      "nonfinite": 0,
+      "peak": 0.27836674451828003,
+      "rms": 0.1663452435705433
+    },
+    {
+      "category": "Bass",
+      "name": "Synth Sub Round",
+      "nonfinite": 0,
+      "peak": 0.1656402051448822,
+      "rms": 0.09010447435095473
+    },
+    {
+      "category": "Bass",
+      "name": "Slap Bass Pop",
+      "nonfinite": 0,
+      "peak": 0.5067080855369568,
+      "rms": 0.22081401844052412
+    },
+    {
+      "category": "Bass",
+      "name": "Bass Amp Cab Only",
+      "nonfinite": 0,
+      "peak": 0.23290038108825684,
+      "rms": 0.11261067802561393
+    },
+    {
+      "category": "Bass",
+      "name": "Sidechain Duck Bass",
+      "nonfinite": 0,
+      "peak": 0.2297021448612213,
+      "rms": 0.08983959669946667
+    },
+    {
+      "category": "Bass",
+      "name": "Octave Dirt Bass",
+      "nonfinite": 0,
+      "peak": 0.26605069637298584,
+      "rms": 0.14114551517502458
+    },
+    {
+      "category": "Bass",
+      "name": "Mute Click Bass",
+      "nonfinite": 0,
+      "peak": 0.465779185295105,
+      "rms": 0.19395460401101225
+    },
+    {
+      "category": "Bass",
+      "name": "Motown Bass Round",
+      "nonfinite": 0,
+      "peak": 0.4509669542312622,
+      "rms": 0.1682007093946728
+    },
+    {
+      "category": "Bass",
+      "name": "Foldback Bass Dark",
+      "nonfinite": 0,
+      "peak": 0.4431632161140442,
+      "rms": 0.25374432861901364
+    },
+    {
+      "category": "Pitch",
+      "name": "Sub Only Octave",
+      "nonfinite": 0,
+      "peak": 0.17167656123638153,
+      "rms": 0.11905904559676729
+    },
+    {
+      "category": "Pitch",
+      "name": "Octave Into Dirt",
+      "nonfinite": 0,
+      "peak": 0.24750500917434692,
+      "rms": 0.12280531741162269
+    },
+    {
+      "category": "Pitch",
+      "name": "Vocoder Formant Shift",
+      "nonfinite": 0,
+      "peak": 0.3332183361053467,
+      "rms": 0.18365045460243387
+    },
+    {
+      "category": "Pitch",
+      "name": "Vocoder Talk Box",
+      "nonfinite": 0,
+      "peak": 0.2815839946269989,
+      "rms": 0.16663257823639932
+    },
+    {
+      "category": "Pitch",
+      "name": "Bass Synth Stack",
+      "nonfinite": 0,
+      "peak": 0.15442979335784912,
+      "rms": 0.07903091993697646
+    },
+    {
+      "category": "Delay",
+      "name": "Dub Feedback Cave",
+      "nonfinite": 0,
+      "peak": 0.16620934009552002,
+      "rms": 0.0662924408649184
+    },
+    {
+      "category": "Reverb",
+      "name": "Vocal Plate Short",
+      "nonfinite": 0,
+      "peak": 0.28907036781311035,
+      "rms": 0.086268562793207
+    },
+    {
+      "category": "Dynamics",
+      "name": "De-Ess Wide",
+      "nonfinite": 0,
+      "peak": 0.4699440598487854,
+      "rms": 0.19570435513451134
+    },
+    {
+      "category": "Dynamics",
+      "name": "FET Then Opto",
+      "nonfinite": 0,
+      "peak": 0.22180911898612976,
+      "rms": 0.08723222329156925
+    },
+    {
+      "category": "Filter",
+      "name": "Formant Vowel",
+      "nonfinite": 0,
+      "peak": 0.1919449269771576,
+      "rms": 0.07085263472619238
+    },
+    {
+      "category": "Mastering",
+      "name": "Loudness Clip Master",
+      "nonfinite": 0,
+      "peak": 0.4164091944694519,
+      "rms": 0.19575432357165728
+    },
+    {
+      "category": "Distortion",
+      "name": "British Plexi Bark",
+      "nonfinite": 0,
+      "peak": 0.546021580696106,
+      "rms": 0.1948533027158802
+    },
+    {
+      "category": "Distortion",
+      "name": "Tweed Edge",
+      "nonfinite": 0,
+      "peak": 0.3952755630016327,
+      "rms": 0.11793678394265357
+    },
+    {
+      "category": "Distortion",
+      "name": "Filter Dist Amp",
+      "nonfinite": 0,
+      "peak": 0.3254702091217041,
+      "rms": 0.1742368092073791
+    },
+    {
+      "category": "Distortion",
+      "name": "Fuzz Into Amp",
+      "nonfinite": 0,
+      "peak": 0.4251503050327301,
+      "rms": 0.21197009440918077
+    },
+    {
+      "category": "Distortion",
+      "name": "Crunch Rhythm Pedal",
+      "nonfinite": 0,
+      "peak": 0.577864408493042,
+      "rms": 0.3685478555630492
+    },
+    {
+      "category": "Distortion",
+      "name": "Lead Satin Clip",
+      "nonfinite": 0,
+      "peak": 0.5953687429428101,
+      "rms": 0.2939658008330564
+    },
+    {
+      "category": "Distortion",
+      "name": "Vocal Tube Desk",
+      "nonfinite": 0,
+      "peak": 0.46175146102905273,
+      "rms": 0.1771970583144556
+    },
+    {
+      "category": "Distortion",
+      "name": "Lo-Fi Amp Sim",
+      "nonfinite": 0,
+      "peak": 0.22676098346710205,
+      "rms": 0.12794127624675197
+    },
+    {
+      "category": "Club",
+      "name": "Gabber Mid Bark",
+      "nonfinite": 0,
+      "peak": 0.46639496088027954,
+      "rms": 0.23845250934899567
+    },
+    {
+      "category": "Club",
+      "name": "Acid Soft Slide",
+      "nonfinite": 0,
+      "peak": 0.3871431052684784,
+      "rms": 0.23468546578345997
+    },
+    {
+      "category": "Club",
+      "name": "Industrial Chop",
+      "nonfinite": 0,
+      "peak": 0.5156159400939941,
+      "rms": 0.28774537207969203
+    },
+    {
+      "category": "Club",
+      "name": "Hoover Fold Club",
+      "nonfinite": 0,
+      "peak": 0.3144260048866272,
+      "rms": 0.12546871344056668
+    },
+    {
+      "category": "Club",
+      "name": "Rave Stab Desk",
+      "nonfinite": 0,
+      "peak": 0.48977982997894287,
+      "rms": 0.36339061000444406
+    },
+    {
+      "category": "Club",
+      "name": "Club Mono Kick",
+      "nonfinite": 0,
+      "peak": 0.45432770252227783,
+      "rms": 0.19767093652966777
+    },
+    {
+      "category": "EDM",
+      "name": "Supersaw Glue",
+      "nonfinite": 0,
+      "peak": 0.4228762984275818,
+      "rms": 0.18838712669864122
+    },
+    {
+      "category": "EDM",
+      "name": "Drop Impact FX",
+      "nonfinite": 0,
+      "peak": 0.5511437654495239,
+      "rms": 0.32548970508515224
+    },
+    {
+      "category": "EDM",
+      "name": "Sidechain Pad EDM",
+      "nonfinite": 0,
+      "peak": 0.236174076795578,
+      "rms": 0.09292164596887882
+    },
+    {
+      "category": "EDM",
+      "name": "Reese Mid Growl",
+      "nonfinite": 0,
+      "peak": 0.500674843788147,
+      "rms": 0.20900885751439482
+    },
+    {
+      "category": "EDM",
+      "name": "Festival Group Vocal",
+      "nonfinite": 0,
+      "peak": 0.3968806266784668,
+      "rms": 0.15932324920341348
+    },
+    {
+      "category": "EDM",
+      "name": "Festival Lead Clip",
+      "nonfinite": 0,
+      "peak": 0.5732046961784363,
+      "rms": 0.3284034637919745
+    },
+    {
+      "category": "EDM",
+      "name": "Festival Drum Bus",
+      "nonfinite": 0,
+      "peak": 0.41315069794654846,
+      "rms": 0.2400102952345772
+    },
+    {
+      "category": "Lo-Fi",
+      "name": "Tape Hiss Bed",
+      "nonfinite": 0,
+      "peak": 0.3130841851234436,
+      "rms": 0.1662617549605535
+    },
+    {
+      "category": "Lo-Fi",
+      "name": "VHS Tracking",
+      "nonfinite": 0,
+      "peak": 0.3353925347328186,
+      "rms": 0.16330274998888397
+    },
+    {
+      "category": "Lo-Fi",
+      "name": "Broken Speaker",
+      "nonfinite": 0,
+      "peak": 0.14798741042613983,
+      "rms": 0.08735435460541072
+    },
+    {
+      "category": "Lo-Fi",
+      "name": "Dusty Vinyl Bed",
+      "nonfinite": 0,
+      "peak": 0.3256184458732605,
+      "rms": 0.19213195464115673
+    },
+    {
+      "category": "Lo-Fi",
+      "name": "Pocket Recorder",
+      "nonfinite": 0,
+      "peak": 0.27635741233825684,
+      "rms": 0.1459425144222496
+    },
+    {
+      "category": "Lo-Fi",
+      "name": "Telephone Then Room",
+      "nonfinite": 0,
+      "peak": 0.11344651877880096,
+      "rms": 0.046657728298597975
+    },
+    {
+      "category": "Ambient",
+      "name": "Pad Cloud Hall",
+      "nonfinite": 0,
+      "peak": 0.350297212600708,
+      "rms": 0.11078199635481834
+    },
+    {
+      "category": "Ambient",
+      "name": "Drone Low Bed",
+      "nonfinite": 0,
+      "peak": 0.13349024951457977,
+      "rms": 0.05929788226411855
+    },
+    {
+      "category": "Ambient",
+      "name": "Distant Radio Amb",
+      "nonfinite": 0,
+      "peak": 0.218815416097641,
+      "rms": 0.06627020682352275
+    },
+    {
+      "category": "Cinematic",
+      "name": "Impact Body Boom",
+      "nonfinite": 0,
+      "peak": 0.5448079109191895,
+      "rms": 0.31565097619023846
+    },
+    {
+      "category": "Cinematic",
+      "name": "Tension Pulse",
+      "nonfinite": 0,
+      "peak": 0.3021664619445801,
+      "rms": 0.11900835556777167
+    },
+    {
+      "category": "Cinematic",
+      "name": "Score String Hall",
+      "nonfinite": 0,
+      "peak": 0.34317395091056824,
+      "rms": 0.1106109457099419
+    },
+    {
+      "category": "Cinematic",
+      "name": "Trailer Whoosh",
+      "nonfinite": 0,
+      "peak": 0.2790926694869995,
+      "rms": 0.08920564876037707
+    },
+    {
+      "category": "Cinematic",
+      "name": "Horror Low Drone",
+      "nonfinite": 0,
+      "peak": 0.1763838529586792,
+      "rms": 0.07186575409450814
+    },
+    {
+      "category": "Cinematic",
+      "name": "Dialogue Air Seat",
+      "nonfinite": 0,
+      "peak": 0.4145461916923523,
+      "rms": 0.15384987825875895
+    },
+    {
+      "category": "Creative",
+      "name": "Glitch Hold Gate",
+      "nonfinite": 0,
+      "peak": 0.40042105317115784,
+      "rms": 0.1212990160887609
+    },
+    {
+      "category": "Creative",
+      "name": "Alien Formant",
+      "nonfinite": 0,
+      "peak": 0.39979419112205505,
+      "rms": 0.22197045910815688
+    },
+    {
+      "category": "Creative",
+      "name": "Ring Then Verb",
+      "nonfinite": 0,
+      "peak": 0.4873809218406677,
+      "rms": 0.21635561188080313
+    },
+    {
+      "category": "Creative",
+      "name": "Cascade Taps",
+      "nonfinite": 0,
+      "peak": 0.39350855350494385,
+      "rms": 0.1930286379689127
+    },
+    {
+      "category": "Sound Design",
+      "name": "Impact Designer",
+      "nonfinite": 0,
+      "peak": 0.5920645594596863,
+      "rms": 0.33885728544991267
+    },
+    {
+      "category": "Sound Design",
+      "name": "Texture Crush",
+      "nonfinite": 0,
+      "peak": 0.29039669036865234,
+      "rms": 0.14124157938921372
+    },
+    {
+      "category": "Sound Design",
+      "name": "Sub Drop FX",
+      "nonfinite": 0,
+      "peak": 0.16799703240394592,
+      "rms": 0.07099485015040381
+    },
+    {
+      "category": "Sound Design",
+      "name": "Glitch Buffer",
+      "nonfinite": 0,
+      "peak": 0.371568888425827,
+      "rms": 0.11806909300667226
+    },
+    {
+      "category": "Guitar",
+      "name": "Acoustic Body",
+      "nonfinite": 0,
+      "peak": 0.3990998864173889,
+      "rms": 0.21738451574164974
+    },
+    {
+      "category": "Synth",
+      "name": "Arp Shimmer",
+      "nonfinite": 0,
+      "peak": 0.47067317366600037,
+      "rms": 0.19916815298729185
+    },
+    {
+      "category": "Sound Design",
+      "name": "Bitcrush Glitch",
+      "nonfinite": 0,
+      "peak": 0.133448526263237,
+      "rms": 0.05212918300622616
+    },
+    {
+      "category": "Guitar",
+      "name": "Blues Break OD",
+      "nonfinite": 0,
+      "peak": 0.5246354341506958,
+      "rms": 0.3254234660626089
+    },
+    {
+      "category": "Guitar",
+      "name": "Chug Palm Mute",
+      "nonfinite": 0,
+      "peak": 0.45639997720718384,
+      "rms": 0.37210848854831396
+    },
+    {
+      "category": "Ambient",
+      "name": "Dark Atmosphere",
+      "nonfinite": 0,
+      "peak": 0.19319793581962585,
+      "rms": 0.11835113201368785
+    },
+    {
+      "category": "Drums",
+      "name": "Drum Bus Glue",
+      "nonfinite": 0,
+      "peak": 0.3756127953529358,
+      "rms": 0.1591902073974448
+    },
+    {
+      "category": "Creative",
+      "name": "Harmonic Exciter",
+      "nonfinite": 0,
+      "peak": 0.42073696851730347,
+      "rms": 0.14864711270324957
+    },
+    {
+      "category": "Mastering",
+      "name": "Low End Control",
+      "nonfinite": 0,
+      "peak": 0.26981836557388306,
+      "rms": 0.14199947878720823
+    },
+    {
+      "category": "Guitar",
+      "name": "Metal Scoop",
+      "nonfinite": 0,
+      "peak": 0.5920979976654053,
+      "rms": 0.34519727825745006
+    },
+    {
+      "category": "Bass",
+      "name": "Pick Attack",
+      "nonfinite": 0,
+      "peak": 0.5013631582260132,
+      "rms": 0.2322862897764911
+    },
+    {
+      "category": "Synth",
+      "name": "Pluck Bite",
+      "nonfinite": 0,
+      "peak": 0.2290513664484024,
+      "rms": 0.07786793887257797
+    },
+    {
+      "category": "Vocals",
+      "name": "Podcast Voice",
+      "nonfinite": 0,
+      "peak": 0.2624955475330353,
+      "rms": 0.10613044647616411
+    },
+    {
+      "category": "Guitar",
+      "name": "Riff Sustain",
+      "nonfinite": 0,
+      "peak": 0.4568336606025696,
+      "rms": 0.26777947425949555
+    },
+    {
+      "category": "Bass",
+      "name": "Sub Weight",
+      "nonfinite": 0,
+      "peak": 0.21288295090198517,
+      "rms": 0.110795710110544
+    },
+    {
+      "category": "Lo-Fi",
+      "name": "Tape Wobble",
+      "nonfinite": 0,
+      "peak": 0.3421396017074585,
+      "rms": 0.18595401627609104
+    },
+    {
+      "category": "Vocals",
+      "name": "Vocal De-Ess",
+      "nonfinite": 0,
+      "peak": 0.4314768314361572,
+      "rms": 0.19429509797731145
+    },
+    {
+      "category": "Vocals",
+      "name": "Vocal Double",
+      "nonfinite": 0,
+      "peak": 0.47257864475250244,
+      "rms": 0.21827481290689507
+    },
+    {
+      "category": "Vocals",
+      "name": "Vocal Presence",
+      "nonfinite": 0,
+      "peak": 0.4306430220603943,
+      "rms": 0.17637337045101759
+    },
+    {
+      "category": "Vocals",
+      "name": "Vocal Warmth",
+      "nonfinite": 0,
+      "peak": 0.48351025581359863,
+      "rms": 0.22553248800525788
+    },
+    {
+      "category": "Filter",
+      "name": "Vowel Filter",
+      "nonfinite": 0,
+      "peak": 0.3134901523590088,
+      "rms": 0.12222198397587211
+    },
+    {
+      "category": "Club",
+      "name": "909 Newstyle",
+      "nonfinite": 0,
+      "peak": 0.1949215531349182,
+      "rms": 0.1036821972325577
+    },
+    {
+      "category": "Club",
+      "name": "Crisp Brick",
+      "nonfinite": 0,
+      "peak": 0.19264709949493408,
+      "rms": 0.10358103548000157
+    },
+    {
+      "category": "Club",
+      "name": "Techno Snap",
+      "nonfinite": 0,
+      "peak": 0.31709420680999756,
+      "rms": 0.17526121426837943
+    },
+    {
+      "category": "Club",
+      "name": "Side Scream",
+      "nonfinite": 0,
+      "peak": 0.3393399119377136,
+      "rms": 0.1859444616276253
+    },
+    {
+      "category": "Club",
+      "name": "Offbeat Gallop",
+      "nonfinite": 0,
+      "peak": 0.2706894278526306,
+      "rms": 0.13985698039141162
+    },
+    {
+      "category": "Club",
+      "name": "Schranz Multiband",
+      "nonfinite": 0,
+      "peak": 0.4084652066230774,
+      "rms": 0.21840872505349257
+    },
+    {
+      "category": "Guitar",
+      "name": "Downtuned Stack Cab",
+      "nonfinite": 0,
+      "peak": 0.39653056859970093,
+      "rms": 0.24322523007204636
+    },
+    {
+      "category": "Mastering",
+      "name": "Streaming Ceiling",
+      "nonfinite": 0,
+      "peak": 0.2683676481246948,
+      "rms": 0.13662861471291948
+    },
+    {
+      "category": "Dynamics",
+      "name": "FET All In",
+      "nonfinite": 0,
+      "peak": 0.3564659059047699,
+      "rms": 0.21116811077343636
+    },
+    {
+      "category": "Dynamics",
+      "name": "Precision Multiband",
+      "nonfinite": 0,
+      "peak": 0.23350566625595093,
+      "rms": 0.1110633424339761
+    },
+    {
+      "category": "Mastering",
+      "name": "British Desk EQ",
+      "nonfinite": 0,
+      "peak": 0.3410520553588867,
+      "rms": 0.19518698770054488
+    },
+    {
+      "category": "Mastering",
+      "name": "Passive Low Trick",
+      "nonfinite": 0,
+      "peak": 0.3451130986213684,
+      "rms": 0.19144599767454945
+    },
+    {
+      "category": "Filter",
+      "name": "Ladder Sweep",
+      "nonfinite": 0,
+      "peak": 0.41263464093208313,
+      "rms": 0.2756628384192281
+    },
+    {
+      "category": "Delay",
+      "name": "Octave Cloud",
+      "nonfinite": 0,
+      "peak": 0.4397367835044861,
+      "rms": 0.19845785415420056
+    },
+    {
+      "category": "Cinematic",
+      "name": "Blackwall Space",
+      "nonfinite": 0,
+      "peak": 0.17861728370189667,
+      "rms": 0.04680722201467312
+    },
+    {
+      "category": "Dynamics",
+      "name": "Click Sustain",
+      "nonfinite": 0,
+      "peak": 0.37346652150154114,
+      "rms": 0.2179525196269802
+    },
+    {
+      "category": "EDM",
+      "name": "Resonant Lead Screamer",
+      "nonfinite": 0,
+      "peak": 0.4624032974243164,
+      "rms": 0.3386372495349414
+    },
+    {
+      "category": "EDM",
+      "name": "Peak Screamer",
+      "nonfinite": 0,
+      "peak": 0.46695560216903687,
+      "rms": 0.3202091926289344
+    },
+    {
+      "category": "Distortion",
+      "name": "Hyper Cyberpunk Sweep",
+      "nonfinite": 0,
+      "peak": 0.579136073589325,
+      "rms": 0.39803899064001746
+    },
+    {
+      "category": "Bass",
+      "name": "Speaking Bass",
+      "nonfinite": 0,
+      "peak": 0.4983695149421692,
+      "rms": 0.2484092206690376
+    },
+    {
+      "category": "EDM",
+      "name": "Hardstyle Tail Screech",
+      "nonfinite": 0,
+      "peak": 0.5174225568771362,
+      "rms": 0.15022807401465585
+    },
+    {
+      "category": "Club",
+      "name": "Acid Morph 303",
+      "nonfinite": 0,
+      "peak": 0.47263303399086,
+      "rms": 0.3343448442046701
+    },
+    {
+      "category": "Sound Design",
+      "name": "Frequency Assassin",
+      "nonfinite": 0,
+      "peak": 0.21465608477592468,
+      "rms": 0.05470597424616059
+    },
+    {
+      "category": "Club",
+      "name": "CTZ Kick Master",
+      "nonfinite": 0,
+      "peak": 0.6475437879562378,
+      "rms": 0.41161319728678175
+    },
+    {
+      "category": "Mastering",
+      "name": "Loudness Wall",
+      "nonfinite": 0,
+      "peak": 0.6457020044326782,
+      "rms": 0.3517086409858835
+    },
+    {
+      "category": "Club",
+      "name": "Brickwall Techno",
+      "nonfinite": 0,
+      "peak": 0.6612198948860168,
+      "rms": 0.40878757536455385
+    },
+    {
+      "category": "Mastering",
+      "name": "Master Bus Destroyer",
+      "nonfinite": 0,
+      "peak": 0.38492414355278015,
+      "rms": 0.18634933949741156
+    },
+    {
+      "category": "Synth",
+      "name": "Midtempo Pressure Pump",
+      "nonfinite": 0,
+      "peak": 0.37021368741989136,
+      "rms": 0.17574960806754159
+    },
+    {
+      "category": "Synth",
+      "name": "Midtempo Pump",
+      "nonfinite": 0,
+      "peak": 0.2538279891014099,
+      "rms": 0.12879122017368974
+    },
+    {
+      "category": "Creative",
+      "name": "Broken Grid Chaos",
+      "nonfinite": 0,
+      "peak": 0.1413927674293518,
+      "rms": 0.07040143583455985
+    },
+    {
+      "category": "Creative",
+      "name": "Chaos Grid",
+      "nonfinite": 0,
+      "peak": 0.29298150539398193,
+      "rms": 0.12854857811636244
+    },
+    {
+      "category": "EDM",
+      "name": "Pulsing Electro",
+      "nonfinite": 0,
+      "peak": 0.3939574062824249,
+      "rms": 0.21454385461640332
+    },
+    {
+      "category": "Synth",
+      "name": "Vital Saw Morph",
+      "nonfinite": 0,
+      "peak": 0.16520161926746368,
+      "rms": 0.0429031416437961
+    },
+    {
+      "category": "EDM",
+      "name": "Hard Groove Machine",
+      "nonfinite": 0,
+      "peak": 0.5910037755966187,
+      "rms": 0.32924392174130507
+    },
+    {
+      "category": "EDM",
+      "name": "Resonant Sweep Stab",
+      "nonfinite": 0,
+      "peak": 0.26683199405670166,
+      "rms": 0.18499561027670056
+    },
+    {
+      "category": "Drums",
+      "name": "Kick Surgery",
+      "nonfinite": 0,
+      "peak": 0.4493226408958435,
+      "rms": 0.15976047566761023
+    },
+    {
+      "category": "EDM",
+      "name": "Hardstyle Sub Pummel",
+      "nonfinite": 0,
+      "peak": 0.5924192667007446,
+      "rms": 0.25428077683478506
+    },
+    {
+      "category": "Club",
+      "name": "Industrial Split Authority",
+      "nonfinite": 0,
+      "peak": 0.5531578063964844,
+      "rms": 0.28497683830117276
+    },
+    {
+      "category": "Club",
+      "name": "Split Authority",
+      "nonfinite": 0,
+      "peak": 0.35611605644226074,
+      "rms": 0.20987664690513363
+    },
+    {
+      "category": "Club",
+      "name": "Multiband Phase Lock",
+      "nonfinite": 0,
+      "peak": 0.3198338747024536,
+      "rms": 0.10673203521594676
+    },
+    {
+      "category": "Bass",
+      "name": "Reese Razor Mid",
+      "nonfinite": 0,
+      "peak": 0.5246022343635559,
+      "rms": 0.2741611337272811
+    },
+    {
+      "category": "Bass",
+      "name": "Reese Formant Strike",
+      "nonfinite": 0,
+      "peak": 0.5476109385490417,
+      "rms": 0.30463178555135256
+    },
+    {
+      "category": "Bass",
+      "name": "Reese Knife Edge",
+      "nonfinite": 0,
+      "peak": 0.5188808441162109,
+      "rms": 0.26499419888047676
+    },
+    {
+      "category": "Bass",
+      "name": "Bass Fractionator",
+      "nonfinite": 0,
+      "peak": 0.343192994594574,
+      "rms": 0.1089832957196874
+    },
+    {
+      "category": "Drums",
+      "name": "DnB Snare Needle",
+      "nonfinite": 0,
+      "peak": 0.4547540545463562,
+      "rms": 0.19146427651825595
+    },
+    {
+      "category": "Drums",
+      "name": "DnB Break Snap Bus",
+      "nonfinite": 0,
+      "peak": 0.4022277593612671,
+      "rms": 0.16893136302293532
+    },
+    {
+      "category": "Drums",
+      "name": "Surgical Snare Designer",
+      "nonfinite": 0,
+      "peak": 0.4977981448173523,
+      "rms": 0.2108230480642477
+    },
+    {
+      "category": "Synth",
+      "name": "Depth Sculptor",
+      "nonfinite": 0,
+      "peak": 0.23878510296344757,
+      "rms": 0.09375859085635498
+    },
+    {
+      "category": "Mastering",
+      "name": "Multiband Punch Enhancer",
+      "nonfinite": 0,
+      "peak": 0.46436578035354614,
+      "rms": 0.19234576731982375
+    },
+    {
+      "category": "Ambient",
+      "name": "Dynamic Space Former",
+      "nonfinite": 0,
+      "peak": 0.31855544447898865,
+      "rms": 0.14792433398307966
+    },
+    {
+      "category": "Sound Design",
+      "name": "Metal Percussion",
+      "nonfinite": 0,
+      "peak": 0.27071717381477356,
+      "rms": 0.06544650357881067
+    },
+    {
+      "category": "Sound Design",
+      "name": "Field Recording Glitch",
+      "nonfinite": 0,
+      "peak": 0.3503989577293396,
+      "rms": 0.1692604341676448
+    },
+    {
+      "category": "Distortion",
+      "name": "Downtuned Guitar Industrial",
+      "nonfinite": 0,
+      "peak": 0.4516884684562683,
+      "rms": 0.267023468058808
+    },
+    {
+      "category": "Sound Design",
+      "name": "Chaotic Stab Generator",
+      "nonfinite": 0,
+      "peak": 0.2751173973083496,
+      "rms": 0.12623674430596912
+    },
+    {
+      "category": "Ambient",
+      "name": "Granular Smear",
+      "nonfinite": 0,
+      "peak": 0.5319219827651978,
+      "rms": 0.2005523711242649
+    },
+    {
+      "category": "Metal",
+      "name": "Metal Kick Beater",
+      "nonfinite": 0,
+      "peak": 0.4642218351364136,
+      "rms": 0.21055968009253004
+    },
+    {
+      "category": "Metal",
+      "name": "Metal Snare Crack",
+      "nonfinite": 0,
+      "peak": 0.4619860053062439,
+      "rms": 0.19631080357000744
+    },
+    {
+      "category": "Metal",
+      "name": "Metal Toms Controlled",
+      "nonfinite": 0,
+      "peak": 0.4265008568763733,
+      "rms": 0.17525636946892947
+    },
+    {
+      "category": "Metal",
+      "name": "Metal Drum Bus Impact",
+      "nonfinite": 0,
+      "peak": 0.4054507315158844,
+      "rms": 0.1746408864455739
+    },
+    {
+      "category": "Metal",
+      "name": "Metal Cymbal Tamer",
+      "nonfinite": 0,
+      "peak": 0.41166800260543823,
+      "rms": 0.17169923501550627
+    },
+    {
+      "category": "Metal",
+      "name": "Blastbeat Front Edge",
+      "nonfinite": 0,
+      "peak": 0.5876989364624023,
+      "rms": 0.3094450079452915
+    },
+    {
+      "category": "Metal",
+      "name": "Snare Steel Crack",
+      "nonfinite": 0,
+      "peak": 0.4584752917289734,
+      "rms": 0.19149251116808536
+    },
+    {
+      "category": "Metal",
+      "name": "Growl Iron Throat",
+      "nonfinite": 0,
+      "peak": 0.4198998808860779,
+      "rms": 0.24206693978991425
+    },
+    {
+      "category": "Metal",
+      "name": "Deathwall Tight Stack",
+      "nonfinite": 0,
+      "peak": 0.6166045069694519,
+      "rms": 0.3882871270806889
+    },
+    {
+      "category": "Metal",
+      "name": "Baritone Serrated Stack",
+      "nonfinite": 0,
+      "peak": 0.620459258556366,
+      "rms": 0.4429678060411248
+    },
+    {
+      "category": "Metal",
+      "name": "Ironclad Split Bass",
+      "nonfinite": 0,
+      "peak": 0.6522988677024841,
+      "rms": 0.43358126394116103
+    },
+    {
+      "category": "Industrial",
+      "name": "Forge Kick Overdrive",
+      "nonfinite": 0,
+      "peak": 0.39548197388648987,
+      "rms": 0.3059398345214
+    },
+    {
+      "category": "Industrial",
+      "name": "Concrete Kick Fracture",
+      "nonfinite": 0,
+      "peak": 0.5358583927154541,
+      "rms": 0.37264715410860344
+    },
+    {
+      "category": "Industrial",
+      "name": "Schranz Percussion Furnace",
+      "nonfinite": 0,
+      "peak": 0.4511524438858032,
+      "rms": 0.35637362172043524
+    },
+    {
+      "category": "Industrial",
+      "name": "Industrial Bass Excision",
+      "nonfinite": 0,
+      "peak": 0.4674026370048523,
+      "rms": 0.2368409833715471
+    },
+    {
+      "category": "Industrial",
+      "name": "Techno Iron Rumble",
+      "nonfinite": 0,
+      "peak": 0.4433835446834564,
+      "rms": 0.20301387010172148
+    },
+    {
+      "category": "Industrial",
+      "name": "Techno Rail Drum Bus",
+      "nonfinite": 0,
+      "peak": 0.4900217652320862,
+      "rms": 0.2597092458116338
+    },
+    {
+      "category": "Industrial",
+      "name": "Motion Blur Rumble Send",
+      "nonfinite": 0,
+      "peak": 0.12876832485198975,
+      "rms": 0.07097825760220201
+    },
+    {
+      "category": "Industrial",
+      "name": "Gated Rumble Machine Send",
+      "nonfinite": 0,
+      "peak": 0.31158649921417236,
+      "rms": 0.11757550814421297
+    },
+    {
+      "category": "Mixing",
+      "name": "Sub Harmonic Translation",
+      "nonfinite": 0,
+      "peak": 0.45614248514175415,
+      "rms": 0.19527927792477326
+    },
+    {
+      "category": "Mixing",
+      "name": "Drum Crush Parallel",
+      "nonfinite": 0,
+      "peak": 0.47269320487976074,
+      "rms": 0.2171728720799381
+    },
+    {
+      "category": "Mixing",
+      "name": "Low Mid Congestion Control",
+      "nonfinite": 0,
+      "peak": 0.38002628087997437,
+      "rms": 0.14059995221578955
+    },
+    {
+      "category": "Mastering",
+      "name": "Master Transient Glue",
+      "nonfinite": 0,
+      "peak": 0.4388207793235779,
+      "rms": 0.18613419208304055
+    },
+    {
+      "category": "Mastering",
+      "name": "Master Side Low Cleanup",
+      "nonfinite": 0,
+      "peak": 0.4490298628807068,
+      "rms": 0.19710101677767805
+    },
+    {
+      "category": "Mastering",
+      "name": "Reference Master Polish",
+      "nonfinite": 0,
+      "peak": 0.3953416347503662,
+      "rms": 0.17558910799300415
+    },
+    {
+      "category": "Mastering",
+      "name": "Impact Master Finish",
+      "nonfinite": 0,
+      "peak": 0.4040648937225342,
+      "rms": 0.1779472941777371
+    },
+    {
+      "category": "Modulation",
+      "name": "Curved Sync Duck",
+      "nonfinite": 0,
+      "peak": 0.44140055775642395,
+      "rms": 0.18152351564025573
+    },
+    {
+      "category": "Ambient",
+      "name": "MIDI Bowed Resonator",
+      "nonfinite": 0,
+      "peak": 0.03064037673175335,
+      "rms": 0.010375833974659314
+    },
+    {
+      "category": "Filter",
+      "name": "Bipolar Formant Arc",
+      "nonfinite": 0,
+      "peak": 0.23009347915649414,
+      "rms": 0.09358007073947723
+    },
+    {
+      "category": "Modulation",
+      "name": "Sixteen Step Filter",
+      "nonfinite": 0,
+      "peak": 0.27094316482543945,
+      "rms": 0.16384833639535237
+    },
+    {
+      "category": "Drums",
+      "name": "Probability Break Chops",
+      "nonfinite": 0,
+      "peak": 0.08353108167648315,
+      "rms": 0.03177946789611525
+    },
+    {
+      "category": "Synth",
+      "name": "MIDI Pluck Filter",
+      "nonfinite": 0,
+      "peak": 0.3155669569969177,
+      "rms": 0.20140393560964812
+    },
+    {
+      "category": "Ambient",
+      "name": "MIDI Swell Return",
+      "nonfinite": 0,
+      "peak": 0.11251270771026611,
+      "rms": 0.045804286130825614
+    },
+    {
+      "category": "Filter",
+      "name": "Held Envelope Cutoff",
+      "nonfinite": 0,
+      "peak": 0.3356975317001343,
+      "rms": 0.17926895963771516
+    },
+    {
+      "category": "Sound Design",
+      "name": "Seeded Drift Filter",
+      "nonfinite": 0,
+      "peak": 0.09993639588356018,
+      "rms": 0.05478354803846482
+    },
+    {
+      "category": "Industrial",
+      "name": "Transient Accent Fold",
+      "nonfinite": 0,
+      "peak": 0.35769838094711304,
+      "rms": 0.23552088202368546
+    },
+    {
+      "category": "Modulation",
+      "name": "Control Crossfade Filter",
+      "nonfinite": 0,
+      "peak": 0.1729760318994522,
+      "rms": 0.09958829478223183
+    },
+    {
+      "category": "Modulation",
+      "name": "Rectified Motion",
+      "nonfinite": 0,
+      "peak": 0.3137221336364746,
+      "rms": 0.17896651340497124
+    },
+    {
+      "category": "Creative",
+      "name": "Quantized Random Steps",
+      "nonfinite": 0,
+      "peak": 0.294211208820343,
+      "rms": 0.10022244702197759
+    },
+    {
+      "category": "Drums",
+      "name": "Transient Clip Bus",
+      "nonfinite": 0,
+      "peak": 0.4543328285217285,
+      "rms": 0.24981191481372367
+    },
+    {
+      "category": "Mastering",
+      "name": "Transformer Bus Cushion",
+      "nonfinite": 0,
+      "peak": 0.4225822687149048,
+      "rms": 0.18812876496291173
+    },
+    {
+      "category": "Sound Design",
+      "name": "Folded Parallel Texture",
+      "nonfinite": 0,
+      "peak": 0.4688873291015625,
+      "rms": 0.29929147120251126
+    },
+    {
+      "category": "Lo-Fi",
+      "name": "Jittered Drum Sampler",
+      "nonfinite": 0,
+      "peak": 0.40956562757492065,
+      "rms": 0.19294135496420844
+    },
+    {
+      "category": "Mixing",
+      "name": "Transparent Gain Trim",
+      "nonfinite": 0,
+      "peak": 0.4525274634361267,
+      "rms": 0.19871606692957416
+    },
+    {
+      "category": "Sound Design",
+      "name": "Metallic Resonant Body",
+      "nonfinite": 0,
+      "peak": 0.3365892767906189,
+      "rms": 0.15058959035764163
+    },
+    {
+      "category": "Creative",
+      "name": "Frequency Shift Halo",
+      "nonfinite": 0,
+      "peak": 0.4367246627807617,
+      "rms": 0.11343529529436193
+    },
+    {
+      "category": "Bass",
+      "name": "Fold Threshold Bass",
+      "nonfinite": 0,
+      "peak": 0.3692401647567749,
+      "rms": 0.25290363953662864
+    },
+    {
+      "category": "Filter",
+      "name": "Nonlinear Lowpass Drive",
+      "nonfinite": 0,
+      "peak": 0.4581277072429657,
+      "rms": 0.27029186197466637
+    },
+    {
+      "category": "Creative",
+      "name": "Tape Brake Transition",
+      "nonfinite": 0,
+      "peak": 0.3908579647541046,
+      "rms": 0.1443956924300142
+    },
+    {
+      "category": "Delay",
+      "name": "Reverse Grain Return",
+      "nonfinite": 0,
+      "peak": 0.3420695662498474,
+      "rms": 0.1559788736428517
+    },
+    {
+      "category": "Sound Design",
+      "name": "Ring Sideband Percussion",
+      "nonfinite": 0,
+      "peak": 0.3495336174964905,
+      "rms": 0.11087503303719216
+    },
+    {
+      "category": "Synth",
+      "name": "Poly Synth Motion",
+      "nonfinite": 0,
+      "peak": 0.241856187582016,
+      "rms": 0.09360013099563473
+    },
+    {
+      "category": "Synth",
+      "name": "Velocity Driven Drive",
+      "nonfinite": 0,
+      "peak": 0.2897503972053528,
+      "rms": 0.16220672353809953
+    },
+    {
+      "category": "Modulation",
+      "name": "Hybrid Dynamic Wah",
+      "nonfinite": 0,
+      "peak": 0.2458907663822174,
+      "rms": 0.09534547332653617
+    },
+    {
+      "category": "Bass",
+      "name": "Subsafe Groove Bass",
+      "nonfinite": 0,
+      "peak": 0.29642802476882935,
+      "rms": 0.1783035147879826
+    },
+    {
+      "category": "Drums",
+      "name": "Resonant Drum Body",
+      "nonfinite": 0,
+      "peak": 0.4610227644443512,
+      "rms": 0.19830731723526193
+    },
+    {
+      "category": "Drums",
+      "name": "Dynamic Hat Tamer",
+      "nonfinite": 0,
+      "peak": 0.44462984800338745,
+      "rms": 0.19805511761054947
+    },
+    {
+      "category": "Drums",
+      "name": "Triggered Room Send",
+      "nonfinite": 0,
+      "peak": 0.4549180269241333,
+      "rms": 0.18608250781165545
+    },
+    {
+      "category": "Delay",
+      "name": "Patterned Delay Throws",
+      "nonfinite": 0,
+      "peak": 0.45287197828292847,
+      "rms": 0.19868312752545725
+    },
+    {
+      "category": "Mixing",
+      "name": "Vocal Presence Duck",
+      "nonfinite": 0,
+      "peak": 3.459743325162634e-10,
+      "rms": 5.350320924426366e-11
+    },
+    {
+      "category": "Utility",
+      "name": "Metered Drive Template",
+      "nonfinite": 0,
+      "peak": 0.43097054958343506,
+      "rms": 0.26963241190844556
+    }
+  ],
+  "sampleRate": 48000
+}
