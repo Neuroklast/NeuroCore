@@ -115,7 +115,8 @@ test.describe("MSEG curve editor", () => {
     expect(chartAfter).not.toBeNull();
     expect(Math.abs(after!.width-after!.height)).toBeLessThan(1);
     const relativeAfter=(after!.x+after!.width/2-chartAfter!.x)/chartAfter!.width;
-    expect(relativeAfter).toBeCloseTo(relativeBefore,2);
+    expect(relativeBefore).toBeCloseTo(0.25+8/chartBefore!.width,2);
+    expect(relativeAfter).toBeCloseTo(0.25+8/chartAfter!.width,2);
   });
 
 });
