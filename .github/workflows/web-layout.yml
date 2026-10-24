@@ -28,6 +28,17 @@ jobs:
       - name: Build
         working-directory: web
         run: npm run build
+      - name: Responsive layout unit contracts
+        working-directory: web
+        run: npx vitest run src/theme/fit.test.ts
+      - name: Install Chromium
+        working-directory: web
+        run: npx playwright install --with-deps chromium
+      - name: Responsive layout viewport smoke
+        working-directory: web
+        env:
+          NK_DISABLE_WEBGL: "1"
+        run: npx playwright test e2e/responsive-editor.spec.ts --project=chromium-1x
       - name: Serial signal-flow contracts
         working-directory: web
         env:
