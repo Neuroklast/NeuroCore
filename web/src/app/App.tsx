@@ -137,6 +137,7 @@ export function App() {
       // The standalone application owns Space. VST3/AU must continue forwarding
       // it to the DAW. Never intercept typing in text fields or active overlays.
       if (useHostStore.getState().standalone && !hostCtx.textTarget && !hostCtx.overlayOpen
+          && !(e.target instanceof HTMLElement && e.target.closest("button, select, [role=button]"))
           && !e.repeat && !e.ctrlKey && !e.altKey && !e.metaKey && !e.shiftKey
           && (e.code === "Space" || e.key === " " || e.key === "Spacebar")) {
         e.preventDefault();
