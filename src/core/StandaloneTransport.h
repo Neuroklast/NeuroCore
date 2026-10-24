@@ -1,6 +1,7 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include <juce_audio_formats/juce_audio_formats.h>
 #include <atomic>
 #include <algorithm>
 #include <cmath>
