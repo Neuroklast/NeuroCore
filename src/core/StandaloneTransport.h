@@ -86,9 +86,11 @@ public:
         const auto safeBpm = std::isfinite (bpm) && bpm >= 20.0 && bpm <= 400.0 ? bpm : 120.0;
         Snapshot start { ppq, safeBpm, running };
         const int count = input.getNumSamples();
+        const auto mode = source();
+        if ((mode == Source::File || mode == Source::TestTone) && ! running)
+            input.clear(); // Paused internal sources never leak the physical input.
         if (running && count > 0 && sampleRate > 1.0)
         {
-            const auto mode = source();
             if (mode == Source::File || mode == Source::TestTone)
             {
                 std::shared_ptr<const AudioClip> active;
