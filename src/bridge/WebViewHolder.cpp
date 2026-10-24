@@ -690,6 +690,26 @@ struct WebViewHolder::Impl : private juce::Timer,
                                 pushHost();
                                 complete (juce::var (true));
                             })
+                        .withNativeFunction ("standaloneWindow",
+                            [this] (const juce::Array<juce::var>& args, auto complete)
+                            {
+                                if (! proc.isStandalone() || attachedTo == nullptr)
+                                {
+                                    complete (failVar ("Standalone window is not available."));
+                                    return;
+                                }
+
+                                const auto request = args.size() > 0 ? args[0] : juce::var();
+                                const auto action = request.getProperty ("action", "").toString();
+                                const auto dx = (int) request.getProperty ("dx", 0);
+                                const auto dy = (int) request.getProperty ("dy", 0);
+                                if (! performStandaloneWindowAction (*attachedTo, action, dx, dy))
+                                {
+                                    complete (failVar ("Unsupported standalone window operation."));
+                                    return;
+                                }
+                                complete (juce::var (true));
+                            })
                         .withNativeFunction ("standaloneTransport",
                             [this] (const juce::Array<juce::var>& args, auto complete)
                             {
