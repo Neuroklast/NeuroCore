@@ -113,8 +113,13 @@ void DspEngine::prepare(const juce::dsp::ProcessSpec& spec,
     userGainValue.setCurrentAndTargetValue(1.0f);
     gainCompValue.reset(currentSpec.sampleRate, 0.85);
     gainCompValue.setCurrentAndTargetValue(1.0f);
+    float mix = 1.0f;
+    if (apvts != nullptr)
+        if (auto* p = apvts->getRawParameterValue (EffectParameters::dryWet))
+            mix = juce::jlimit (0.0f, 1.0f, p->load());
+    mix *= wetMixCap.load (std::memory_order_relaxed);
     wetValue.reset(currentSpec.sampleRate, Config::kSmoothingTime);
-    wetValue.setCurrentAndTargetValue(1.0f);
+    wetValue.setCurrentAndTargetValue (mix);
 
     for (auto& s : smoothedParams)
     {

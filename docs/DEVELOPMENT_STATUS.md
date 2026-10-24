@@ -2,7 +2,11 @@
 
 **Stand:** 2026-10-24 (0.7.2-beta)
 **Version:** 0.7.2-beta  
-**Branch:** `fix/audio-thread-realtime`
+**Branch:** `fix/oversampling-switch-state`
+
+## Oversampling switch state (2026-10-24)
+
+`DspEngine::prepare` seeds `wetValue` from APVTS mix (and demo cap), so Mix 0 stays dry across re-prepare. Live/Studio no longer calls `ScriptManager::prepare` when the OS-domain spec is unchanged, so delay/reverb rings survive. The switch still rebuilds OS/sanitation and fades `osOutGain` in. Factor changes still prepare DSL. Native: CrackleFixes + ArchitectureHardening + DemoMix + HostSnapshot 16064 passed / 0 failed.
 
 ## Audio-thread realtime (2026-10-24)
 
