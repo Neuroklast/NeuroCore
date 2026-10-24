@@ -10,7 +10,7 @@ import { bindHit, commitBind, resolveBindKey } from "../assemble/bindModel";
 import { useAstStore } from "../store/astStore";
 import { useHostStore } from "../store/hostStore";
 import { useBindStore } from "../store/telemetryStore";
-import { formatBound, mappedValue } from "../theme/tokens";
+import { formatBound, formatEditableBound, mappedValue } from "../theme/tokens";
 import type { KnobState } from "../store/hostStore";
 import {
   KNOB_ARC_R,
@@ -228,7 +228,7 @@ export function Knob({ knob, bind = true, compact = false }: { knob: KnobState; 
         if (! host) {
           return;
         }
-        setMenu(menuPos(e.clientX, e.clientY, host, 200, 220));
+        setMenu(menuPos(e.clientX, e.clientY, host, 260, 272));
       }}
     >
       {hud ? <div className="nk-knob-hud">{readout}</div> : null}
@@ -477,14 +477,14 @@ function KnobEditMenu({
       {fields.includes("min") ? (
         <KnobField
           label="Min"
-          value={formatNoteBound(knob.min, knob.max, "min", Boolean(knob.isNote)) ?? String(knob.min)}
+          value={formatNoteBound(knob.min, knob.max, "min", Boolean(knob.isNote)) ?? formatEditableBound(knob.min)}
           onCommit={(raw) => commitKnobMeta(knob.id, { min: parseKnobBound(raw, knob.min, Boolean(knob.isNote)) })}
         />
       ) : null}
       {fields.includes("max") ? (
         <KnobField
           label="Max"
-          value={formatNoteBound(knob.min, knob.max, "max", Boolean(knob.isNote)) ?? String(knob.max)}
+          value={formatNoteBound(knob.min, knob.max, "max", Boolean(knob.isNote)) ?? formatEditableBound(knob.max)}
           onCommit={(raw) => commitKnobMeta(knob.id, { max: parseKnobBound(raw, knob.max, Boolean(knob.isNote)) })}
         />
       ) : null}
