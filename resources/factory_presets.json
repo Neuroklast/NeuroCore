@@ -20269,7 +20269,7 @@
     "inputGain": 0,
     "outputGain": 0,
     "mix": 1,
-    "script": "# Vocal Presence Duck\n# External sidechain compresses only the presence band of the insert. Lows and air pass around it. Route a vocal to the sidechain input; without that input there is no ducking.\nparam a = Frequency [800, 3500]\nparam b = Width [400, 2500]\nparam c = Sensitivity [-28, -8]\nparam d = Recovery [0.04, 0.35]\nparam e = Duck Amount [0.2, 1]\nsidechain1: mix = 1\nxover1: f1 = a; f2 = a + b\nbus mid:\n  comp1: threshold = c; ratio = 1 + e * 5; attack = 0.008; release = d; source = sidechain; makeup = 0\nout: low = 1; mid = 1; high = 1\n",
+    "script": "# Vocal Presence Duck\n# External sidechain compresses only the presence band of the insert. Lows and air pass around it. Route a vocal to the sidechain input; without that input there is no ducking.\nparam a = Frequency [800, 3500]\nparam b = Width [400, 2500]\nparam c = Sensitivity [-28, -8]\nparam d = Recovery [0.04, 0.35]\nparam e = Duck Amount [0.2, 1]\nxover1: f1 = a; f2 = a + b\nbus mid:\n  comp1: threshold = c; ratio = 1 + e * 5; attack = 0.008; release = d; source = sidechain; makeup = 0\nout: low = 1; mid = 1; high = 1\n",
     "tags": [
       "air",
       "bus",

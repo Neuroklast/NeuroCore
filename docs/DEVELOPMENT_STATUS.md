@@ -2,7 +2,11 @@
 
 **Stand:** 2026-10-24 (0.7.2-beta)
 **Version:** 0.7.2-beta  
-**Branch:** `fix/release-gates-installer-sign`
+**Branch:** `fix/factory-sc-midi-probe`
+
+## Factory SC/MIDI probe honesty (2026-10-24)
+
+Vocal Presence Duck no longer uses `sidechain1: mix = 1` (that replaced the insert with an empty SC bus). Duck is xover mid + `comp1 source = sidechain`. `FactoryUseCaseTest` probes 2 kHz with knobs at factory defaults (f1=1800, f2=2700). Loudness probe is 56 blocks, skip 32, so env attack 0.16 s is past. MIDI floor matches `source = midi`, `gate = midi`, and `requiredInputs` midi (rms 0.006). Snapshot `docs/presets/2026-10-24-factory-render.json`: 363, 0 apply/nonfinite. Quiet inserts vs floors: 0. Native: FactoryUseCase 59/0, FactoryLoudness 4/0. Python: `tests.test_factory_listening_prep`. Not a DAW or ear sign-off. Factory scripts otherwise unchanged.
 
 ## Release gates (2026-10-24)
 
@@ -10,7 +14,7 @@ Installer deletes leftover `NEUROKORE-*.vst3` only when the VST3 component is se
 
 ## Factory listening prep (2026-10-24)
 
-`NeuroKoreTests --factory-report` applies all 363 factory presets on the live processor (48 kHz / 512, sine+pink, no MIDI/SC). Snapshot `docs/presets/2026-10-24-factory-render.json`: 0 apply errors, 0 nonfinite. Listening queue in `docs/presets/2026-10-24-listening-prep.md`. Factory scripts unchanged. `FactoryLoudnessTest` still flags Ambient Swell Guitar, MIDI Swell Return, Vocal Presence Duck; Vocal Presence Duck is silent without sidechain (`FactoryUseCaseTest` duck/open both 0 on a 3.2 kHz tone). Python: `tests.test_factory_listening_prep` 2/0. Not a DAW or ear sign-off.
+`NeuroKoreTests --factory-report` applies all 363 factory presets on the live processor (48 kHz / 512, 56 blocks skip 32, sine+pink, no MIDI/SC). Snapshot `docs/presets/2026-10-24-factory-render.json`: 0 apply errors, 0 nonfinite. Probe floors match FactoryLoudness (0 quiet inserts). MIDI/SC still need a DAW ear pass. Python: `tests.test_factory_listening_prep`. Not a DAW or ear sign-off.
 
 ## VST3 moduleinfo CID vs factory (2026-10-24)
 

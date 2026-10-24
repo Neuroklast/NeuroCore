@@ -80,8 +80,7 @@ out: main = 1; throws = e`,
   { a: k("Pattern", 0.3, 1, 0.85), b: k("Time", 80, 480, 187.5), c: k("Feedback", 0.1, 0.65, 0.32), d: k("Tone", 2500, 12000, 7000), e: k("Throw Level", 0.1, 0.8, 0.35) }),
 
   make("Vocal Presence Duck", "Mixing", "External sidechain compresses only the presence band of the insert. Lows and air pass around it. Route a vocal to the sidechain input; without that input there is no ducking.",
-`sidechain1: mix = 1
-xover1: f1 = a; f2 = a + b
+`xover1: f1 = a; f2 = a + b
 bus mid:
   comp1: threshold = c; ratio = 1 + e * 5; attack = 0.008; release = d; source = sidechain; makeup = 0
 out: low = 1; mid = 1; high = 1`,

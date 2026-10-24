@@ -8,6 +8,7 @@ Session diary: `docs/archive/LESSONS_SESSION_LOG.md`. Add a rule here only if it
 - Silent-side seed for a mono DI is `InputRouter` (plugin input, BOTH). `SignalChain` must not copy L↔R — chip taps and a hard pan stay honest.
 - Node taps are slots bound in `loadScript`. Never construct `juce::String` to find a tap on the audio thread. Overflow must not land on slot 0 (`__in__`). Wave/peak/rms come from the 64-sample viz tap, not a second OS-rate scan.
 - `processOn` hands chips a view of callback `n`, never `AudioBuffer::getNumSamples()` of prepare-sized scratch. Walking the OS ceiling on a 64-sample host callback is HF scratch and insane Circuit dB. Same view as `DspEngine` `osWork`.
+- `sidechain1: mix = 1` replaces the insert with the SC bus. Empty SC is silence. Presence duck is xover mid + `comp1 source = sidechain`. Keep `sidechain1: mix = a` only when the job is a depth blend (Duck Bass / Pad). MIDI loudness floors must match `source = midi`, `gate = midi`, and `requiredInputs` midi. Skip the probe past envelope attack. Do not retune factory scripts from a sine+pink probe.
 
 ## Process
 

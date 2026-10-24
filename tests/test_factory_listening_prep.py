@@ -13,11 +13,7 @@ from factory_listening_prep import is_send, loudness_floors  # noqa: E402
 RENDER = ROOT / "docs" / "presets" / "2026-10-24-factory-render.json"
 SHEET = ROOT / "docs" / "presets" / "2026-10-24-listening-prep.md"
 CATALOG = ROOT / "resources" / "factory_presets.json"
-EXPECTED_QUIET = {
-    "Ambient Swell Guitar",
-    "MIDI Swell Return",
-    "Vocal Presence Duck",
-}
+EXPECTED_QUIET = set()
 
 
 class FactoryListeningPrep(unittest.TestCase):
@@ -32,18 +28,28 @@ class FactoryListeningPrep(unittest.TestCase):
         self.assertTrue(all(int(row["nonfinite"]) == 0 for row in data["presets"]))
         self.assertTrue(all("error" not in row for row in data["presets"]))
 
+    def test_midi_floors_include_gate_and_required_inputs(self):
+        self.assertEqual(
+            loudness_floors("Ambient", "adsr1: gate = midi\n", []),
+            (0.02, 0.006),
+        )
+        self.assertEqual(
+            loudness_floors("Ambient", "mseg1: source = midi\n", ["midi"]),
+            (0.02, 0.006),
+        )
+
     def test_loudness_queue_matches_native_quiet_inserts(self):
         data = json.loads(RENDER.read_text(encoding="utf-8"))
-        catalog = {
-            row["name"]: row.get("script") or ""
-            for row in json.loads(CATALOG.read_text(encoding="utf-8"))
-        }
+        catalog = {row["name"]: row for row in json.loads(CATALOG.read_text(encoding="utf-8"))}
         quiet = []
         for row in data["presets"]:
             if is_send(row["category"], row["name"]):
                 continue
+            entry = catalog.get(row["name"]) or {}
             peak_floor, rms_floor = loudness_floors(
-                row["category"], catalog.get(row["name"], "")
+                row["category"],
+                entry.get("script") or "",
+                entry.get("requiredInputs") or [],
             )
             if float(row["peak"]) < peak_floor or float(row["rms"]) < rms_floor:
                 quiet.append(row["name"])
