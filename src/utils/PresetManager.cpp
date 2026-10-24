@@ -296,7 +296,7 @@ bool PresetManager::loadPreset(const juce::File& file)
     return true;
 }
 
-bool PresetManager::readInfo (const juce::File& file, Info& info) const
+bool PresetManager::readInfo (const juce::File& file, Info& info)
 {
     info = {};
     info.name = file.getFileNameWithoutExtension();

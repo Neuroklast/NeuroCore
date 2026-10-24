@@ -45,7 +45,7 @@ public:
     };
 
     /** META fields from an .nrk file. Name falls back to the file stem. */
-    bool readInfo (const juce::File& file, Info& info) const;
+    static bool readInfo (const juce::File& file, Info& info);
 
     std::vector<juce::File> getAvailablePresets(const juce::File& directory) const;
 

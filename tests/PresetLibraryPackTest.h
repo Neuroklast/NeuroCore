@@ -446,8 +446,6 @@ public:
             auto inst = PresetPack::installPreview (PresetPack::analyzeArchive (pack), lib);
             expect (inst.ok, inst.error);
             const auto dest = lib.getChildFile ("Packs").getChildFile ("net.test.keep-pack");
-            expect (dest.getChildFile ("presets").getChildFile ("Good.nrk").existsAsFile()
-                    || dest.getChildFile ("Good.nrk").existsAsFile());
             juce::Array<juce::File> installed;
             dest.findChildFiles (installed, juce::File::findFiles, true, "*.nrk");
             expectEquals (installed.size(), 1);
@@ -530,6 +528,87 @@ public:
             juce::Array<juce::File> found;
             dest.findChildFiles (found, juce::File::findFiles, true, "*.nrk");
             expectEquals (found.size(), 1);
+            work.deleteRecursively();
+        }
+
+        beginTest ("export keeps colliding filenames as distinct archive entries");
+        {
+            NeuroKoreAudioProcessor proc;
+            PresetManager mgr (proc);
+            juce::String err;
+            expect (proc.setFormula ("stage1: y = x * a", err));
+            auto work = juce::File::getSpecialLocation (juce::File::tempDirectory)
+                            .getChildFile ("nk-col-" + juce::String (juce::Random::getSystemRandom().nextInt()));
+            work.deleteRecursively();
+            work.createDirectory();
+            const auto dirA = work.getChildFile ("A");
+            const auto dirB = work.getChildFile ("B");
+            expect (dirA.createDirectory());
+            expect (dirB.createDirectory());
+            const auto aFile = dirA.getChildFile ("Drive.nrk");
+            const auto bFile = dirB.getChildFile ("Drive.nrk");
+            expect (mgr.savePreset (aFile, "Drive", "One", "Bass", "heavy"));
+            expect (proc.setFormula ("stage1: y = tanh(x)", err));
+            expect (mgr.savePreset (bFile, "Drive", "Two", "Lead", "bright"));
+            PresetManager::Info ia, ib;
+            expect (PresetManager::readInfo (aFile, ia));
+            expect (PresetManager::readInfo (bFile, ib));
+            expect (ia.id.isNotEmpty() && ib.id.isNotEmpty());
+            expect (ia.id != ib.id);
+
+            PackManifest m;
+            m.name = "Collision Pack";
+            m.id = "net.test.collision-pack";
+            const auto pack = work.getChildFile ("collision.nrkpack");
+            expect (PresetPack::exportNrkpack ({ aFile, bFile }, pack, m, err), err);
+            auto preview = PresetPack::analyzeArchive (pack);
+            expect (preview.error.isEmpty(), preview.error);
+            expectEquals ((int) preview.manifest.presets.size(), 2);
+            expect (preview.manifest.presets[0].id == ia.id);
+            expect (preview.manifest.presets[1].id == ib.id);
+            expect (preview.manifest.presets[0].file != preview.manifest.presets[1].file);
+            expect (preview.manifest.presets[0].file.startsWith ("presets/"));
+            expect (preview.manifest.presets[1].file.startsWith ("presets/"));
+            expectEquals (preview.manifest.presets[0].category, juce::String ("Bass"));
+            expectEquals (preview.manifest.presets[1].category, juce::String ("Lead"));
+
+            auto lib = work.getChildFile ("lib");
+            auto inst = PresetPack::installPreview (preview, lib);
+            expect (inst.ok, inst.error);
+            expectEquals (inst.installed, 2);
+            juce::Array<juce::File> installed;
+            lib.findChildFiles (installed, juce::File::findFiles, true, "*.nrk");
+            expectEquals (installed.size(), 2);
+            PresetLibraryIndex index;
+            index.rebuild (mgr, FactoryPresetLibrary::getInstance(), lib);
+            const auto* ea = index.findById (ia.id);
+            const auto* eb = index.findById (ib.id);
+            expect (ea != nullptr && eb != nullptr);
+            expectEquals (ea->displayName, juce::String ("Drive"));
+            expectEquals (eb->displayName, juce::String ("Drive"));
+            expect (ea->presetId != eb->presetId);
+
+            const auto pack2 = work.getChildFile ("collision2.nrkpack");
+            expect (PresetPack::exportNrkpack ({ aFile, bFile }, pack2, m, err), err);
+            auto preview2 = PresetPack::analyzeArchive (pack2);
+            expectEquals ((int) preview2.manifest.presets.size(), 2);
+            expect (preview2.manifest.presets[0].id == preview.manifest.presets[0].id);
+            expect (preview2.manifest.presets[1].id == preview.manifest.presets[1].id);
+            expect (preview2.manifest.presets[0].file == preview.manifest.presets[0].file);
+            expect (preview2.manifest.presets[1].file == preview.manifest.presets[1].file);
+
+            NeuroKoreAudioProcessor loaded;
+            PresetManager loadedMgr (loaded);
+            bool sawTanh = false, sawMul = false;
+            for (auto& f : installed)
+            {
+                expect (loadedMgr.loadPreset (f));
+                if (loaded.getScript().contains ("tanh"))
+                    sawTanh = true;
+                if (loaded.getScript().contains ("x * a"))
+                    sawMul = true;
+            }
+            expect (sawTanh && sawMul);
             work.deleteRecursively();
         }
     }
