@@ -34,3 +34,24 @@ Interactive browser geometry check (manual on a GPU-capable runner):
 CI runs fast responsive breakpoints and CSS/native source contracts instead;
 software-rendered Chromium can hang while synchronously forcing full-page layout
 with the active Unit visualizer. Do not treat contract checks as a screenshot audit.
+
+## Visual polish and window aspect
+
+Width and height use **independent** layout signals. `data-layout=wide|compact|tight`
+controls horizontal reflow, while `data-height=regular|short` controls
+vertical density. A wide-but-short host window (e.g. 1600×700) therefore
+keeps the one-row toolbar and allocates the saved height to the canvas.
+
+At 900×600, the Unit's left and right diagnostics columns scroll **inside
+their own panes** instead of compressing the Spectrum, Dynamics and field
+visualizers into clipped boxes. Primary controls and the central core stay
+visible. The macro dials have reduced vertical SVG geometry but retain their
+editable readout, range endpoints and binding indicators. The compact footer
+keeps the license status pinned to the right while the remaining telemetry
+can scroll horizontally. Focus-visible controls use the cyan outline.
+
+CI includes `web/e2e/responsive-css-fixture.spec.ts`: a headless Chromium
+render of the **compiled production stylesheet** with small representative
+DOM fixtures, rather than mounting the real GPU-heavy Unit. This checks
+actual geometry/overflow and complements the pure responsive unit contracts.
+It does not replace a native WebView2, VST3, AU or DAW screenshot pass.
