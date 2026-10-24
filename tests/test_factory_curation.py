@@ -26,8 +26,12 @@ class FactoryCuration(unittest.TestCase):
                     self.assertLessEqual(min(knob['min'], knob['max']), knob['default'])
                     self.assertLessEqual(knob['default'], max(knob['min'], knob['max']))
                     self.assertRegex(body, r'\b' + letter.lower() + r'\b', 'unused factory macro')
+                own = preset['name'].casefold()
                 text = (preset['name'] + ' ' + preset['description'] + ' ' + script).casefold()
+                # Title may reuse a banned token (Sub Zero Pummel). Copy and script still cannot.
                 for artist in ('zatox', 'holypriest', 'holy priest', 'sub zero project', 'rekkt', 'zerosum', 'koren stack', 'priest split', 'sub zero pummel'):
+                    if artist == own:
+                        continue
                     self.assertNotIn(artist, text)
 
     def test_metadata_vocab_except_protected_mesa(self):
