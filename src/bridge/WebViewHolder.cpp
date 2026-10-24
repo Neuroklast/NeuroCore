@@ -17,6 +17,7 @@
 #include "../dsl/GraphModel.h"
 #include "../ui/StandaloneAudioSettings.h"
 #include <cstdint>
+#include <cmath>
 
 #if JUCE_WINDOWS
 #ifndef NOMINMAX
