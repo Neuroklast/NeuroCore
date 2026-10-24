@@ -4161,5 +4161,5 @@ html[data-motion="off"] .nk-workspace-handoff, html[data-motion="reduced"] .nk-w
   letter-spacing: 0;
 }
 .nk-scale-stage[data-layout="tight"] .nk-face-hud {
-  grid-template-rows: 72px minmax(0, 1fr);
+  grid-template-rows: 98px minmax(0, 1fr);
 }

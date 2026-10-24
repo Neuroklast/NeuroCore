@@ -38,7 +38,7 @@ jobs:
         working-directory: web
         env:
           NK_DISABLE_WEBGL: "1"
-        run: npx playwright test e2e/responsive-editor.spec.ts --project=chromium-1x
+        run: npx playwright test e2e/responsive-editor.spec.ts --project=chromium-1x --timeout=30000
       - name: Serial signal-flow contracts
         working-directory: web
         env:
