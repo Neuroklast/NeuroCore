@@ -13,7 +13,7 @@
   },
   "Classes": [
     {
-      "CID": "01EFCDAB8291EBFA4E524B4C4E524B4F",
+      "CID": "ABCDEF019182FAEB4E524B4C4E524B4F",
       "Category": "Audio Module Class",
       "Name": "NEUROKORE",
       "Vendor": "Neuroklast",
@@ -25,7 +25,7 @@
       "Snapshots": []
     },
     {
-      "CID": "01EFCDAB3412CDAB4E524B4C4E524B4F",
+      "CID": "ABCDEF011234ABCD4E524B4C4E524B4F",
       "Category": "Component Controller Class",
       "Name": "NEUROKORE",
       "Vendor": "Neuroklast",
@@ -37,7 +37,7 @@
       "Snapshots": []
     },
     {
-      "CID": "01EFCDABDEC00DF04E524B4C4E524B4F",
+      "CID": "ABCDEF01C0DEF00D4E524B4C4E524B4F",
       "Category": "Plugin Compatibility Class",
       "Name": "NEUROKORE",
       "Vendor": "Neuroklast",

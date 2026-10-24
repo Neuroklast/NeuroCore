@@ -1,4 +1,5 @@
-import { readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { mkdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -56,6 +57,57 @@ describe("product version is one string", () => {
 
     const notes = readFileSync(join(root, "docs/ALPHA_RELEASE_NOTES.md"), "utf8");
     expect(notes).toContain(`NEUROKORE ${nk.version}`);
+  });
+
+  it("moduleinfo CID is Steinberg UID::toString so JUCE hosts match the factory", () => {
+    // convertJucePluginId Windows TUID hex is 01EFCDAB…; Steinberg/JUCE parse
+    // moduleinfo CID with UID::fromString (COM on Windows). Canonical word hex
+    // round-trips to the factory TUID. Raw TUID hex does not.
+    const json = readFileSync(join(root, "resources/moduleinfo.json"), "utf8");
+    expect(json).toContain('"CID": "ABCDEF019182FAEB4E524B4C4E524B4F"');
+    expect(json).toContain('"CID": "ABCDEF011234ABCD4E524B4C4E524B4F"');
+    expect(json).toContain('"CID": "ABCDEF01C0DEF00D4E524B4C4E524B4F"');
+    expect(json).not.toContain("01EFCDAB8291EBFA");
+    expect(json).not.toContain("01EFCDAB3412CDAB");
+    expect(json).not.toContain("01EFCDABDEC00DF0");
+  });
+
+  it("every build path refuses Windows TUID hex for moduleinfo CID", () => {
+    const cmake = readFileSync(join(root, "CMakeLists.txt"), "utf8");
+    expect(cmake).not.toMatch(/--endian\s+\$\{/);
+    expect(cmake).not.toMatch(/--endian\s+_nk_mod_endian/);
+    expect(cmake).not.toContain("set (_nk_mod_endian");
+
+    const pack = readFileSync(join(root, "scripts/package_windows.ps1"), "utf8");
+    expect(pack).toContain("ABCDEF019182FAEB4E524B4C4E524B4F");
+    expect(pack).toContain("ABCDEF011234ABCD4E524B4C4E524B4F");
+    expect(pack).toContain("ABCDEF01C0DEF00D4E524B4C4E524B4F");
+    expect(pack).toContain("01EFCDAB");
+
+    const writer = join(root, "scripts/write_vst3_moduleinfo.mjs");
+    const tmpDir = join(root, "build", "validation");
+    mkdirSync(tmpDir, { recursive: true });
+    const endianOut = join(tmpDir, "moduleinfo-endian-reject.json");
+    const endian = spawnSync(
+      process.execPath,
+      [writer, "--endian", "windows", "--out", endianOut],
+      { encoding: "utf8" },
+    );
+    expect(endian.status).not.toBe(0);
+    expect(`${endian.stderr}${endian.stdout}`).toMatch(/endian|UID::toString/i);
+
+    const okOut = join(tmpDir, "moduleinfo-cid-ok.json");
+    const ok = spawnSync(
+      process.execPath,
+      [writer, "--out", okOut, "--version", nk.version],
+      { encoding: "utf8" },
+    );
+    expect(ok.status, ok.stderr + ok.stdout).toBe(0);
+    const written = readFileSync(okOut, "utf8");
+    expect(written).toContain('"CID": "ABCDEF019182FAEB4E524B4C4E524B4F"');
+    expect(written).toContain('"CID": "ABCDEF011234ABCD4E524B4C4E524B4F"');
+    expect(written).toContain('"CID": "ABCDEF01C0DEF00D4E524B4C4E524B4F"');
+    expect(written).not.toContain("01EFCDAB");
   });
 
   it("Windows release syncs the living manual and packages every time", () => {

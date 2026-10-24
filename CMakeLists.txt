@@ -647,22 +647,17 @@ nk_copy_web_dist(NeuroKore_AU)
 
 # Cubase reads Contents/Resources/moduleinfo.json without loading the DLL.
 # Keep VST3_AUTO_MANIFEST FALSE: juce_vst3_helper loads the plugin and can hang
-# the same way a Cubase scan did.
+# the same way a Cubase scan did. CID strings are Steinberg UID::toString;
+# do not pass --endian (Windows TUID hex 01EFCDAB... hashes a different uniqueId).
 # NeuroKoreVst3Manifest is always out of date so a no-op VST3 link still writes
 # the JSON (POST_BUILD is skipped when MSBuild considers the DLL up to date).
 if (TARGET NeuroKore_VST3 AND NODE_EXECUTABLE)
-    if (WIN32)
-        set (_nk_mod_endian windows)
-    else()
-        set (_nk_mod_endian apple)
-    endif()
     get_target_property (_nk_vst3_artefact NeuroKore_VST3 JUCE_PLUGIN_ARTEFACT_FILE)
     set (_nk_modinfo_script "${CMAKE_CURRENT_SOURCE_DIR}/scripts/write_vst3_moduleinfo.mjs")
     set (_nk_modinfo_res "${CMAKE_CURRENT_SOURCE_DIR}/resources/moduleinfo.json")
     set (_nk_modinfo_cmds
         COMMAND "${NODE_EXECUTABLE}"
             "${_nk_modinfo_script}"
-            --endian ${_nk_mod_endian}
             --version ${NEUROKORE_VERSION_LABEL}
             --out "${_nk_modinfo_res}"
     )
@@ -672,7 +667,6 @@ if (TARGET NeuroKore_VST3 AND NODE_EXECUTABLE)
                 "${_nk_vst3_artefact}/Contents/Resources"
             COMMAND "${NODE_EXECUTABLE}"
                 "${_nk_modinfo_script}"
-                --endian ${_nk_mod_endian}
                 --version ${NEUROKORE_VERSION_LABEL}
                 --out "${_nk_vst3_artefact}/Contents/Resources/moduleinfo.json"
                 --also "${_nk_modinfo_res}"

@@ -189,21 +189,27 @@ public:
             const auto component = bridge::vst3CidHex (Type::component);
             const auto controller = bridge::vst3CidHex (Type::controller);
             const auto compatibility = bridge::vst3CidHex (Type::compatibility);
+            const auto moduleComponent = bridge::vst3ModuleInfoCidHex (Type::component);
+            const auto moduleController = bridge::vst3ModuleInfoCidHex (Type::controller);
+            const auto moduleCompatibility = bridge::vst3ModuleInfoCidHex (Type::compatibility);
             expect (component.length() == 32, component);
             expect (controller.length() == 32, controller);
             expect (compatibility.length() == 32, compatibility);
             expect (component != controller);
             expect (component != compatibility);
             expect (controller != compatibility);
+            expectEquals (moduleComponent, juce::String ("ABCDEF019182FAEB4E524B4C4E524B4F"));
+            expectEquals (moduleController, juce::String ("ABCDEF011234ABCD4E524B4C4E524B4F"));
+            expectEquals (moduleCompatibility, juce::String ("ABCDEF01C0DEF00D4E524B4C4E524B4F"));
 
             const auto json = bridge::vst3ModuleInfoJson();
             expect (json.contains ("\"Name\": \"NEUROKORE\""), json);
             expect (json.contains ("Audio Module Class"), json);
             expect (json.contains ("Component Controller Class"), json);
             expect (json.contains ("Plugin Compatibility Class"), json);
-            expect (json.contains (component), json);
-            expect (json.contains (controller), json);
-            expect (json.contains (compatibility), json);
+            expect (json.contains (moduleComponent), json);
+            expect (json.contains (moduleController), json);
+            expect (json.contains (moduleCompatibility), json);
 
             int cidCount = 0;
             for (int from = 0;;)
@@ -227,9 +233,9 @@ public:
             const auto onDisk = disk.loadFileAsString();
             expect (onDisk.contains ("NEUROKORE"), onDisk);
             expect (onDisk.contains ("Plugin Compatibility Class"), onDisk);
-            expect (onDisk.contains (component), onDisk);
-            expect (onDisk.contains (controller), onDisk);
-            expect (onDisk.contains (compatibility), onDisk);
+            expect (onDisk.contains (moduleComponent), onDisk);
+            expect (onDisk.contains (moduleController), onDisk);
+            expect (onDisk.contains (moduleCompatibility), onDisk);
         }
 
         beginTest ("Space is host transport, never a plugin command");
