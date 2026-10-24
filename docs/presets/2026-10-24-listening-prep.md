@@ -99,6 +99,6 @@ No insert is below the FactoryLoudness floors on this probe. MIDI-gated and side
 
 ## Limits
 
-- MIDI-gated and sidechain presets are under-driven by this probe. `FactoryUseCaseTest` still fails Vocal Presence Duck (open=0 / duck=0) because the presence-band duck needs a vocal-like SC, not a 3.2 kHz tone on the main input alone.
+- MIDI-gated and sidechain presets are under-driven by this sine+pink probe (no notes, no SC). `FactoryUseCaseTest` asserts Vocal Presence Duck at 2 kHz in the factory presence band with an external sidechain.
 - `FactoryLoudnessTest` uses these same floors. The ear-pass queue is that quiet-insert list. Sends (Delay/Reverb and named send-likes) are excluded.
 - Subjective listening, latency, LUFS, and DAW load remain open.

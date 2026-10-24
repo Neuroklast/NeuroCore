@@ -24,7 +24,7 @@ SEND_NAMES = {
 LISTENING_NOTES = {
     "Ambient Swell Guitar": "Quiet insert on the sine+pink probe. Ear-check swell/gate vs a real guitar.",
     "MIDI Swell Return": "Quiet insert. Needs MIDI gate; confirm swell return in a DAW with notes.",
-    "Vocal Presence Duck": "Zero output without sidechain. Confirm presence-band duck with a vocal on SC.",
+    "Vocal Presence Duck": "Presence-band duck needs a vocal on the sidechain. Without SC the insert still passes.",
 }
 
 
@@ -191,10 +191,9 @@ def main() -> int:
     lines.append("## Limits")
     lines.append("")
     lines.append(
-        "- MIDI-gated and sidechain presets are under-driven by this probe. "
-        "`FactoryUseCaseTest` still fails Vocal Presence Duck (open=0 / duck=0) "
-        "because the presence-band duck needs a vocal-like SC, not a 3.2 kHz tone "
-        "on the main input alone."
+        "- MIDI-gated and sidechain presets are under-driven by this sine+pink probe "
+        "(no notes, no SC). `FactoryUseCaseTest` asserts Vocal Presence Duck at 2 kHz "
+        "in the factory presence band with an external sidechain."
     )
     lines.append(
         "- `FactoryLoudnessTest` uses these same floors. The ear-pass queue is that "

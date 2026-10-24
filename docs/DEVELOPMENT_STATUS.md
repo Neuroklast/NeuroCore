@@ -6,7 +6,7 @@
 
 ## Factory SC/MIDI probe honesty (2026-10-24)
 
-Vocal Presence Duck no longer uses `sidechain1: mix = 1` (that replaced the insert with an empty SC bus). Duck is xover mid + `comp1 source = sidechain`. `FactoryUseCaseTest` probes 2 kHz in the presence band (f1=1800, f2=2700). Loudness probe is 56 blocks, skip 32, so env attack 0.16 s is past. MIDI floor matches `source = midi`, `gate = midi`, and `requiredInputs` midi (rms 0.006). Snapshot `docs/presets/2026-10-24-factory-render.json`: 363, 0 apply/nonfinite. Quiet inserts vs floors: 0. Native: FactoryUseCase 59/0, FactoryLoudness 4/0. Python: `tests.test_factory_listening_prep`. Not a DAW or ear sign-off. Factory scripts otherwise unchanged.
+Vocal Presence Duck no longer uses `sidechain1: mix = 1` (that replaced the insert with an empty SC bus). Duck is xover mid + `comp1 source = sidechain`. `FactoryUseCaseTest` probes 2 kHz with knobs at factory defaults (f1=1800, f2=2700). Loudness probe is 56 blocks, skip 32, so env attack 0.16 s is past. MIDI floor matches `source = midi`, `gate = midi`, and `requiredInputs` midi (rms 0.006). Snapshot `docs/presets/2026-10-24-factory-render.json`: 363, 0 apply/nonfinite. Quiet inserts vs floors: 0. Native: FactoryUseCase 59/0, FactoryLoudness 4/0. Python: `tests.test_factory_listening_prep`. Not a DAW or ear sign-off. Factory scripts otherwise unchanged.
 
 ## Release gates (2026-10-24)
 

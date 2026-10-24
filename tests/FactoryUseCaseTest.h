@@ -167,13 +167,22 @@ private:
     }
 
     static std::array<juce::SmoothedValue<float>*, Config::kNumUserParams> knobPtrs (
-        std::array<juce::SmoothedValue<float>, Config::kNumUserParams>& knobs)
+        std::array<juce::SmoothedValue<float>, Config::kNumUserParams>& knobs,
+        const FactoryPresetEntry* e = nullptr)
     {
         std::array<juce::SmoothedValue<float>*, Config::kNumUserParams> ptrs {};
         for (int i = 0; i < Config::kNumUserParams; ++i)
         {
             knobs[(size_t) i].reset (48000.0, 0.01);
-            knobs[(size_t) i].setCurrentAndTargetValue (0.65f);
+            float v = 0.65f;
+            if (e != nullptr && e->paramNames[(size_t) i].isNotEmpty())
+            {
+                const float denom = e->paramMax[(size_t) i] - e->paramMin[(size_t) i];
+                v = std::abs (denom) > 1.0e-6f
+                    ? juce::jlimit (0.f, 1.f, (e->paramDefault[(size_t) i] - e->paramMin[(size_t) i]) / denom)
+                    : 0.f;
+            }
+            knobs[(size_t) i].setCurrentAndTargetValue (v);
             ptrs[(size_t) i] = &knobs[(size_t) i];
         }
         return ptrs;
@@ -194,7 +203,7 @@ private:
         if (! load (chain, e))
             return 0.f;
         std::array<juce::SmoothedValue<float>, Config::kNumUserParams> knobs {};
-        auto ptrs = knobPtrs (knobs);
+        auto ptrs = knobPtrs (knobs, &e);
         juce::AudioBuffer<float> main (2, 512);
         juce::AudioBuffer<float> sc (2, 512);
         double acc = 0.0;
@@ -233,7 +242,7 @@ private:
         if (! load (chain, e))
             return;
         std::array<juce::SmoothedValue<float>, Config::kNumUserParams> knobs {};
-        auto ptrs = knobPtrs (knobs);
+        auto ptrs = knobPtrs (knobs, &e);
         juce::AudioBuffer<float> buf (2, 512);
         for (int b = 0; b < 24; ++b)
         {
