@@ -44,8 +44,8 @@ public:
     void setHostRate(double hz) noexcept;
 
     /** Apply a new DSL formula.
-        Updates variable names/active flags, loads script into signalChain,
-        and sets previewSignalChain.  Does NOT register an undo action.
+        Loads preview then live; names/dslScript update only after both succeed.
+        Does NOT register an undo action.
         @returns true on success. */
     bool applyFormula(const juce::String& text, juce::String& error);
 

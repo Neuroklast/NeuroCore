@@ -108,6 +108,12 @@ bool ScriptManager::applyFormula(const juce::String& text, juce::String& error)
     if (! parser.parse(text, blocks, aliases, params, error))
         return false;
 
+    // Preview first so a compile failure cannot publish the audible graph.
+    // Do not hold processLock for compile/alloc — that forced lock-miss dropouts.
+    if (! previewSignalChain.loadScript (text, error)
+        || ! signalChain.loadScript (text, error))
+        return false;
+
     {
         const juce::SpinLock::ScopedLockType sl(variableLock);
         for (int i = 0; i < Config::kNumUserParams; ++i)
@@ -117,22 +123,10 @@ bool ScriptManager::applyFormula(const juce::String& text, juce::String& error)
             variableNames[(size_t) i] = it != aliases.end() ? it->second : key;
             parameterActive[(size_t) i].store (knobUsedInScript (text, key, variableNames[(size_t) i]));
         }
+        dslScript = text;
     }
-
-    // New graph is prepared on unused Block objects, then published with
-    // atomic_store. Audio keeps processing the previous shared_ptr. Do not
-    // hold processLock for compile/alloc — that forced lock-miss dropouts.
-    const bool ok = signalChain.loadScript(text, error) && previewSignalChain.loadScript(text, error);
-    if (ok)
-    {
-        {
-            const juce::SpinLock::ScopedLockType sl(variableLock);
-            dslScript = text;
-        }
-        LookupTables::prepareFromScript(text);
-        return true;
-    }
-    return false;
+    LookupTables::prepareFromScript(text);
+    return true;
 }
 
 float ScriptManager::evaluateFormula(float x)

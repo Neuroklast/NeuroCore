@@ -3,6 +3,7 @@
 #include "PresetIdentity.h"
 #include "../core/Config.h"
 #include "../core/PluginProcessor.h"
+#include "../dsl/DSLParser.h"
 #include "Log.h"
 #include <cstring>
 
@@ -256,6 +257,17 @@ bool PresetManager::loadPreset(const juce::File& file)
 
     if (stateData.empty())
         return false;
+
+    if (dscrScript.isNotEmpty())
+    {
+        dsl::DSLParser parser;
+        std::vector<dsl::BlockDesc> blocks;
+        dsl::AliasMap aliases;
+        std::vector<dsl::ParamDesc> params;
+        juce::String parseErr;
+        if (! parser.parse (dscrScript, blocks, aliases, params, parseErr))
+            return false;
+    }
 
     juce::MemoryBlock plain;
     if (!decrypt(stateData, plain))
