@@ -12,6 +12,7 @@ assert "skip signing" in script
 
 pkg = (root / "scripts/package_windows.ps1").read_text(encoding="utf-8")
 assert "sign_windows.ps1" in pkg
-assert "NEUROKORE_REQUIRE_SIGN" in pkg or "Invoke-Sign" in pkg
+assert 'NEUROKORE_REQUIRE_SIGN -eq "1"' in pkg
+assert "cannot sign" in pkg
 
 print("sign_windows fails closed when NEUROKORE_REQUIRE_SIGN is set: PASS")

@@ -13,8 +13,7 @@ cur = re.search(
 assert cur, "CurStepChanged missing"
 body = cur.group("body")
 assert "RemoveOldVersionedBundles" in body, body
-assert "WizardIsComponentSelected('vst3')" in body, body
-assert "ssInstall" in body, body
+assert "if (CurStep = ssInstall) and WizardIsComponentSelected('vst3') then" in body, body
 
 remove = re.search(
     r"procedure RemoveOldVersionedBundles;\s*(?:var.*?)\s*begin(?P<body>.*?)end;",

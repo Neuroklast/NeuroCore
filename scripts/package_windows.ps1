@@ -43,8 +43,15 @@ function Find-Iscc {
 }
 
 function Invoke-Sign([string]$path) {
-    if (Test-Path $sign) {
-        & $sign -Path $path
+    if (-not (Test-Path $sign)) {
+        if ($env:NEUROKORE_REQUIRE_SIGN -eq "1") {
+            throw "scripts/sign_windows.ps1 missing - cannot sign $path"
+        }
+        return
+    }
+    & $sign -Path $path
+    if ($LASTEXITCODE -ne 0) {
+        throw "sign_windows.ps1 failed ($LASTEXITCODE) for $path"
     }
 }
 
@@ -166,7 +173,7 @@ New-Item -ItemType Directory -Force -Path $docsStage | Out-Null
     "",
     "VST3 path",
     "  C:\Program Files\Common Files\VST3\NEUROKORE.vst3",
-    "  Rescan plug-ins in the DAW. Older NEUROKORE-<version>.vst3 folders are removed.",
+    "  Rescan plug-ins in the DAW. Installing VST3 also deletes leftover NEUROKORE-<version>.vst3 folders.",
     "",
     "Standalone",
     "  Start menu: Neuroklast\NEUROKORE",
