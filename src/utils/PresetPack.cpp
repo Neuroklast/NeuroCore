@@ -1023,9 +1023,9 @@ bool PresetPack::exportNrkpack (const std::vector<juce::File>& nrkFiles,
         manifest.artworkSha256 = PresetIdentity::fileSha256 (target);
         builder.addFile (target, 9, manifest.artwork);
     }
-    else
+    else if (manifest.artwork.isEmpty())
     {
-        manifest.artwork.clear();
+        // Preserve the pre-existing metadata-only artwork field for old callers.
         manifest.artworkSha256.clear();
     }
     const auto mf = tmp.getChildFile ("manifest.json");
