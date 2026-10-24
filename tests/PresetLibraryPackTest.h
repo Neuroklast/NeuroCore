@@ -322,6 +322,72 @@ public:
             juce::ignoreUnused (searched);
         }
 
+        beginTest ("builder exports metadata, ordered presets and verified cover artwork");
+        {
+            NeuroKoreAudioProcessor proc;
+            PresetManager mgr (proc);
+            juce::String err;
+            auto work = juce::File::getSpecialLocation (juce::File::tempDirectory)
+                            .getChildFile ("nk-pack-builder-" + juce::Uuid().toDashedString());
+            expect (work.createDirectory());
+            const auto first = work.getChildFile ("First.nrk");
+            const auto second = work.getChildFile ("Second.nrk");
+            expect (proc.setFormula ("stage1: y = x", err));
+            expect (mgr.savePreset (first, "First", "Studio"));
+            expect (proc.setFormula ("stage1: y = tanh(x)", err));
+            expect (mgr.savePreset (second, "Second", "Studio"));
+            const auto cover = work.getChildFile ("cover.png");
+            {
+                juce::Image image (juce::Image::ARGB, 8, 8, true);
+                juce::Graphics graphics (image);
+                graphics.fillAll (juce::Colours::darkgrey);
+                juce::PNGImageFormat png;
+                juce::FileOutputStream stream (cover);
+                expect (stream.openedOk());
+                expect (png.writeImageToStream (image, stream));
+                stream.flush();
+            }
+            PackManifest manifest;
+            manifest.id = "pack.neuroklast.industrial-essentials";
+            manifest.name = "Industrial Essentials";
+            manifest.author = "NEUROKLAST";
+            manifest.description = "Curated effects";
+            manifest.version = "1.2.0";
+            manifest.website = "https://neuroklast.net";
+            manifest.artworkSource = cover;
+            auto archive = work.getChildFile ("bundle.nrkpack");
+            expect (PresetPack::exportNrkpack ({ second, first }, archive, manifest, err), err);
+            auto preview = PresetPack::analyzeArchive (archive);
+            expect (preview.error.isEmpty(), preview.error);
+            expectEquals (preview.presetCount, 2);
+            expectEquals (preview.manifest.name, manifest.name);
+            expectEquals (preview.manifest.author, manifest.author);
+            expectEquals (preview.manifest.version, manifest.version);
+            expectEquals (preview.manifest.description, manifest.description);
+            expectEquals (preview.manifest.website, manifest.website);
+            expectEquals (preview.manifest.artwork, juce::String ("artwork/cover.png"));
+            expect (preview.manifest.artworkSha256.isNotEmpty());
+            expect (preview.manifest.presets.size() == 2);
+            PresetManager::Info firstInfo, secondInfo;
+            expect (PresetManager::readInfo (first, firstInfo));
+            expect (PresetManager::readInfo (second, secondInfo));
+            expectEquals (preview.manifest.presets[0].id, secondInfo.id);
+            expectEquals (preview.manifest.presets[1].id, firstInfo.id);
+            auto lib = work.getChildFile ("lib");
+            auto installed = PresetPack::installPreview (preview, lib);
+            expect (installed.ok, installed.error);
+            const auto coverInstalled = lib.getChildFile ("Packs")
+                                            .getChildFile (manifest.id)
+                                            .getChildFile ("artwork/cover.png");
+            expect (coverInstalled.existsAsFile());
+            expectEquals (PresetIdentity::fileSha256 (coverInstalled), preview.manifest.artworkSha256);
+            // A modified cover cannot pass the same integrity check.
+            expect (coverInstalled.replaceWithText ("tampered"));
+            auto tampered = PresetPack::analyzeDirectory (coverInstalled.getParentDirectory().getParentDirectory());
+            expect (tampered.error.containsIgnoreCase ("artwork"));
+            work.deleteRecursively();
+        }
+
         beginTest ("export with no .nrk files fails");
         {
             juce::String err;

@@ -16,6 +16,10 @@ Installer deletes leftover `NEUROKORE-*.vst3` only when the VST3 component is se
 
 `NeuroKoreTests --factory-report` applies all 363 factory presets on the live processor (48 kHz / 512, 56 blocks skip 32, sine+pink, no MIDI/SC). Snapshot `docs/presets/2026-10-24-factory-render.json`: 0 apply errors, 0 nonfinite. Probe floors match FactoryLoudness (0 quiet inserts). MIDI/SC still need a DAW ear pass. Python: `tests.test_factory_listening_prep`. Not a DAW or ear sign-off.
 
+## Preset Pack Builder (2026-10-24)
+
+`New Pack` now opens a full editor: user/installed-pack preset selection, ordered manifest entries, editable name/author/version/stable ID/description/HTTPS website, optional embedded PNG/JPEG artwork (5 MB cap) with JUCE-generated thumbnail, preview and verified export. The exporter re-opens the .nrkpack archive without installation, verifies hashes and metadata, and emits an explicit outcome. Factory presets require Save As. PackBuilder model regression and native pack cover round-trip/tamper contracts added. CI/native test results must be checked before marking verified.
+
 ## VST3 moduleinfo CID vs factory (2026-10-24)
 
 `moduleinfo.json` CID is Steinberg `UID::toString` (`ABCDEF019182FAEB…`), matching JUCE/pluginval uniqueId `18b17b0d`. Raw Windows TUID hex (`01EFCDAB…`) made pluginval scan then fail Open plugin. Factory TUIDs unchanged. Writer, CMake, and `package_windows.ps1` refuse `--endian` / `01EFCDAB…` on every build. pluginval 1.0.4 on the official 0.7.2-beta bundle after the full Windows package rebuild: strictness 5 SUCCESS (3 repeats) and strictness 10 SUCCESS (uniqueId `18b17b0d`, fuzz/thread-safety included). Vitest versionLock CID contract runs the writer into a temp file (Linux CI: `Resources/moduleinfo.json` is not `resources/moduleinfo.json`).

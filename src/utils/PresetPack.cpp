@@ -200,6 +200,21 @@ void collectCategories (const PackManifest& m, juce::StringArray& cats)
 
 bool validateExtracted (const juce::File& dir, const PackManifest& m, juce::String& error)
 {
+    if (m.artworkSha256.isNotEmpty())
+    {
+        if (! PresetPack::zipPathSafe (m.artwork) || ! m.artwork.startsWith ("artwork/"))
+        {
+            error = "Illegal artwork path";
+            return false;
+        }
+        const auto cover = dir.getChildFile (m.artwork);
+        if (! cover.existsAsFile() || cover.getSize() > 5ll * 1024 * 1024
+            || PresetIdentity::fileSha256 (cover) != m.artworkSha256)
+        {
+            error = "Pack artwork is missing or invalid";
+            return false;
+        }
+    }
     if (m.presets.empty())
     {
         juce::Array<juce::File> nrks;
@@ -390,6 +405,8 @@ bool PresetPack::parseManifestText (const juce::String& text, PackManifest& out,
         out.minimumPluginVersion = juce::String (j["minimumPluginVersion"].get<std::string>()).trim();
     if (j.contains ("artwork") && j["artwork"].is_string())
         out.artwork = juce::String (j["artwork"].get<std::string>()).trim();
+    if (j.contains ("artworkSha256") && j["artworkSha256"].is_string())
+        out.artworkSha256 = juce::String (j["artworkSha256"].get<std::string>()).trim();
     if (j.contains ("website") && j["website"].is_string())
         out.website = juce::String (j["website"].get<std::string>()).trim();
     if (j.contains ("presets") && j["presets"].is_array())
@@ -450,6 +467,8 @@ juce::String PresetPack::manifestToJson (const PackManifest& m)
         j["minimumPluginVersion"] = m.minimumPluginVersion.toStdString();
     if (m.artwork.isNotEmpty())
         j["artwork"] = m.artwork.toStdString();
+    if (m.artworkSha256.isNotEmpty())
+        j["artworkSha256"] = m.artworkSha256.toStdString();
     if (m.website.isNotEmpty())
         j["website"] = m.website.toStdString();
     json presets = json::array();
@@ -980,8 +999,42 @@ bool PresetPack::exportNrkpack (const std::vector<juce::File>& nrkFiles,
         tmp.deleteRecursively();
         return false;
     }
+    if (manifest.artworkSource.getFullPathName().isNotEmpty())
+    {
+        const auto source = manifest.artworkSource;
+        const auto extension = source.getFileExtension().toLowerCase();
+        if (! source.existsAsFile() || source.getSize() <= 0
+            || source.getSize() > 5ll * 1024 * 1024
+            || (extension != ".png" && extension != ".jpg" && extension != ".jpeg")
+            || ! juce::ImageFileFormat::loadFrom (source).isValid())
+        {
+            error = "Cover must be a valid PNG/JPEG under 5 MB";
+            tmp.deleteRecursively();
+            return false;
+        }
+        manifest.artwork = "artwork/cover" + extension;
+        const auto target = tmp.getChildFile (manifest.artwork);
+        if (! target.getParentDirectory().createDirectory() || ! source.copyFileTo (target))
+        {
+            error = "Could not stage cover artwork";
+            tmp.deleteRecursively();
+            return false;
+        }
+        manifest.artworkSha256 = PresetIdentity::fileSha256 (target);
+        builder.addFile (target, 9, manifest.artwork);
+    }
+    else if (manifest.artwork.isEmpty())
+    {
+        // Preserve the pre-existing metadata-only artwork field for old callers.
+        manifest.artworkSha256.clear();
+    }
     const auto mf = tmp.getChildFile ("manifest.json");
-    mf.replaceWithText (manifestToJson (manifest));
+    if (! mf.replaceWithText (manifestToJson (manifest)))
+    {
+        error = "Could not write pack manifest";
+        tmp.deleteRecursively();
+        return false;
+    }
     builder.addFile (mf, 9, "manifest.json");
 
     auto outFile = dest;

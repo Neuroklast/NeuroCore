@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
-import { getNativeFunction, hasJuceBridge, onNativeEvent } from "../bridge/juce";
+import { getNativeFunction, onNativeEvent } from "../bridge/juce";
 import { presetAction, requestPresetAction } from "../presets/presetActions";
 import { analyzeImport, installImport, libraryAction, type PackPreview } from "../presets/presetLibrary";
 import { migrateStarKeys, rowKey, starKey } from "../presets/presetIdentity";
@@ -33,6 +33,7 @@ import {
   type ExplorerRow,
 } from "./explorerModel";
 import { explorerKeyFlags, explorerKeyIntent, explorerKeyZone } from "./explorerKey";
+import { PackBuilder } from "./PackBuilder";
 
 export function PresetExplorer() {
   const presets = useHostStore((s) => s.presets);
@@ -296,6 +297,9 @@ export function PresetExplorer() {
           </button>
         ))}
       </div>
+      {view === "builder" ? (
+        <PackBuilder rows={presets} selected={picked} onSelected={setPicked} onBack={() => setView("browse")} />
+      ) : (
       <div className="nk-preset-body">
         <aside className="nk-preset-folders">
           <div className="nk-archive-label mb-1 shrink-0">LIBRARY</div>
@@ -540,6 +544,7 @@ export function PresetExplorer() {
           </button>
         </aside>
       </div>
+      )}
       {saveOpen ? (
         <div className="flex shrink-0 flex-wrap items-center gap-2 border border-panel p-2">
           <input
@@ -622,25 +627,6 @@ export function PresetExplorer() {
             </div>
           ))}
           <button type="button" className="nk-clip" onClick={() => void libraryAction({ action: "rescan" })}>Rescan Library</button>
-          <button type="button" className="nk-clip" onClick={() => setView("browse")}>Back</button>
-        </div>
-      ) : null}
-      {view === "builder" ? (
-        <div className="flex shrink-0 flex-col gap-2 border border-panel p-2 text-[12px]">
-          <div className="nk-archive-label">PACK BUILDER</div>
-          <div className="text-muted">{picked.length} selected. Ctrl-click rows, then export.</div>
-          <button
-            type="button"
-            className="nk-clip on"
-            disabled={picked.length === 0 || ! hasJuceBridge()}
-            onClick={() => void getNativeFunction("pickFile")({
-              kind: "exportPack",
-              presetIds: picked,
-              name: "My Pack",
-            })}
-          >
-            Export Pack
-          </button>
           <button type="button" className="nk-clip" onClick={() => setView("browse")}>Back</button>
         </div>
       ) : null}
