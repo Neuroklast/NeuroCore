@@ -72,6 +72,35 @@ public:
             expectWithinAbsoluteError (p->getValue(), 0.0f, 0.001f);
         }
 
+        beginTest ("mapped CC processBlock does not allocate");
+        {
+            NeuroKoreAudioProcessor proc;
+            proc.setPlayConfigDetails (2, 2, 48000.0, 32);
+            proc.prepareToPlay (48000.0, 32);
+            proc.midiLearnManager.startLearning (EffectParameters::paramA);
+            juce::MidiBuffer learn;
+            learn.addEvent (juce::MidiMessage::controllerEvent (1, 11, 64), 0);
+            juce::AudioBuffer<float> buf (2, 32);
+            buf.clear();
+            proc.processBlock (buf, learn);
+            proc.midiLearnManager.drainLearnEvents();
+            expectEquals (proc.midiLearnManager.getMappedCC (EffectParameters::paramA), 11);
+
+            juce::MidiBuffer midi;
+            midi.addEvent (juce::MidiMessage::controllerEvent (1, 11, 127), 0);
+            buf.clear();
+           #if NK_ALLOCATION_PROBE
+            nkBeginAllocationProbe();
+           #endif
+            proc.processBlock (buf, midi);
+           #if NK_ALLOCATION_PROBE
+            expectEquals ((int) nkEndAllocationProbe(), 0);
+           #endif
+            auto* p = proc.apvts.getParameter (EffectParameters::paramA);
+            expect (p != nullptr);
+            expectWithinAbsoluteError (p->getValue(), 1.0f, 0.001f);
+        }
+
         beginTest ("mapping editor on another thread does not lock the audio path");
         {
             NeuroKoreAudioProcessor proc;

@@ -1210,25 +1210,7 @@ bool ExpressionEvaluator::bindCompiledUnlocked (std::function<float(const float*
 {
     varsCopy = variables;
     func = compiled;
-    xIndex = invalidIndex;
-    auto it = varIndices.find("x");
-    if (it != varIndices.end())
-        xIndex = it->second;
-    return static_cast<bool>(func);
-}
-
-bool ExpressionEvaluator::captureSimdState(std::function<juce::dsp::SIMDRegister<float>(const juce::dsp::SIMDRegister<float>*)>& func,
-                                           SimdVarArray& varsCopy,
-                                           size_t& xIndex) const noexcept
-{
-    const juce::SpinLock::ScopedLockType sl(lock);
-    func = compiledSimd;
-    for (size_t i = 0; i < MaxVariables; ++i)
-        varsCopy[i] = juce::dsp::SIMDRegister<float>(variables[i]);
-    xIndex = invalidIndex;
-    auto it = varIndices.find("x");
-    if (it != varIndices.end())
-        xIndex = it->second;
+    xIndex = cachedXIndex;
     return static_cast<bool>(func);
 }
 

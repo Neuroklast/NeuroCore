@@ -266,9 +266,6 @@ private:
     static std::string nodeKey(const Node* node);
     static NodePtr eliminateCSE(NodePtr node, std::unordered_map<std::string, NodePtr>& cache);
     bool captureScalarState(std::function<float(const float*)>& func, VarArray& varsCopy, size_t& xIndex) const noexcept;
-    bool captureSimdState(std::function<juce::dsp::SIMDRegister<float>(const juce::dsp::SIMDRegister<float>*)>& func,
-                          SimdVarArray& varsCopy,
-                          size_t& xIndex) const noexcept;
 
     // Parsing helpers
     class Lexer;
@@ -331,14 +328,13 @@ inline void ExpressionEvaluator::evaluateBlockSimdT(float* samples, size_t numSa
     if (numSamples == 0)
         return;
 
-    std::function<juce::dsp::SIMDRegister<float>(const juce::dsp::SIMDRegister<float>*)> func;
-    SimdVarArray varsCopy{};
-    size_t xIndex = invalidIndex;
-    if (!captureSimdState(func, varsCopy, xIndex))
+    if (! compiledSimd)
         return;
-
-    evaluateBlockSimdUnsafe(samples, numSamples, func, varsCopy, xIndex,
-                            std::forward<PreFn>(pre), std::forward<PostFn>(post));
+    SimdVarArray varsCopy{};
+    for (size_t i = 0; i < MaxVariables; ++i)
+        varsCopy[i] = juce::dsp::SIMDRegister<float> (variables[i]);
+    evaluateBlockSimdUnsafe (samples, numSamples, compiledSimd, varsCopy, cachedXIndex,
+                             std::forward<PreFn> (pre), std::forward<PostFn> (post));
 }
 
 template<typename PreFn, typename PostFn>

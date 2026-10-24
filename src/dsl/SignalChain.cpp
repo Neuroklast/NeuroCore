@@ -3406,9 +3406,10 @@ void SignalChain::processBlockSmoothed(juce::AudioBuffer<float>& buffer,
                         env->renderModBlock (l, r, nWork);
                     if (! env->modLane.empty())
                     {
-                        writeNodeTapLane (env->tapSlot, env->modLane.data(), (int) env->modLane.size());
-                        if (env->destSlot != nullptr)
-                            *env->destSlot = env->modLane.back();
+                        const int filled = juce::jmin (nWork, (int) env->modLane.size());
+                        writeNodeTapLane (env->tapSlot, env->modLane.data(), filled);
+                        if (env->destSlot != nullptr && filled > 0)
+                            *env->destSlot = env->modLane[(size_t) filled - 1];
                     }
                     continue;
                 }
@@ -3947,9 +3948,7 @@ void SignalChain::Osc::prepare(const juce::dsp::ProcessSpec& spec)
     sampleRate = static_cast<float>(spec.sampleRate);
     osc.prepare({spec.sampleRate, spec.maximumBlockSize, 1});
     last.assign(spec.numChannels, 0.0f);
-    const size_t laneN = (size_t) juce::jmax (spec.maximumBlockSize, (juce::uint32) 64) * 8;
-    if (modLane.capacity() < laneN)
-        modLane.reserve (laneN);
+    reserveControlLane (spec);
     if (varPtr != nullptr && name.isNotEmpty())
         destSlot = &(*varPtr)[name];
     lastSetFreq = -1.f;
@@ -4239,11 +4238,12 @@ void SignalChain::Osc::renderModBlock (int numSamples) noexcept
     else if (fixedHz > 0.f)
         applyOscFrequency (fixedHz);
 
-    if ((int) modLane.size() < numSamples)
-        modLane.resize ((size_t) numSamples);
+    const int n = juce::jmin (numSamples, (int) modLane.size());
+    if (n <= 0)
+        return;
 
     float lastV = 0.0f;
-    for (int i = 0; i < numSamples; ++i)
+    for (int i = 0; i < n; ++i)
     {
         auto v = osc.processSample (0.0f) * depth;
         if (! std::isfinite (v))
@@ -4690,9 +4690,7 @@ void SignalChain::Env::prepare(const juce::dsp::ProcessSpec& spec)
 {
     sampleRate = spec.sampleRate;
     value.assign(spec.numChannels, 0.0f);
-    const size_t laneN = (size_t) juce::jmax (spec.maximumBlockSize, (juce::uint32) 64) * 8;
-    if (modLane.capacity() < laneN)
-        modLane.reserve (laneN);
+    reserveControlLane (spec);
     if (varPtr != nullptr && name.isNotEmpty())
         destSlot = &(*varPtr)[name];
     prevMidiGate = 0.0f;
@@ -4824,10 +4822,11 @@ void SignalChain::Env::renderModBlock (const float* left, const float* right, in
     if (numSamples <= 0)
         return;
 
-    if ((int) modLane.size() < numSamples)
-        modLane.resize ((size_t) numSamples);
+    const int n = juce::jmin (numSamples, (int) modLane.size());
+    if (n <= 0)
+        return;
 
-    for (int i = 0; i < numSamples; ++i)
+    for (int i = 0; i < n; ++i)
     {
         // Stereo sidechain: follow louder channel (was: L-only — right-only/MS wrong)
         const bool available = availableSamples < 0 || i < availableSamples;
