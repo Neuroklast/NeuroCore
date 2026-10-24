@@ -2,11 +2,15 @@
 
 **Stand:** 2026-10-24 (0.7.2-beta)
 **Version:** 0.7.2-beta  
-**Branch:** `fix/pack-interrupted-install-restore`
+**Branch:** `feat/dsp-host-callback-baseline`
 
 ## VST3 moduleinfo CID vs factory (2026-10-24)
 
 `moduleinfo.json` CID is Steinberg `UID::toString` (`ABCDEF019182FAEB…`), matching JUCE/pluginval uniqueId `18b17b0d`. Raw Windows TUID hex (`01EFCDAB…`) made pluginval scan then fail Open plugin. Factory TUIDs unchanged. Writer, CMake, and `package_windows.ps1` refuse `--endian` / `01EFCDAB…` on every build. pluginval 1.0.4 on the official 0.7.2-beta bundle after the full Windows package rebuild: strictness 5 SUCCESS (3 repeats) and strictness 10 SUCCESS (uniqueId `18b17b0d`, fuzz/thread-safety included). Vitest versionLock CID contract runs the writer into a temp file (Linux CI: `Resources/moduleinfo.json` is not `resources/moduleinfo.json`).
+
+## DSP host-callback baseline (2026-10-24)
+
+`NeuroKoreTests --bench-host` measures 1/4 instances, 48/96 kHz, 32/64/256, 1×/8× OS on one `tanh` stage. i7-14700KF Release: heaviest row 4×96 kHz/64/8× p99 56 % of that callback, 0 nonfinite. Dense SignalChain `--bench-dense` 200 serial @ 8× is 308 % of a 48 kHz/256 budget (graph cost, not one stage). Numbers in `docs/performance/DSP_BASELINE.md`. Not a DAW meter. UI nkperf sheet still empty.
 
 ## Pack interrupt recover and restore-while-playing (2026-10-24)
 
