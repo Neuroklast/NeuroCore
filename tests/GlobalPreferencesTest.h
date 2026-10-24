@@ -56,5 +56,18 @@ public:
         prefs.setPolisherIndex (oldPolish);
         prefs.setThemeId (oldTheme);
         prefs.setFrameRate (oldFps);
+
+        beginTest ("editor size floor is Config min for save and restore");
+        {
+            const int oldW = prefs.editorWidth();
+            const int oldH = prefs.editorHeight();
+            prefs.setEditorSize (800, 538);
+            expectEquals (prefs.editorWidth(), Config::kUiMinWindowWidth);
+            expectEquals (prefs.editorHeight(), Config::kUiMinWindowHeight);
+            const int aspectH = juce::jmax (1,
+                (int) std::lround ((double) Config::kUiMinWindowWidth / Config::kUiAspectRatio));
+            expectEquals (aspectH, Config::kUiMinWindowHeight);
+            prefs.setEditorSize (oldW, oldH);
+        }
     }
 };
