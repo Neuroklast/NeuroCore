@@ -2,8 +2,10 @@
 
 #include <JuceHeader.h>
 #include <atomic>
+#include <algorithm>
 #include <cmath>
 #include <memory>
+#include <vector>
 
 /** Standalone-only transport. Its clock and optional audition source run on the
     audio callback, never a GUI timer. Commands are atomic and allocation-free
@@ -41,6 +43,12 @@ public:
             error = "Choose a supported mono/stereo audio file (up to 12 million samples and 96 MB decoded).";
             return false;
         }
+        // Reclaim retired buffers on the message thread, only after the audio
+        // callback has fully passed the replacement boundary.
+        const auto epoch = blocksCompleted.load (std::memory_order_acquire);
+        retiredClips.erase (std::remove_if (retiredClips.begin(), retiredClips.end(),
+            [epoch] (const RetiredClip& old) { return epoch >= old.retiredAt + 2; }),
+            retiredClips.end());
         auto decoded = std::make_shared<AudioClip>();
         decoded->sampleRate = reader->sampleRate;
         decoded->data.setSize ((int) reader->numChannels, (int) reader->lengthInSamples);
@@ -53,7 +61,7 @@ public:
         // Retain the old clip on the message thread until a later safe collection;
         // don't run a potentially expensive buffer destructor in the audio callback.
         if (auto old = std::atomic_load (&clip))
-            retiredClips.push_back (std::move (old));
+            retiredClips.push_back ({ std::move (old), blocksCompleted.load (std::memory_order_acquire) });
         std::atomic_store (&clip, published);
         fileName = file.getFileName();
         fileGeneration.fetch_add (1, std::memory_order_release);
@@ -138,6 +146,7 @@ public:
             ppq += (double) count * safeBpm / (60.0 * sampleRate);
         }
         displayedPpq.store (ppq, std::memory_order_release);
+        blocksCompleted.fetch_add (1, std::memory_order_release);
         return start;
     }
 
@@ -145,7 +154,9 @@ private:
     struct AudioClip { juce::AudioBuffer<float> data; double sampleRate { 48000.0 }; };
     std::shared_ptr<const AudioClip> clip;
     // Retired clips are never destroyed on the callback. Reclaimed on shutdown.
-    std::vector<std::shared_ptr<const AudioClip>> retiredClips;
+    struct RetiredClip { std::shared_ptr<const AudioClip> clip; uint64_t retiredAt; };
+    std::vector<RetiredClip> retiredClips;
+    std::atomic<uint64_t> blocksCompleted { 0 };
     juce::String fileName;
     std::atomic<int> requestedCommand { 0 };
     std::atomic<int> sourceMode { (int) Source::Input };
