@@ -895,14 +895,18 @@ void NeuroKoreAudioProcessor::uiSettingsChanged()
         cpuProtect.reset();
         if (getSampleRate() > 0.0)
         {
-            const juce::ScopedLock pl (scriptManager.getProcessLock());
-            dspEngine.setLiveMode (enabled);
-            updateProcessingSpec (getSampleRate(), juce::jmax (1, getBlockSize()));
+            osOutGainTarget.store (0.f, std::memory_order_release);
+            {
+                const juce::ScopedLock pl (scriptManager.getProcessLock());
+                dspEngine.setLiveMode (enabled);
+                updateProcessingSpec (getSampleRate(), juce::jmax (1, getBlockSize()), false);
+                osOutGain.store (0.f, std::memory_order_relaxed);
+            }
+            osOutGainTarget.store (1.f, std::memory_order_release);
         }
         else
         {
             dspEngine.setLiveMode (enabled);
-            triggerAsyncUpdate();
         }
     }
     applySharedProcessingPrefs();
@@ -1309,7 +1313,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout NeuroKoreAudioProcessor::cre
     return { params.begin(), params.end() };
 }
 
-void NeuroKoreAudioProcessor::updateProcessingSpec (double sampleRate, int blockSize)
+void NeuroKoreAudioProcessor::updateProcessingSpec (double sampleRate, int blockSize, bool forceDslPrepare)
 {
     if (sampleRate <= 0.0)
     {
@@ -1344,7 +1348,12 @@ void NeuroKoreAudioProcessor::updateProcessingSpec (double sampleRate, int block
                                      static_cast<juce::uint32>(blockSize * (int)osFactor),
                                      static_cast<juce::uint32>(channels) };
     scriptManager.setHostRate(sampleRate);
-    scriptManager.prepare(dslSpec);
+    const bool dslSpecChanged = lastDslSpec.sampleRate != dslSpec.sampleRate
+        || lastDslSpec.maximumBlockSize != dslSpec.maximumBlockSize
+        || lastDslSpec.numChannels != dslSpec.numChannels;
+    if (forceDslPrepare || dslSpecChanged)
+        scriptManager.prepare (dslSpec);
+    lastDslSpec = dslSpec;
     refreshReportedLatency();
 
     // Same host ceiling as the OS bank — ASIO Guard can exceed samplesPerBlock.
@@ -1368,7 +1377,8 @@ void NeuroKoreAudioProcessor::handleAsyncUpdate()
     }
     {
         const juce::ScopedLock pl (scriptManager.getProcessLock());
-        updateProcessingSpec (getSampleRate(), getBlockSize());
+        dspEngine.setLiveMode (UiSettings::get().liveMode());
+        updateProcessingSpec (getSampleRate(), getBlockSize(), false);
         cpuProtect.reset();
         osOutGain.store (0.f, std::memory_order_relaxed);
     }

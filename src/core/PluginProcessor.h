@@ -377,7 +377,8 @@ private:
 
     bool installIr (const juce::String& slot, juce::AudioFormatReader& reader,
                     const juce::String& displayName, juce::String& error);
-    void updateProcessingSpec (double sampleRate, int blockSize);
+    void updateProcessingSpec (double sampleRate, int blockSize, bool forceDslPrepare = true);
+    juce::dsp::ProcessSpec lastDslSpec {};
     void handleAsyncUpdate() override;
     void applySharedProcessingPrefs();
 

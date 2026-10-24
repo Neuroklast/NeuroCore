@@ -8,6 +8,10 @@
 
 Drag, persist and restore use `Config::kUiMinWindowWidth/Height` (1100×739). The editor no longer allows a 800 px floor that save/restore then discarded. Native: GlobalPreferences contract.
 
+## Oversampling switch state (2026-10-24)
+
+`DspEngine::prepare` seeds `wetValue` from APVTS mix (and demo cap), so Mix 0 stays dry across re-prepare. Live/Studio no longer calls `ScriptManager::prepare` when the OS-domain spec is unchanged, so delay/reverb rings survive. The switch still rebuilds OS/sanitation and fades `osOutGain` in. Factor changes still prepare DSL. Native: CrackleFixes + ArchitectureHardening + DemoMix + HostSnapshot 16064 passed / 0 failed.
+
 ## Audio-thread realtime (2026-10-24)
 
 MIDI-learned CCs call `setValue` on the callback, not `setValueNotifyingHost` (no APVTS CriticalSection). Independent `stage` SIMD no longer takes `ExpressionEvaluator::lock` or copies `std::function`. Osc/Env size the control lane in `prepare` and never `resize` in render; Env taps/publish use the filled count, not `modLane.back()`. Native: ArchitectureHardening + MidiLearn + FxRuntimeTest 500 passed / 0 failed.
