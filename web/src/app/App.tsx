@@ -11,6 +11,7 @@ import { BindCables, BindDragGhost } from "../assemble/BindCables";
 import { Footer, Hud, Knobs, MixOs, Toolbar, WorkspaceTabs } from "../chrome/Chrome";
 import { TooltipLayer } from "../chrome/TooltipLayer";
 import { browserShortcutStopsPropagation, canForwardHostKey, circuitHasOverlay, circuitHasSelection, shouldBlockBrowserShortcut, shouldBlockNativeContextMenu, shouldBlockWheelZoom, shouldForwardToHost } from "../chrome/shortcuts";
+import { StandaloneTransportBar } from "../chrome/StandaloneTransportBar";
 import { isRedoKey, isUndoKey, undoTargetIsText } from "../chrome/undoModel";
 import { redoCircuit, undoCircuit } from "../assemble/addBlock";
 import { Overlays } from "../overlays/Overlays";
@@ -133,6 +134,18 @@ export function App() {
         circuitHasSelection: circuitHasSelection(),
         overlayOpen: useHostStore.getState().overlay != null || circuitHasOverlay(),
       };
+      // The standalone application owns Space. VST3/AU must continue forwarding
+      // it to the DAW. Never intercept typing in text fields or active overlays.
+      if (useHostStore.getState().standalone && !hostCtx.textTarget && !hostCtx.overlayOpen
+          && !e.repeat && !e.ctrlKey && !e.altKey && !e.metaKey && !e.shiftKey
+          && (e.code === "Space" || e.key === " " || e.key === "Spacebar")) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (hasJuceBridge()) {
+          void getNativeFunction("standaloneTransport")({ action: "toggle" }).catch(() => undefined);
+        }
+        return;
+      }
       if (shouldForwardToHost(e, hostCtx)) {
         // Only swallow keys native can map — otherwise plugin and Cubase both lose them.
         if (! canForwardHostKey(e))
@@ -206,6 +219,7 @@ export function App() {
     <main data-ws={workspace} className="nk-os relative flex h-[860px] w-[1280px] flex-col overflow-hidden font-mono text-ink">
       <Hud />
       <Toolbar />
+      <StandaloneTransportBar />
       <WorkspaceTabs workspace={workspace} setWorkspace={changeWorkspace} />
         <div className="nk-bind-host nk-chrome-x relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         <div ref={frameRef} className="nk-frame relative min-h-0 flex-1 overflow-hidden border border-[var(--nk-line)]">
