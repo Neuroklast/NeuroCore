@@ -14,6 +14,7 @@ export function PackBuilder({ rows, selected, onSelected, onBack }: Props) {
     website: "", id: "", artworkSource: "",
   });
   const [idEdited, setIdEdited] = useState(false);
+  const [coverPreview, setCoverPreview] = useState("");
   const [search, setSearch] = useState("");
   const [showPreview, setShowPreview] = useState(false);
   const [message, setMessage] = useState("");
@@ -36,9 +37,10 @@ export function PackBuilder({ rows, selected, onSelected, onBack }: Props) {
   };
 
   useEffect(() => onNativeEvent("packArtworkSelected", (payload) => {
-    const rec = (payload || {}) as { ok?: boolean; path?: string; error?: string };
+    const rec = (payload || {}) as { ok?: boolean; path?: string; error?: string; preview?: string };
     if (rec.ok && rec.path) {
       setDraft((prev) => ({ ...prev, artworkSource: rec.path! }));
+      setCoverPreview(rec.preview || "");
       setMessage("Cover selected; it will be included in the pack.");
     } else if (rec.error) setMessage(rec.error);
   }), []);
@@ -107,9 +109,11 @@ export function PackBuilder({ rows, selected, onSelected, onBack }: Props) {
                 Choose cover
               </button>
               {draft.artworkSource && <button type="button" className="nk-clip"
-                onClick={() => patch({ artworkSource: "" })}>Remove</button>}
+                onClick={() => { patch({ artworkSource: "" }); setCoverPreview(""); }}>Remove</button>}
               <span className="text-muted break-all">{coverName}</span>
             </div>
+            {coverPreview && <img src={coverPreview} alt="Selected pack cover" width={144} height={144}
+              style={{ objectFit: "contain", border: "1px solid var(--nk-line)" }}/>}
           </div>
         </div>
         <div className="flex flex-col gap-3" style={panelStyle}>
@@ -169,7 +173,9 @@ export function PackBuilder({ rows, selected, onSelected, onBack }: Props) {
           <div className="text-[16px] font-semibold">{draft.name || "Untitled Pack"}</div>
           <p className="text-muted">by {draft.author || "Unknown"} · v{draft.version} · {included.length} presets</p>
           <p className="mt-1">{draft.description || "No description"}</p>
-          {draft.artworkSource && <p className="text-muted mt-1">Artwork: {coverName}</p>}
+          {draft.artworkSource && <div className="flex items-center gap-3 mt-2">
+            {coverPreview && <img src={coverPreview} alt="Pack cover preview" width={96} height={96} style={{ objectFit: "contain" }}/>}<span className="text-muted">{coverName}</span>
+          </div>}
           {draft.website && <p className="text-muted mt-1">{draft.website}</p>}
           <ol className="mt-2 list-decimal pl-5">{included.map((row) =>
             <li key={rowKey(row)}>{row.name}</li>)}</ol>
