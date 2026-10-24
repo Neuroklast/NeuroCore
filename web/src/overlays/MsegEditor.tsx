@@ -84,7 +84,7 @@ export function MsegEditor({nodeId,args}:{nodeId:string;args:Record<string,strin
     </svg>
     <div className="flex flex-wrap items-center gap-2">
       <label>Segment curve <input aria-label="Segment curve" type="number" min={-8} max={8} step={0.25}
-        className="w-20 min-h-[28px] bg-black/60" value={points[selected]?.curve??0}
+        className="w-20 min-h-[28px] border border-[var(--nk-line)] bg-[var(--nk-well)] px-2 text-[var(--nk-ink)] font-mono tabular-nums focus:border-[var(--nk-accent)]" value={points[selected]?.curve??0}
         onChange={e=>{
           if(!Number.isFinite(e.currentTarget.valueAsNumber))return;
           const p=current.current[selected]!;
