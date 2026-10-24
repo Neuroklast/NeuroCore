@@ -65,7 +65,7 @@ Obere Leiste
 - Stages: Blöcke der aktuellen Formel und welche Regler sie nutzen. IR-Block öffnet den Cab-Slot.
 - Settings: Motion, Studio / Live, Scale 100/125/150, Theme, Frame rate 30/60, Circuit-Kabel, Tempo, unsaved prompt, Standalone-Audio, About / License / Help. Keine Formelgröße. Fenster per Rahmen ziehen.
 - LIVE / STUDIO: Live = min-phase Oversampling (kaum Latenz). Studio = linear-phase. Gleicher Schalter in Settings. Gilt für jedes Insert auf diesem Rechner.
-- Bypass: Mix auf 0, Slider gesperrt. Bypass aus: alter Mix kommt zurück.
+- DRY: Mix vorübergehend auf 0 %, Slider gesperrt. DRY aus: alter Mix kommt zurück. Das ist kein vollständiger Host-Bypass.
 - Help: englische In-Plugin-Hilfe (ohne Install). Diese Datei ist die deutsche Bedienhilfe.
 
 Kein License-Knopf in der Kopfzeile. Settings → License.
@@ -83,7 +83,7 @@ Regler
 Tools-Zeile (Circuit und Terminal)
 - L / BOTH / R, Oversampling 1× / 2× / 4× / 8× (Default 4×), Soft Clip Aus / An, Mix.
 - OS, Soft Clip und Unit-Meter (Rechtsklick aufs Plot) gelten für jedes Insert und bleiben in AppData. Mix, Regler und Formel bleiben am Insert.
-- Mix-Glitch nur im Slider. Bei Bypass gesperrt.
+- Mix-Glitch nur im Slider. Bei DRY gesperrt.
 
 Fußzeile
 - MODE (STUDIO / LIVE / SAFE), CPU 0–100, LAT, SR, BUF, BPM HOST oder USER, OS.
@@ -319,7 +319,7 @@ Gute Gewohnheiten
 - Nach hardclip, fold oder bitcrush ein Lowpass um 6–12 kHz, sonst wird es spröde.
 - softclip und tube sind meist weicher als hardclip für Amp-Grit.
 - Noten-Knobs [1/1, 1/16]: Delay-Zeit in Millisekunden. Am Oszillator (freq oder sync) ein Zyklus pro Note.
-- Mix 0 % ist voll dry. Bypass merkt Mix und sperrt den Slider.
+- Mix 0 % ist voll dry. DRY merkt sich den Mix-Wert und sperrt den Slider.
 
 ---
 
@@ -339,7 +339,7 @@ Hart digital
 - Oversampling auf 4× oder 8×. Lowpass nach Clip oder Fold.
 
 A/B
-- Bypass ist dry, Mix-Wert bleibt. Mix erst wieder beweglich, wenn Bypass aus ist.
+- DRY schaltet auf trocken, der ursprüngliche Mix-Wert bleibt gespeichert. Mix ist erst wieder beweglich, wenn DRY aus ist.
 
 MIDI
 - Rechtsklick auf einen Knob → MIDI Learn. Controller bewegen.
@@ -362,13 +362,13 @@ Animation
 ## 9. Troubleshooting
 
 Kein Sound
-    Mix auf 0? Bypass an? Rote Fehlzeile unter dem Editor? Input auf dem leeren Kanal? BOTH und Mix anheben.
+    Mix auf 0? DRY an? Rote Fehlzeile unter dem Editor? Input auf dem leeren Kanal? BOTH und Mix anheben.
 
 Knackser / Klicks
     Feedback zu hoch. Feedback-Knob runter. Lowpass nach hardclip. Ein kurzer Klick beim OS-Wechsel ist Fade-in; er darf nicht weiterlaufen.
 
 Hänger / SAFE in der Fußzeile
-    Die Formel hat den Audiobuffer kurz überzogen. Wet pausiert, versucht allein neu. OS senken, wenn SAFE wiederkommt. BYPASS bleibt immer dry.
+    Die Formel hat den Audiobuffer kurz überzogen. Wet pausiert, versucht allein neu. OS senken, wenn SAFE wiederkommt. DRY bleibt immer trocken.
 
 Host sagt, das Plugin sei instabil
     Projekt speichern, Plugin neu laden. Keine riesige Delay-Formel umschreiben, während aufgenommen wird.
@@ -527,7 +527,7 @@ Ziel: Echos setzen sich, wenn du spielst, und kommen in den Lücken hoch.
 
 1. Rhythmic Gate Delay laden, oder Dry-Main plus Echo-Bus.
 2. Time ist die Lücke. Duck ist, wie hart der Input die Repeats versteckt.
-3. Mix bewegt nur das Echo. Dry bleibt. Bypass sperrt Mix weiter.
+3. Mix bewegt nur das Echo. Dry bleibt. DRY sperrt Mix weiter.
 
 ---
 

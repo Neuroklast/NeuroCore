@@ -113,7 +113,7 @@ export function Toolbar() {
             type="button"
             className={`${headerClipClass("bypass")} ${bypassed ? "on" : ""}`}
             aria-pressed={bypassed}
-            data-tip="Dry-only monitoring: mix to 0%. Processing remains active." aria-label="Toggle dry-only monitoring"
+            data-tip="Dry-only monitoring: mix to 0%. This is not host/plugin bypass." aria-label="Toggle dry-only monitoring"
             onClick={() => {
               const value = useHostStore.getState().toggleBypass();
               if (hasJuceBridge()) {
