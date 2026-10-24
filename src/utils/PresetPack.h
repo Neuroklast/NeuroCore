@@ -24,6 +24,8 @@ struct PackManifest
     juce::String description;
     juce::String minimumPluginVersion;
     juce::String artwork;
+    juce::String artworkSha256;
+    juce::File artworkSource; // Export-only local cover; never serialized.
     juce::String website;
     std::vector<PackPresetRef> presets;
     bool legacy { false };
