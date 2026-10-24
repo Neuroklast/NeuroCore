@@ -365,7 +365,10 @@ bool NeuroKoreAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts
         return false;
 
    #if ! JucePlugin_IsSynth
-    if (layouts.getMainOutputChannelSet() != layouts.getMainInputChannelSet())
+    // The standalone app may have output-only audio hardware. It can still
+    // process a loaded audition file or its explicitly selected test tone.
+    if (layouts.getMainOutputChannelSet() != layouts.getMainInputChannelSet()
+        && ! (isStandalone() && layouts.getMainInputChannelSet().isDisabled()))
         return false;
    #endif
 
