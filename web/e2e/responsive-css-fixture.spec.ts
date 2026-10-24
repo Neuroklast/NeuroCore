@@ -5,9 +5,14 @@ import { test, expect } from "@playwright/test";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const cssDir = path.resolve(here, "../dist/assets");
-const cssName = readdirSync(cssDir).find((name) => name.endsWith(".css"));
-if (!cssName) throw new Error("Run npm run build before the CSS fixture test.");
-const productionCss = readFileSync(path.join(cssDir, cssName), "utf8");
+// Vite can emit several stylesheets (including Monaco's editor CSS).
+// Selecting the first filename silently tests without any NEUROKORE rules.
+const productionCss = readdirSync(cssDir)
+  .filter((name) => name.endsWith(".css"))
+  .map((name) => readFileSync(path.join(cssDir, name), "utf8"))
+  .find((source) => source.includes(".nk-preset-cluster") &&
+    source.includes(".nk-scale-stage") && source.includes(".nk-face-diag"));
+if (!productionCss) throw new Error("NEUROKORE production stylesheet missing; run npm run build.");
 
 /* Minimal DOM/CSS rendering, deliberately without the expensive live BallGl
  * visualizer. Confirms production CSS geometry rather than source text alone.
