@@ -104,6 +104,23 @@ $modSrc = Join-Path $srcBundle "Contents\Resources\moduleinfo.json"
 if (-not (Test-Path $modSrc)) {
     throw "VST3 moduleinfo.json missing at $modSrc - Cubase scan needs Contents/Resources, not a sibling resources folder."
 }
+$modJson = Get-Content -Raw $modSrc | ConvertFrom-Json
+$wantCids = @(
+    "ABCDEF019182FAEB4E524B4C4E524B4F",
+    "ABCDEF011234ABCD4E524B4C4E524B4F",
+    "ABCDEF01C0DEF00D4E524B4C4E524B4F"
+)
+$gotCids = @($modJson.Classes | ForEach-Object { $_.CID })
+foreach ($cid in $wantCids) {
+    if ($gotCids -notcontains $cid) {
+        throw "VST3 moduleinfo CID missing Steinberg UID::toString $cid (got $($gotCids -join ',')). Windows TUID hex 01EFCDAB... is not valid."
+    }
+}
+foreach ($cid in $gotCids) {
+    if ($cid -like "01EFCDAB*") {
+        throw "VST3 moduleinfo CID is Windows TUID hex $cid - JUCE hosts will not match the factory."
+    }
+}
 $stageMod = Join-Path $stageBundle "Contents\Resources"
 New-Item -ItemType Directory -Force -Path $stageMod | Out-Null
 Copy-Item -Force $modSrc (Join-Path $stageMod "moduleinfo.json")
