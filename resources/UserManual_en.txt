@@ -54,6 +54,10 @@ Top bar
 - The row under it is Unit / Circuit / Terminal, then A | B, A→B and MATCH on the right. Unit and Circuit crossfade. Unit still tears down its GPU view when you leave it. Circuit stays mounted. Motion Off cuts the fade.
 - Functions — look up formula words and insert them.
 - Stages — chain on the left, parameters of the selected block on the right. Arrow keys move the selection; Enter opens Inspect. The title X closes Inspect and every other overlay. Select an IR block to open that cabinet slot.
+### Standalone window chrome
+
+In the standalone app, NEUROKORE replaces JUCE's generic title strip with its own compact, theme-aware top line. Drag the empty header area to move the window; the **minimise** and **close** buttons live at the top-right corner. Window controls are not added to VST3 or AU plugin editors, where the DAW remains responsible for the window. The usual standalone audio-device dialog stays available under **Settings → Audio device settings**. Window sizing and the bottom-right resize grip continue to work. The standalone window's native window-close shortcuts remain available.
+
 ### Standalone transport and audition
 
 Standalone NEUROKORE has an independent musical transport, visible only in the standalone application. **Play / Pause / Stop** and **BPM (20–400)** run a sample-based PPQ clock that synchronizes StepSeq and other tempo-following modules; in a DAW, the plug-in continues to follow the host transport instead. **Space** toggles play/pause when no editor, menu or button is focused. Stop resets musical position and file playback to the beginning; Pause preserves position. Sequencer control signals keep advancing even when external input is silent.

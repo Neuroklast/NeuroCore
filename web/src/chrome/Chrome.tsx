@@ -6,11 +6,14 @@ import { useHostStore } from "../store/hostStore";
 import { nk } from "../theme/tokens";
 import { Knob } from "./Knob";
 import { footerLicenseLabel } from "./footerLicense";
+import { StandaloneWindowChrome } from "./StandaloneWindowChrome";
 import { footerBuf, footerSr } from "./footerStatus";
 import { headerClipClass, workspaceRowClass, workspaceTabClass } from "./toolbarChrome";
 
 export function Hud() {
   const licensed = useHostStore((s) => s.licensed);
+  const standalone = useHostStore((s) => s.standalone);
+  if (standalone) return <StandaloneWindowChrome licensed={licensed} />;
   return (
     <div className="flex h-5 shrink-0 items-center justify-between px-3 font-mono text-[11px] tracking-[0.16em] text-muted">
       <span>{nk.product}</span>

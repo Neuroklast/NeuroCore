@@ -1,5 +1,6 @@
 #include "WebPluginEditor.h"
 #include "../bridge/WebViewHolder.h"
+#include "StandaloneAudioSettings.h"
 #include "../core/Config.h"
 #include "../utils/PresetLibrary.h"
 #include "../utils/PresetPack.h"
@@ -85,11 +86,15 @@ void WebPluginEditor::paint (juce::Graphics& g)
 
 void WebPluginEditor::parentHierarchyChanged()
 {
+    if (audioProcessor.isStandalone())
+        configureStandaloneWindowChrome (*this);
     audioProcessor.getWebView().syncNativeAttachment (*this);
 }
 
 void WebPluginEditor::visibilityChanged()
 {
+    if (audioProcessor.isStandalone())
+        configureStandaloneWindowChrome (*this);
     audioProcessor.getWebView().syncNativeAttachment (*this);
 }
 
