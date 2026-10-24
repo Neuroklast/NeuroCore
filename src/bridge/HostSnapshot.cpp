@@ -636,12 +636,25 @@ juce::var applyLibraryCmd (NeuroKoreAudioProcessor& proc, const juce::var& cmd, 
                 if (e->filePath.isNotEmpty())
                     files.push_back (juce::File (e->filePath));
         PackManifest m;
+        m.id = cmd.getProperty ("id", "").toString();
         m.name = cmd.getProperty ("name", "Pack").toString();
         m.author = cmd.getProperty ("author", "").toString();
         m.description = cmd.getProperty ("description", "").toString();
         m.version = cmd.getProperty ("version", "1.0.0").toString();
+        m.website = cmd.getProperty ("website", "").toString();
+        const auto artwork = cmd.getProperty ("artworkSource", "").toString();
+        if (artwork.isNotEmpty())
+            m.artworkSource = juce::File (artwork);
         if (! PresetPack::exportNrkpack (files, dest, m, error))
             return {};
+        const auto archive = dest.hasFileExtension (PresetPack::kPackExtension) || dest.hasFileExtension (".zip")
+                                 ? dest : dest.withFileExtension (PresetPack::kPackExtension);
+        const auto verified = PresetPack::analyzeArchive (archive);
+        if (verified.error.isNotEmpty() || verified.presetCount != (int) files.size())
+        {
+            error = verified.error.isNotEmpty() ? verified.error : juce::String ("Pack round-trip validation failed");
+            return {};
+        }
         return juce::var (ok);
     }
     if (action == "exportpreset")
