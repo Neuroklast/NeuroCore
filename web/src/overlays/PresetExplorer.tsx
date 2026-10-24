@@ -14,7 +14,6 @@ import {
   emptyExplorerCopy,
   filterExplorer,
   libraryFolders,
-  neighborName,
   resolveSelectedName,
   resolveSelectedRow,
   rowSources,
@@ -79,9 +78,9 @@ export function PresetExplorer() {
     if (partial.selectedName !== undefined) setSelectedName(partial.selectedName);
   };
 
-  const showRow = (name: string) => {
+  const showRow = (key: string) => {
     requestAnimationFrame(() => {
-      listRef.current?.querySelector(`[data-name="${CSS.escape(name)}"]`)?.scrollIntoView({ block: "nearest" });
+      listRef.current?.querySelector(`[data-row-key="${CSS.escape(key)}"]`)?.scrollIntoView({ block: "nearest" });
     });
   };
   const selectRow = (row: ExplorerRow | undefined) => {
@@ -107,7 +106,7 @@ export function PresetExplorer() {
       if (listRef.current) {
         listRef.current.scrollTop = explorerSession.listScroll;
       }
-      showRow(name);
+      showRow(next.find((p) => p.name === name) ? rowKey(next.find((p) => p.name === name)!) : "");
       folderRef.current?.querySelector(`[data-folder="${explorerSession.sources[0] || "all"}"]`)?.scrollIntoView({ block: "nearest" });
     });
     return () => { loadGen.current += 1; };
@@ -148,8 +147,9 @@ export function PresetExplorer() {
   const favKey = row ? starKey(row) : "";
   const fav = favKey ? isPresetFavorite(favKey, stars) : false;
   const blocks = useMemo(
-    () => explorerScriptBlocks(findFactory(row?.name ?? "")?.script ?? ""),
-    [row?.name],
+    () => explorerScriptBlocks(row?.factory === true && row.sourceType !== "pack"
+      ? (findFactory(row.name)?.script ?? "") : ""),
+    [row?.name, row?.factory, row?.sourceType],
   );
 
   const load = (row: ExplorerRow | string) => {
@@ -193,12 +193,12 @@ export function PresetExplorer() {
       return;
     }
     if (intent === "move-down" || intent === "move-up") {
-      const from = row?.name ?? selectedName;
-      const next = neighborName(filtered, from, intent === "move-down" ? "ArrowDown" : "ArrowUp");
-      const nextRow = filtered.find((p) => p.name === next && (! selectedId || p.id === selectedId || p.name !== from))
-        ?? filtered.find((p) => p.name === next);
+      const at = row ? filtered.findIndex((p) => rowKey(p) === rowKey(row)) : -1;
+      const direction = intent === "move-down" ? 1 : -1;
+      const nextIndex = Math.max(0, Math.min(filtered.length - 1, (at < 0 ? 0 : at) + direction));
+      const nextRow = filtered[nextIndex];
       selectRow(nextRow);
-      showRow(next);
+      if (nextRow) showRow(rowKey(nextRow));
       return;
     }
     if (intent === "load" && row) {
@@ -262,8 +262,8 @@ export function PresetExplorer() {
     else pickStyle(chip.value);
   };
   const clearFilters = () => {
-    const next = listed(filterExplorer(catalog, q, "", EMPTY_FACETS));
-    persist({ sources: [], types: [], styles: [], selectedName: resolveSelectedName(next, selectedName) });
+    const next = listed(filterExplorer(catalog, "", "", EMPTY_FACETS));
+    persist({ q: "", sources: [], types: [], styles: [], selectedName: resolveSelectedName(next, selectedName) });
   };
 
   return (
@@ -273,7 +273,7 @@ export function PresetExplorer() {
         <input
           id="preset-search"
           className="h-8 min-w-[16rem] flex-1 border border-panel bg-surface-high px-2 text-white"
-          placeholder="Search presets, tags, effects..."
+          placeholder="Search presets, tags, sources..."
           value={q}
           onChange={(e) => {
             const nextQ = e.target.value;
@@ -281,21 +281,6 @@ export function PresetExplorer() {
             persist({ q: nextQ, selectedName: resolveSelectedName(next, selectedName) });
           }}
         />
-        {(["all", "factory", "user"] as const).map((s) => (
-          <button
-            key={s}
-            type="button"
-            className={`nk-clip capitalize ${scope === s ? "on" : ""}`}
-            onClick={() => {
-              const nextScope = s;
-              const nextIn = scopeRows(presets, nextScope);
-              const next = listed(filterExplorer(nextIn, q, "", facets));
-              persist({ scope: nextScope, selectedName: resolveSelectedName(next, selectedName) });
-            }}
-          >
-            {s === "all" ? "All" : s === "factory" ? "Factory" : "User"}
-          </button>
-        ))}
       </div>
       {view === "builder" ? (
         <PackBuilder rows={presets} selected={picked} onSelected={setPicked} onBack={() => setView("browse")} />
@@ -432,7 +417,7 @@ export function PresetExplorer() {
             role="listbox"
             tabIndex={0}
             aria-label="Presets"
-            aria-activedescendant={row ? `nk-preset-opt-${encodeURIComponent(row.name)}` : undefined}
+            aria-activedescendant={row ? `nk-preset-opt-${encodeURIComponent(rowKey(row))}` : undefined}
             onScroll={(e) => { explorerSession.listScroll = e.currentTarget.scrollTop; }}
           >
             {filtered.map((p) => (
@@ -440,6 +425,7 @@ export function PresetExplorer() {
                 key={rowKey(p)}
                 id={`nk-preset-opt-${encodeURIComponent(rowKey(p))}`}
                 data-name={p.name}
+                data-row-key={rowKey(p)}
                 data-id={p.id ?? ""}
                 data-selected={rowKey(p) === (row ? rowKey(row) : "")}
                 data-loaded={(p.id && p.id === currentId) || (! currentId && p.name === current)}

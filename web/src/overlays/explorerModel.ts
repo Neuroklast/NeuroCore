@@ -145,7 +145,7 @@ export function filterExplorer(rows: ExplorerRow[], q: string, cat: string, face
     if (! needle) {
       return true;
     }
-    const hay = `${p.name} ${p.category} ${p.author ?? ""} ${p.description ?? ""} ${(p.tags ?? []).join(" ")}`.toLowerCase();
+    const hay = `${p.name} ${p.category} ${p.author ?? ""} ${p.description ?? ""} ${(p.tags ?? []).join(" ")} ${rowSources(p).join(" ")} ${rowTypes(p).join(" ")} ${rowStyles(p).join(" ")} ${(p.requiredInputs ?? []).join(" ")}`.toLowerCase();
     return hay.includes(needle);
   });
   out.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
