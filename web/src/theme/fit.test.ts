@@ -1,5 +1,22 @@
 import { describe, expect, it } from "vitest";
-import { DESIGN_H, DESIGN_W, clientToPane, fitForWindow, fitOrigin, menuPos, placeOverlay, snapUiFitToGrid } from "./fit";
+import { DESIGN_H, DESIGN_W, RESPONSIVE_MIN_W, RESPONSIVE_MIN_H, clientToPane, fitForWindow, fitOrigin, layoutForViewport, menuPos, placeOverlay, snapUiFitToGrid } from "./fit";
+
+describe("responsive editor layout", () => {
+  it("keeps real 1:1 type and hit targets at plugin sizes", () => {
+    expect(layoutForViewport(1280, 860)).toMatchObject({ mode: "wide", scale: 1, width: "100%" });
+    expect(layoutForViewport(1100, 740)).toMatchObject({ mode: "compact", scale: 1 });
+    expect(layoutForViewport(900, 600)).toMatchObject({ mode: "tight", scale: 1 });
+    expect(layoutForViewport(1600, 900)).toMatchObject({ mode: "wide", scale: 1 });
+  });
+  it("only falls back to proportional sizing below native minimums", () => {
+    expect(RESPONSIVE_MIN_W).toBe(900);
+    expect(RESPONSIVE_MIN_H).toBe(600);
+    const out = layoutForViewport(720, 480);
+    expect(out).toMatchObject({ mode: "fallback", scale: 0.8, width: 900, height: 600 });
+    expect(layoutForViewport(980, 500).mode).toBe("fallback");
+    expect(layoutForViewport(0, 0).mode).toBe("wide");
+  });
+});
 
 describe("design scale", () => {
   it("keeps a 1280x860 canvas", () => {

@@ -34,15 +34,15 @@ namespace Config
     inline constexpr int kWindowWidth        = 1280;
     /// Height of the plugin window in pixels.
     inline constexpr int kWindowHeight       = 860;
-    /// Layout raster. The editor scales this to the host window (true UI scale).
+    /// Visual reference size; the WebView now reflows for the actual editor bounds.
     inline constexpr int kUiDesignWidth      = kWindowWidth;
     inline constexpr int kUiDesignHeight     = kWindowHeight;
-    /// Host window must stay large enough that 100% scale stays readable.
-    inline constexpr int kUiMinWindowWidth   = 1100;
-    inline constexpr int kUiMinWindowHeight  = 739;  // 1100 * 860/1280
+    /// Minimum usable responsive workspace: independently resize width and height.
+    inline constexpr int kUiMinWindowWidth   = 900;
+    inline constexpr int kUiMinWindowHeight  = 600;
     inline constexpr int kUiMaxWindowWidth   = 1920;
-    inline constexpr int kUiMaxWindowHeight  = 1290; // 1920 * 860/1280
-    inline constexpr double kUiAspectRatio   = (double) kUiDesignWidth / (double) kUiDesignHeight;
+    inline constexpr int kUiMaxWindowHeight  = 1290;
+    inline constexpr double kUiAspectRatio   = (double) kUiDesignWidth / (double) kUiDesignHeight; // legacy canvas reference
 
     /** Footer CPU is 0–100. Load is host-callback ratio; over-budget still reads 100. */
     inline int cpuDisplayPercent (float load) noexcept

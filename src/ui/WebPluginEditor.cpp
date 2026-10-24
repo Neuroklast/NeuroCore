@@ -21,8 +21,7 @@ struct QuietCorner : public juce::ResizableCornerComponent
 
 juce::Rectangle<int> innerBrowserBounds (juce::Rectangle<int> r)
 {
-    // The web shell scales the 1280x860 design to fit, so the browser fills the
-    // editor edge to edge. No native bezel, aspect letterbox or red frame here.
+    // Web shell reflows at actual browser pixels; no letterbox or native bezel.
     return r;
 }
 } // namespace
@@ -34,7 +33,6 @@ WebPluginEditor::WebPluginEditor (NeuroKoreAudioProcessor& p)
     setOpaque (true);
     const int minW = Config::kUiMinWindowWidth;
     const int minH = Config::kUiMinWindowHeight;
-    sizeConstrain.setFixedAspectRatio (Config::kUiAspectRatio);
     sizeConstrain.setSizeLimits (minW, minH, Config::kUiMaxWindowWidth, Config::kUiMaxWindowHeight);
     setConstrainer (&sizeConstrain);
     setResizable (true, false);
