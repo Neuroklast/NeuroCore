@@ -1722,5 +1722,100 @@ public:
             expectEquals (runSine (4), 0);
             proc.releaseResources();
         }
+
+        beginTest ("mix 0 survives prepare (wet formula stays dry)");
+        {
+            NeuroKoreAudioProcessor proc;
+            proc.setLiveMode (false);
+            proc.setPlayConfigDetails (2, 2, 48000.0, 128);
+            if (auto* choice = dynamic_cast<juce::AudioParameterChoice*> (
+                    proc.apvts.getParameter (EffectParameters::oversampling)))
+                choice->setValueNotifyingHost (choice->convertTo0to1 (2.f));
+            if (auto* mix = proc.apvts.getParameter (EffectParameters::dryWet))
+                mix->setValueNotifyingHost (0.f);
+            proc.prepareToPlay (48000.0, 128);
+            juce::String err;
+            expect (proc.applyFormula ("stage1: y = 0", err), err);
+
+            juce::AudioBuffer<float> buf (2, 128);
+            juce::MidiBuffer midi;
+            for (int b = 0; b < 48; ++b)
+            {
+                buf.clear();
+                proc.processBlock (buf, midi);
+            }
+            const int lat = proc.getLatencySamples();
+            buf.clear();
+            buf.setSample (0, 0, 1.f);
+            buf.setSample (1, 0, 1.f);
+            proc.processBlock (buf, midi);
+            float peak = 0.f;
+            int peakAt = -1;
+            int sample = 0;
+            for (int b = 0; b < 16; ++b)
+            {
+                if (b > 0)
+                {
+                    buf.clear();
+                    proc.processBlock (buf, midi);
+                }
+                for (int i = 0; i < 128; ++i, ++sample)
+                {
+                    const float a = std::abs (buf.getSample (0, i));
+                    if (a > peak)
+                    {
+                        peak = a;
+                        peakAt = sample;
+                    }
+                }
+            }
+            expect (peak > 0.25f,
+                    "mix0 after prepare must be delayed dry, not wet silence peak="
+                        + juce::String (peak, 3));
+            if (lat > 0)
+                expect (std::abs (peakAt - lat) <= 2,
+                        "mix0-prepare peakAt=" + juce::String (peakAt)
+                            + " lat=" + juce::String (lat));
+            proc.releaseResources();
+        }
+
+        beginTest ("live switch keeps delay echo (no DSL clear)");
+        {
+            NeuroKoreAudioProcessor proc;
+            proc.setLiveMode (false);
+            proc.setPlayConfigDetails (2, 2, 48000.0, 128);
+            if (auto* choice = dynamic_cast<juce::AudioParameterChoice*> (
+                    proc.apvts.getParameter (EffectParameters::oversampling)))
+                choice->setValueNotifyingHost (choice->convertTo0to1 (2.f));
+            proc.prepareToPlay (48000.0, 128);
+            juce::String err;
+            expect (proc.applyFormula (
+                "delay1: time = 120; feedback = 0.0; mix = 1.0; damp = 12000", err), err);
+
+            juce::AudioBuffer<float> buf (2, 128);
+            juce::MidiBuffer midi;
+            for (int b = 0; b < 48; ++b)
+            {
+                buf.clear();
+                proc.processBlock (buf, midi);
+            }
+            buf.clear();
+            buf.setSample (0, 0, 1.f);
+            buf.setSample (1, 0, 1.f);
+            proc.processBlock (buf, midi);
+
+            proc.setLiveMode (true);
+
+            float peak = 0.f;
+            for (int b = 0; b < 64; ++b)
+            {
+                buf.clear();
+                proc.processBlock (buf, midi);
+                peak = juce::jmax (peak, TestHelpers::peakAbs (buf));
+            }
+            expect (peak > 0.12f,
+                    "delay echo must survive Live switch, peak=" + juce::String (peak, 3));
+            proc.releaseResources();
+        }
     }
 };
