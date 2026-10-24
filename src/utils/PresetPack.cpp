@@ -657,6 +657,8 @@ PackInstallResult PresetPack::installPreview (const PackPreview& preview, const 
         return r;
     }
 
+    recoverInterruptedPackInstalls (destRoot);
+
     juce::File dest;
     juce::String err;
     if (! resolvePackDest (destRoot, preview.manifest, dest, err))
@@ -813,6 +815,41 @@ PackInstallResult PresetPack::installPreview (const PackPreview& preview, const 
     r.packId = committedManifest.id;
     r.packName = committedManifest.name;
     return r;
+}
+
+int PresetPack::recoverInterruptedPackInstalls (const juce::File& destRoot)
+{
+    int recovered = 0;
+    if (! destRoot.isDirectory())
+        return 0;
+    const auto children = destRoot.findChildFiles (juce::File::findDirectories, false);
+    for (const auto& bak : children)
+    {
+        if (! bak.getFileName().startsWith (".pack-bak-"))
+            continue;
+        PackManifest m;
+        juce::String err;
+        const auto mf = bak.getChildFile ("manifest.json");
+        if (! mf.existsAsFile() || ! parseManifestText (mf.loadFileAsString(), m, err))
+        {
+            bak.deleteRecursively();
+            continue;
+        }
+        juce::File dest;
+        if (! resolvePackDest (destRoot, m, dest, err))
+        {
+            bak.deleteRecursively();
+            continue;
+        }
+        if (dest.isDirectory())
+        {
+            bak.deleteRecursively();
+            continue;
+        }
+        if (bak.moveFileTo (dest))
+            ++recovered;
+    }
+    return recovered;
 }
 
 bool PresetPack::uninstallPack (const juce::File& destRoot, const juce::String& packId, juce::String& error)

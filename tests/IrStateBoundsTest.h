@@ -153,6 +153,51 @@ public:
             expectWithinAbsoluteError (p->getValue(), 0.25f, 0.02f);
         }
 
+        beginTest ("illegal host script during playback keeps finite output");
+        {
+            NeuroKoreAudioProcessor proc;
+            proc.setPlayConfigDetails (2, 2, 48000.0, 64);
+            proc.prepareToPlay (48000.0, 64);
+            juce::String err;
+            expect (proc.setFormula ("stage1: y = x * a", err), err);
+            proc.setCurrentPresetName ("KeepMe");
+            if (auto* p = proc.apvts.getParameter (EffectParameters::paramA))
+                p->setValueNotifyingHost (0.25f);
+            auto render = [&]()
+            {
+                juce::AudioBuffer<float> buf (2, 64);
+                for (int i = 0; i < 64; ++i)
+                {
+                    buf.setSample (0, i, 0.2f);
+                    buf.setSample (1, i, -0.1f);
+                }
+                juce::MidiBuffer midi;
+                proc.processBlock (buf, midi);
+                for (int c = 0; c < 2; ++c)
+                    for (int i = 0; i < 64; ++i)
+                        expect (std::isfinite (buf.getSample (c, i)));
+            };
+            render();
+            juce::MemoryBlock blob;
+            proc.getStateInformation (blob);
+            auto xml = juce::AudioProcessor::getXmlFromBinary (blob.getData(), (int) blob.getSize());
+            expect (xml != nullptr);
+            auto tree = juce::ValueTree::fromXml (*xml);
+            tree.setProperty ("DSLScript", "this is not dsl!!", nullptr);
+            tree.setProperty (EffectParameters::paramA, 0.9, nullptr);
+            tree.setProperty ("CurrentPresetName", "Hacked", nullptr);
+            auto outXml = tree.createXml();
+            juce::MemoryBlock patched;
+            juce::AudioProcessor::copyXmlToBinary (*outXml, patched);
+            proc.setStateInformation (patched.getData(), (int) patched.getSize());
+            expectEquals (proc.getScript(), juce::String ("stage1: y = x * a"));
+            expectEquals (proc.getCurrentPresetName(), juce::String ("KeepMe"));
+            auto* p = proc.apvts.getParameter (EffectParameters::paramA);
+            expect (p != nullptr);
+            expectWithinAbsoluteError (p->getValue(), 0.25f, 0.02f);
+            render();
+        }
+
         beginTest ("valid host roundtrip restores script MIDI knob and IR");
         {
             NeuroKoreAudioProcessor src;
