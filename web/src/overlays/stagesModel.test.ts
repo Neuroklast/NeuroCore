@@ -78,6 +78,11 @@ describe("stage param sheet", () => {
     expect(stageParamLine("cutoff", "c", knobs).live).not.toContain("42.000");
   });
 
+  it("formats stage values with module-specific units in the user-facing stage sheet", () => {
+    expect(stageParamLine("mix", "0.3", knobs, "delay").binding).toBe("30.00%");
+    expect(stageParamLine("cutoff", "c", knobs, "filter").binding).toBe("Macro C · Low");
+    expect(stageParamLine("cutoff", "c", knobs, "filter").live).toBe("42.00 Hz");
+  });
   it("leaves unbound literals as themselves", () => {
     expect(stageParamLine("resonance", "0.2", knobs)).toEqual({
       key: "resonance",

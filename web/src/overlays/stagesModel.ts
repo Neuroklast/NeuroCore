@@ -1,5 +1,7 @@
 import type { AstDocument, AstNode, AstParam } from "../bridge/ast";
 import { formatBound, kindLabel, mappedValue } from "../theme/tokens";
+import { chipSpec } from "../assemble/chipSpec";
+import { formatKnobDisplay } from "../chrome/noteValue";
 
 export type StageKnob = {
   id: string;
@@ -14,15 +16,22 @@ export function stageParamLine(
   key: string,
   value: string,
   knobs: StageKnob[],
+  nodeType = "",
 ): { key: string; binding: string; live: string } {
+  const spec = nodeType ? chipSpec(nodeType) : null;
+  const displayKey = spec?.paramJackLabels[key] ?? (nodeType ? key.replace(/[_-]/g, " ") : key);
   const letter = value.trim().toLowerCase();
   const knob = /^[a-f]$/.test(letter) ? knobs.find((k) => k.id === letter) : undefined;
-  if (! knob) {
-    return { key, binding: value, live: "" };
+  if (!knob) {
+    const number = Number(value);
+    const unit = spec?.ranges[key]?.unit;
+    const display = nodeType && value.trim() && Number.isFinite(number)
+      ? formatKnobDisplay(number, unit) : value;
+    return { key: displayKey, binding: display, live: "" };
   }
-  const n = formatBound(mappedValue(knob.value, knob.min, knob.max));
-  const unit = knob.unit ? ` ${knob.unit}` : "";
-  return { key, binding: `${letter} ${knob.name}`, live: `${n}${unit}`.trim() };
+  const n = nodeType ? formatKnobDisplay(mappedValue(knob.value, knob.min, knob.max), knob.unit)
+    : `${formatBound(mappedValue(knob.value, knob.min, knob.max))}${knob.unit ? ` ${knob.unit}` : ""}`.trim();
+  return { key: displayKey, binding: nodeType ? `Macro ${letter.toUpperCase()} · ${knob.name}` : `${letter} ${knob.name}`, live: n };
 }
 
 export function stageKnobLive(

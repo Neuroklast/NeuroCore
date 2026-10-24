@@ -101,7 +101,7 @@ export function StagesPanel() {
                 <table className="w-full border-collapse">
                   <tbody>
                     {card.args.map((row) => {
-                      const line = stageParamLine(row.key, row.value, knobs);
+                      const line = stageParamLine(row.key, row.value, knobs, card.type);
                       return (
                         <tr key={row.key} className="border-b border-accent/20">
                           <td className="w-28 py-1.5 pr-2 text-muted">{line.key}</td>
