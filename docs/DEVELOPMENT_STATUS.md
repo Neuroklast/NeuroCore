@@ -2,7 +2,11 @@
 
 **Stand:** 2026-10-24 (0.7.2-beta)
 **Version:** 0.7.2-beta  
-**Branch:** `fix/editor-size-limits`
+**Branch:** `fix/factory-curation-own-name`
+
+## Factory curation own name (2026-10-24)
+
+Artist-token scan no longer fails a kept factory title against itself (`Sub Zero Pummel`). Description and script still cannot contain the banned artist list. `py -m unittest tests.test_factory_curation` 2/0.
 
 ## Editor size limits (2026-10-24)
 
