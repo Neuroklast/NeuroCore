@@ -942,6 +942,17 @@ struct WebViewHolder::Impl : private juce::Timer,
                 {
                     event->setProperty ("path", f.getFullPathName());
                     event->setProperty ("name", f.getFileName());
+                    const auto image = juce::ImageFileFormat::loadFrom (f);
+                    juce::Image thumbnail (juce::Image::ARGB, 192, 192, true);
+                    {
+                        juce::Graphics g (thumbnail);
+                        g.drawImageWithin (image, 0, 0, 192, 192, juce::RectanglePlacement::centred);
+                    }
+                    juce::PNGImageFormat png;
+                    juce::MemoryOutputStream stream;
+                    if (png.writeImageToStream (thumbnail, stream))
+                        event->setProperty ("preview", "data:image/png;base64,"
+                            + juce::Base64::toBase64 (stream.getData(), stream.getDataSize()));
                 }
                 else
                     event->setProperty ("error", "Choose a valid PNG or JPEG cover under 5 MB");
