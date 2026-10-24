@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatBound, formatMapped, kindLabel, nk } from "./tokens";
+import { formatBound, formatEditableBound, formatMapped, kindLabel, nk } from "./tokens";
 
 describe("board tokens", () => {
   it("uses the Neuroklast CI red, void black and off-white text", () => {
@@ -30,5 +30,8 @@ describe("board tokens", () => {
     expect(formatMapped(1.12)).toBe("1.120");
     expect(formatBound(6)).toBe("6");
     expect(formatBound(0.05)).toBe("0.05");
+    expect(formatEditableBound(0.6000000238418579)).toBe("0.6");
+    expect(formatEditableBound(0.00000123456789)).toBe("0.000001234568");
+    expect(formatEditableBound(63)).toBe("63");
   });
 });

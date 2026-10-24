@@ -155,13 +155,14 @@ describe("chip face, labels, copy", () => {
     }
   });
 
-  it("sizes IN and OUT so a single jack sits on the vertical midline; IN.sc is a second east source", () => {
+  it("keeps a single-input OUT compact while IN provides two separate jacks", () => {
     const innJ = [audio("out", true), audio("sc", true)];
     const outJ = [audio("in", false)];
     const inn = chipBox("in", innJ, false, {});
     const out = chipBox("out", outJ, false, {});
     expect(inn.h).toBeGreaterThanOrEqual(96);
-    expect(out.h).toBe(inn.h);
+    expect(out.h).toBe(BOARD_GRID * 5);
+    expect(out.h).toBeLessThan(inn.h);
     expect(inn.h % BOARD_GRID).toBe(0);
     const a = jackAnchor({ x: 0, y: 0 }, "in", innJ, handleId("out", true), true, inn.h, inn.w);
     const sc = jackAnchor({ x: 0, y: 0 }, "in", innJ, handleId("sc", true), true, inn.h, inn.w);

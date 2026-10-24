@@ -74,6 +74,11 @@ export function formatMapped(v: number): string {
   return v.toFixed(3);
 }
 
+/** Remove float32 noise in editable fields without hiding small or large bounds. */
+export function formatEditableBound(v: number): string {
+  return Number.isFinite(v) ? String(Number(v.toPrecision(7))) : String(v);
+}
+
 export function formatBound(v: number): string {
   if (! Number.isFinite(v)) {
     return "0";
