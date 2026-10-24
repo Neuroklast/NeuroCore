@@ -63,6 +63,7 @@ export function PresetExplorer() {
   const [loadBusy, setLoadBusy] = useState(false);
   const [loadError, setLoadError] = useState("");
   const [favOnly, setFavOnly] = useState(false);
+  const [pendingUninstall, setPendingUninstall] = useState<string | null>(null);
   const loadGen = useRef(0);
   const folderRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -602,13 +603,18 @@ export function PresetExplorer() {
               <span>{pack.name}</span>
               <span className="flex gap-1">
                 <button type="button" className="nk-clip" onClick={() => persist({ scope: `pack:${pack.id}` })}>Open</button>
-                <button
-                  type="button"
-                  className="nk-clip"
-                  onClick={() => void libraryAction({ action: "removePack", packId: pack.id })}
-                >
-                  Uninstall
-                </button>
+                {pendingUninstall === pack.id ? (
+                  <>
+                    <span className="text-accent">Remove this pack?</span>
+                    <button type="button" className="nk-clip" onClick={() => {
+                      setPendingUninstall(null);
+                      void libraryAction({ action: "removePack", packId: pack.id });
+                    }}>Confirm</button>
+                    <button type="button" className="nk-clip" onClick={() => setPendingUninstall(null)}>Cancel</button>
+                  </>
+                ) : (
+                  <button type="button" className="nk-clip" onClick={() => setPendingUninstall(pack.id)}>Uninstall</button>
+                )}
               </span>
             </div>
           ))}
