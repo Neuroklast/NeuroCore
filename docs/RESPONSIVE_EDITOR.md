@@ -50,8 +50,11 @@ editable readout, range endpoints and binding indicators. The compact footer
 keeps the license status pinned to the right while the remaining telemetry
 can scroll horizontally. Focus-visible controls use the cyan outline.
 
-CI includes `web/e2e/responsive-css-fixture.spec.ts`: a headless Chromium
+The separate **manually triggered** `Responsive visual smoke` workflow runs
+`web/e2e/responsive-css-fixture.spec.ts`: a headless Chromium
 render of the **compiled production stylesheet** with small representative
 DOM fixtures, rather than mounting the real GPU-heavy Unit. This checks
 actual geometry/overflow and complements the pure responsive unit contracts.
+The standard Web layout CI deliberately stays Playwright-free, as required by
+`src/theme/versionLock.test.ts`.
 It does not replace a native WebView2, VST3, AU or DAW screenshot pass.

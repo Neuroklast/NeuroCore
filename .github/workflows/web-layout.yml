@@ -31,12 +31,6 @@ jobs:
       - name: Responsive layout contracts
         working-directory: web
         run: npx vitest run src/theme/fit.test.ts src/theme/responsiveShell.test.ts
-      - name: Install headless Chromium for lightweight CSS geometry contracts
-        working-directory: web
-        run: npx playwright install --with-deps chromium
-      - name: Verify responsive production CSS geometry
-        working-directory: web
-        run: npx playwright test e2e/responsive-css-fixture.spec.ts --project=chromium-1x --timeout=15000
       - name: Serial signal-flow contracts
         working-directory: web
         env:

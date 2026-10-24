@@ -1,0 +1,28 @@
+name: Responsive visual smoke
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  css-geometry:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install
+        working-directory: web
+        run: npm ci
+      - name: Build UI
+        working-directory: web
+        run: npm run build
+      - name: Install Chromium
+        working-directory: web
+        run: npx playwright install --with-deps chromium
+      - name: Render and verify production CSS geometry
+        working-directory: web
+        run: npx playwright test e2e/responsive-css-fixture.spec.ts --project=chromium-1x --timeout=15000
