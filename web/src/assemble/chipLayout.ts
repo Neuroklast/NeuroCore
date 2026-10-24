@@ -203,7 +203,7 @@ export function chipBox(
   if (isUtilityIo(spec.id)) {
     return {
       w: snapSize(IO_W),
-      h: ioFaceSize(Math.max(faces.west, faces.east, 1)).h,
+      h: spec.id === "out" && Math.max(faces.west, faces.east) === 1\n        ? snapSize(IO_H)\n        : ioFaceSize(Math.max(faces.west, faces.east, 1)).h,
     };
   }
   const south = _jacks.filter(j => j.kind !== "knob" && ["bottom", "top"].includes(cableFace(j.kind)));
