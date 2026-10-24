@@ -1,6 +1,6 @@
 # Factory curation — 0.6.4-beta
 
-The catalog currently contains 317 presets: 301 original entries, one consolidated near-duplicate, and 17 additions. Categories and control ranges describe intended use; preset loudness is not a substitute for level-matched comparison on the source recording.
+This page records the 0.6.4-beta pass (317 presets: 301 original, one consolidated near-duplicate, 17 additions). The shipping catalog on 2026-10-24 is 363 presets. Categories and control ranges describe intended use; preset loudness is not a substitute for level-matched comparison on the source recording.
 
 ## New programs
 
@@ -38,4 +38,4 @@ The catalog currently contains 317 presets: 301 original entries, one consolidat
 
 `tests/test_factory_curation.py` checks unique names, artist-reference removal, used macros, valid default ranges and noncanonical arithmetic arguments. The production-DSP audit (`NeuroKoreDspContracts --factory` / `--factory-stress`) loads selected cabinet IRs and renders stereo probes, macro endpoints and silence/tail transitions. The catalog has no parse failures or nonfinite samples in these probes. This is a numerical and routing check, not a listening-panel rating.
 
-The final full native FactoryLoudness suite, external pluginval validation and packaged platform builds are deferred to the final release checkpoint. Existing global output sanitation remains responsible for final host-output peaks; internal floating-point bus peaks may exceed 0 dBFS.
+`NeuroKoreTests --factory-report` re-rendered all 363 factory presets on 2026-10-24: 0 apply errors, 0 nonfinite samples. The loudness floor still flags three inserts (Ambient Swell Guitar, MIDI Swell Return, Vocal Presence Duck). That queue is `docs/presets/2026-10-24-listening-prep.md`. pluginval Windows VST3 strictness 10 is recorded separately. Packaged macOS/Linux and a human listening pass remain for the release checkpoint. Existing global output sanitation remains responsible for final host-output peaks; internal floating-point bus peaks may exceed 0 dBFS.

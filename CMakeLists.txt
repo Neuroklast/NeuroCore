@@ -398,6 +398,7 @@ target_sources(NeuroKoreTests PRIVATE
     tests/DynamicsBlocksTest.h
     tests/IrXoverTest.h
     tests/FactoryLoudnessTest.h
+    tests/FactoryReport.h
     tests/AstJsonTest.h
     tests/WebShellTest.h
     tests/WebCompileTest.h
