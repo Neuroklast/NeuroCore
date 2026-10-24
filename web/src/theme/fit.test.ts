@@ -6,7 +6,11 @@ describe("responsive editor layout", () => {
     expect(layoutForViewport(1280, 860)).toMatchObject({ mode: "wide", scale: 1, width: "100%" });
     expect(layoutForViewport(1100, 740)).toMatchObject({ mode: "compact", scale: 1 });
     expect(layoutForViewport(900, 600)).toMatchObject({ mode: "tight", scale: 1 });
-    expect(layoutForViewport(1600, 900)).toMatchObject({ mode: "wide", scale: 1 });
+    expect(layoutForViewport(1600, 900)).toMatchObject({ mode: "wide", density: "regular", scale: 1 });
+    expect(layoutForViewport(1600, 700)).toMatchObject({ mode: "wide", density: "short", scale: 1 });
+    expect(layoutForViewport(1280, 660)).toMatchObject({ mode: "wide", density: "short", scale: 1 });
+    expect(layoutForViewport(1100, 680)).toMatchObject({ mode: "compact", density: "short", scale: 1 });
+    expect(layoutForViewport(900, 600)).toMatchObject({ mode: "tight", density: "short", scale: 1 });
   });
   it("only falls back to proportional sizing below native minimums", () => {
     expect(RESPONSIVE_MIN_W).toBe(900);

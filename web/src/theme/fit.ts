@@ -9,6 +9,7 @@ export const RESPONSIVE_MIN_H = 600;
 export type ResponsiveMode = "wide" | "compact" | "tight" | "fallback";
 export type ResponsiveLayout = {
   mode: ResponsiveMode;
+  density: "regular" | "short";
   scale: number;
   width: number | "100%";
   height: number | "100%";
@@ -17,17 +18,19 @@ export type ResponsiveLayout = {
 };
 export function layoutForViewport(width: number, height: number): ResponsiveLayout {
   if (!hasUsableViewport(width, height)) {
-    return { mode: "wide", scale: 1, width: "100%", height: "100%", x: 0, y: 0 };
+    return { mode: "wide", density: "regular", scale: 1, width: "100%", height: "100%", x: 0, y: 0 };
   }
   if (width < RESPONSIVE_MIN_W || height < RESPONSIVE_MIN_H) {
     const scale = Math.min(width / RESPONSIVE_MIN_W, height / RESPONSIVE_MIN_H);
     const x = Math.max(0, (width - RESPONSIVE_MIN_W * scale) / 2);
     const y = Math.max(0, (height - RESPONSIVE_MIN_H * scale) / 2);
-    return { mode: "fallback", scale, width: RESPONSIVE_MIN_W, height: RESPONSIVE_MIN_H, x, y };
+    return { mode: "fallback", density: height < 760 ? "short" : "regular", scale, width: RESPONSIVE_MIN_W, height: RESPONSIVE_MIN_H, x, y };
   }
-  const mode = width < 1000 || height < 690 ? "tight"
-    : width < 1220 || height < 800 ? "compact" : "wide";
-  return { mode, scale: 1, width: "100%", height: "100%", x: 0, y: 0 };
+  // Width decides whether header controls need to wrap. Short but wide DAW
+  // windows keep their single-row toolbar so the editor is not squeezed.
+  const mode = width < 1000 ? "tight" : width < 1220 ? "compact" : "wide";
+  const density = height < 760 ? "short" : "regular";
+  return { mode, density, scale: 1, width: "100%", height: "100%", x: 0, y: 0 };
 }
 
 
