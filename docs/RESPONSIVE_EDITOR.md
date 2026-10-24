@@ -28,3 +28,9 @@ latency and license information.
 
 Tests: `web/src/theme/fit.test.ts` and `web/e2e/responsive-editor.spec.ts`,
 along with the regular Web layout and native `GlobalPreferencesTest` suite.
+
+Interactive browser geometry check (manual on a GPU-capable runner):
+`cd web && npm run build && npx playwright install chromium && npx playwright test e2e/responsive-editor.spec.ts --project=chromium-1x`.
+CI runs fast responsive breakpoints and CSS/native source contracts instead;
+software-rendered Chromium can hang while synchronously forcing full-page layout
+with the active Unit visualizer. Do not treat contract checks as a screenshot audit.
