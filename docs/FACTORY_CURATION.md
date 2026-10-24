@@ -1,6 +1,6 @@
 # Factory curation — 0.6.4-beta
 
-The catalog currently contains 317 presets: 301 original entries, one consolidated near-duplicate, and 17 additions. Categories and control ranges describe intended use; preset loudness is not a substitute for level-matched comparison on the source recording.
+This page records the 0.6.4-beta pass (317 presets: 301 original, one consolidated near-duplicate, 17 additions). The shipping catalog on 2026-10-24 is 363 presets. Categories and control ranges describe intended use; preset loudness is not a substitute for level-matched comparison on the source recording.
 
 ## New programs
 

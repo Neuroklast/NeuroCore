@@ -37,7 +37,7 @@ def is_send(category: str, name: str) -> bool:
 
 
 def loudness_floors(category: str, script: str) -> tuple[float, float]:
-    """Same floors as tests/FactoryLoudnessTest.h."""
+    """Keep in lockstep with tests/FactoryLoudnessTest.h (source = midi, not gate = midi)."""
     s = script.lower()
     midi_gated = "source = midi" in s
     rhythmic = "stepseq1:" in s
@@ -79,8 +79,9 @@ def main() -> int:
     apply_err = [r for r in presets if r.get("error")]
     nonfinite = [r for r in presets if int(r.get("nonfinite", 0)) != 0]
 
-    ranked = sorted(presets, key=lambda r: float(r.get("peak") or 0.0), reverse=True)
-    quietest = list(reversed(ranked[-15:]))
+    measured = [r for r in presets if not r.get("error") and int(r.get("nonfinite") or 0) == 0]
+    ranked = sorted(measured, key=lambda r: float(r.get("peak") or 0.0), reverse=True)
+    quietest = list(reversed(ranked[-15:])) if ranked else []
     hottest = ranked[:15]
 
     quiet_inserts = []
