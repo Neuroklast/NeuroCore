@@ -86,4 +86,37 @@ test.describe("MSEG curve editor", () => {
     await editor.getByLabel("Segment curve").blur();
     await expect(editor.locator("svg")).toBeVisible();
   });
+  test("maintains circular points and correct positions when Inspect changes width", async ({page}) => {
+    await page.locator("[data-node-id='mseg1'] .nk-chip-expand").click();
+    const editor=page.locator("[data-mseg-editor]");
+    const plot=editor.locator('svg[aria-label="MSEG point editor"]');
+    await expect(plot).toHaveAttribute("preserveAspectRatio","xMidYMid meet");
+    const matchesBounds=()=>plot.evaluate((svg)=>{
+      const viewBox=svg.viewBox.baseVal;
+      return Math.abs(viewBox.width-svg.clientWidth)<2 && Math.abs(viewBox.height-svg.clientHeight)<2;
+    });
+    await expect.poll(matchesBounds).toBe(true);
+    const point=editor.locator("[data-mseg-point='1']");
+    const marker=point.locator("circle").last();
+    const before=await marker.boundingBox();
+    expect(before).not.toBeNull();
+    expect(Math.abs(before!.width-before!.height)).toBeLessThan(1);
+    const chartBefore=await plot.boundingBox();
+    expect(chartBefore).not.toBeNull();
+    const relativeBefore=(before!.x+before!.width/2-chartBefore!.x)/chartBefore!.width;
+    expect(relativeBefore).toBeGreaterThan(0.2);
+    expect(relativeBefore).toBeLessThan(0.3);
+
+    await plot.evaluate(el=>{el.style.width="420px";});
+    await expect.poll(matchesBounds).toBe(true);
+    const after=await marker.boundingBox();
+    const chartAfter=await plot.boundingBox();
+    expect(after).not.toBeNull();
+    expect(chartAfter).not.toBeNull();
+    expect(Math.abs(after!.width-after!.height)).toBeLessThan(1);
+    const relativeAfter=(after!.x+after!.width/2-chartAfter!.x)/chartAfter!.width;
+    expect(relativeBefore).toBeCloseTo(0.25+8/chartBefore!.width,2);
+    expect(relativeAfter).toBeCloseTo(0.25+8/chartAfter!.width,2);
+  });
+
 });

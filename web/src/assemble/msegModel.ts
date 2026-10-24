@@ -37,3 +37,53 @@ export function deleteMsegPoint(points:MsegPoint[],index:number):MsegPoint[]{
 export function msegPath(points:MsegPoint[]):string{
  return Array.from({length:129},(_,i)=>`${i?'L':'M'}${(i/128*100).toFixed(3)} ${((1-msegAt(points,i/128))*20).toFixed(3)}`).join(' ');
 }
+
+/**
+ * Inspect graph geometry is expressed in CSS pixel-sized SVG units. Unlike the
+ * compact chip glyph, the editor must never scale its node circles differently
+ * on the X and Y axes when the inspector is resized.
+ */
+export type MsegEditorSize = { width: number; height: number };
+const EDITOR_PAD_X = 16;
+const EDITOR_PAD_Y = 14;
+
+export function msegEditorPosition(time: number, value: number, size: MsegEditorSize): { x: number; y: number } {
+  const w = Math.max(EDITOR_PAD_X * 2 + 1, size.width);
+  const h = Math.max(EDITOR_PAD_Y * 2 + 1, size.height);
+  return {
+    x: EDITOR_PAD_X + clamp(time, 0, 1) * (w - EDITOR_PAD_X * 2),
+    y: EDITOR_PAD_Y + (1 - clamp(value, -1, 1)) * 0.5 * (h - EDITOR_PAD_Y * 2),
+  };
+}
+
+/** Inverse plot projection. Caller converts from viewport to local SVG pixels. */
+export function msegEditorValueAt(x: number, y: number, size: MsegEditorSize): { time: number; value: number } {
+  const w = Math.max(EDITOR_PAD_X * 2 + 1, size.width);
+  const h = Math.max(EDITOR_PAD_Y * 2 + 1, size.height);
+  return {
+    time: clamp((x - EDITOR_PAD_X) / (w - EDITOR_PAD_X * 2), 0, 1),
+    value: clamp(1 - 2 * (y - EDITOR_PAD_Y) / (h - EDITOR_PAD_Y * 2), -1, 1),
+  };
+}
+
+/** Handles CSS / WebView zoom because client pixels are normalized via the rendered rectangle. */
+export function msegEditorPointer(
+  clientX: number,
+  clientY: number,
+  rect: { left: number; top: number; width: number; height: number },
+  size: MsegEditorSize,
+): { time: number; value: number } {
+  const x = rect.width > 0 ? (clientX - rect.left) / rect.width * size.width : 0;
+  const y = rect.height > 0 ? (clientY - rect.top) / rect.height * size.height : 0;
+  return msegEditorValueAt(x, y, size);
+}
+
+/** Same interpolation as native MSEG, projected into a non-distorted responsive editor. */
+export function msegEditorPath(points: MsegPoint[], size: MsegEditorSize): string {
+  const samples = Math.min(512, Math.max(128, Math.ceil(size.width / 2)));
+  return Array.from({ length: samples + 1 }, (_, i) => {
+    const time = i / samples;
+    const p = msegEditorPosition(time, msegAt(points, time), size);
+    return `${i ? "L" : "M"}${p.x.toFixed(2)} ${p.y.toFixed(2)}`;
+  }).join(" ");
+}

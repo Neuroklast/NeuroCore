@@ -36,6 +36,9 @@ jobs:
       - name: Circuit navigation and signal contracts
         working-directory: web
         run: npx vitest run src/assemble/boardNavigation.test.ts src/assemble/cableSignal.test.ts src/assemble/cablePaint.test.ts src/assemble/layout/pcbComposition.test.ts src/assemble/boardCamera.test.ts src/theme/versionLock.test.ts
+      - name: MSEG editor geometry contracts
+        working-directory: web
+        run: npx vitest run src/assemble/msegModel.test.ts
       - name: Settings regression contracts
         working-directory: web
         run: npx vitest run src/overlays/settingsBody.test.ts src/store/hostStore.test.ts src/chrome/persistUi.test.ts src/assemble/connectModel.test.ts src/assemble/cableMotion.test.ts src/assemble/cableSignal.test.ts
