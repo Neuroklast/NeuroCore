@@ -2,7 +2,11 @@
 
 **Stand:** 2026-10-24 (0.7.2-beta)
 **Version:** 0.7.2-beta  
-**Branch:** `fix/audio-thread-realtime`
+**Branch:** `fix/editor-size-limits`
+
+## Editor size limits (2026-10-24)
+
+Drag, persist and restore use `Config::kUiMinWindowWidth/Height` (1100×739). The editor no longer allows a 800 px floor that save/restore then discarded. Native: GlobalPreferences contract.
 
 ## Audio-thread realtime (2026-10-24)
 

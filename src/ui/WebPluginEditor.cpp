@@ -31,8 +31,8 @@ WebPluginEditor::WebPluginEditor (NeuroKoreAudioProcessor& p)
       audioProcessor (p)
 {
     setOpaque (true);
-    const int minW = 800;
-    const int minH = juce::jmax (1, (int) std::lround ((double) minW / Config::kUiAspectRatio));
+    const int minW = Config::kUiMinWindowWidth;
+    const int minH = Config::kUiMinWindowHeight;
     sizeConstrain.setFixedAspectRatio (Config::kUiAspectRatio);
     sizeConstrain.setSizeLimits (minW, minH, Config::kUiMaxWindowWidth, Config::kUiMaxWindowHeight);
     setConstrainer (&sizeConstrain);
