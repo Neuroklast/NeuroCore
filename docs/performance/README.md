@@ -50,6 +50,14 @@ Build `NeuroKoreTests` locally (Release; use the **same** CMake settings and CPU
 ```
 
 On Windows, replace the executable with the built `NeuroKoreTests.exe` path.
+
+Host-callback matrix (full `NeuroKoreAudioProcessor`, including oversampling):
+
+```sh
+./build/NeuroKoreTests_artefacts/Release/NeuroKoreTests.exe --bench-host
+```
+
+Rows are 1 or 4 processors on one thread, 48/96 kHz, 32/64/256 samples, 1× and 8× OS, one `tanh` stage. Numbers go in `docs/performance/DSP_BASELINE.md`. This is still not a DAW CPU meter.
 The benchmark runs *only the SignalChain DSL* without JUCE oversampling/resampler stages,
 WebView2 or a DAW. It uses 10/50/100/200 serial stages, 128 modulation generators,
 80 stages on four buses, at 1x/2x/4x/8x **effective** processing sample rates.

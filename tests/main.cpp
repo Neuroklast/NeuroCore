@@ -2,6 +2,7 @@
 #include "TelemetrySamplingTest.h"
 #include "FxRuntimeTest.h"
 #include "FxBench.h"
+#include "HostCallbackBench.h"
 #include "DSLParserTest.h"
 #include "dsp/ClipTest.h"
 #include "dsp/DspExpansionTest.h"
@@ -55,6 +56,8 @@ int main (int argc, char* argv[])
   juce::ScopedJuceInitialiser_GUI juceInit;
   if (argc == 2 && std::string (argv[1]) == "--bench-dense")
       return runDensePerformanceBenchmark();
+  if (argc == 2 && std::string (argv[1]) == "--bench-host")
+      return runHostCallbackBenchmark();
 
   FxRuntimeTest fxRuntimeTest;
   DSLParserTest parserTest;

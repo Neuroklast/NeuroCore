@@ -1,6 +1,6 @@
 # UI performance baseline
 
-Fill this sheet from a real `?nkperf=1` session. Do not invent percents.
+DSP/host-callback numbers: `docs/performance/DSP_BASELINE.md` (measured 2026-10-24, i7-14700KF, Release tests). This sheet is **UI** `?nkperf=1` only. Fill it from a real session. Do not invent percents.
 
 | Field | Value |
 |---|---|
