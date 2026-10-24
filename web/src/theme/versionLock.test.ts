@@ -10,7 +10,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
 describe("product version is one string", () => {
   it("About, UI_READY, Inno, and pack script share nk.version", () => {
-    expect(nk.version).toBe("0.7.2-beta");
+    expect(nk.version).toBe("0.8.0-beta");
     const numeric = nk.version.replace(/-beta.*$/, "");
 
     const app = readFileSync(join(root, "web/src/app/App.tsx"), "utf8");

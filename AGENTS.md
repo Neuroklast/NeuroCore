@@ -13,7 +13,7 @@ cmake --build build --target NeuroKoreTests --config Release
 
 Windows one-click: `build_release.bat` syncs living docs, builds `NeuroKore_All`, then runs `scripts/package_windows.ps1`. Debug: `build_debug.bat` (docs + Debug build, no package). Same tree (`build/`). The bats read `NEUROKORE_VERSION_LABEL` from CMake. Do not copy the label into the bats.
 
-Version is **0.7.2-beta**. Do not invent a new one.
+Version is **0.8.0-beta**. Do not invent a new one.
 
 ## Read before you touch code
 

@@ -335,9 +335,9 @@ public:
 
         beginTest ("pluginVersionMeets reads numeric prefix");
         {
-            expect (PresetPack::pluginVersionMeets ({}, "0.7.2-beta"));
-            expect (PresetPack::pluginVersionMeets ("0.7.1", "0.7.2-beta"));
-            expect (! PresetPack::pluginVersionMeets ("9.0.0", "0.7.2-beta"));
+            expect (PresetPack::pluginVersionMeets ({}, "0.8.0-beta"));
+            expect (PresetPack::pluginVersionMeets ("0.7.1", "0.8.0-beta"));
+            expect (! PresetPack::pluginVersionMeets ("9.0.0", "0.8.0-beta"));
         }
 
         beginTest ("invalid pack ids are refused without silent rewrite");
