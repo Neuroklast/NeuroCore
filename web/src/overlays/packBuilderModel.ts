@@ -44,7 +44,8 @@ export function validatePackDraft(draft: PackDraft, selected: ExplorerRow[]): st
   if (draft.author.length > 120) errors.push("Author is too long.");
   if (draft.description.length > 2000) errors.push("Description must be 2000 characters or less.");
   if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(draft.id) ||
-      draft.id.includes("..") || draft.id.endsWith("."))
+      draft.id.includes("..") || draft.id.endsWith(".") ||
+      /^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$/i.test(draft.id.split(".")[0] || ""))
     errors.push("Pack ID must use letters, numbers, dots, dashes or underscores without consecutive dots.");
   if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(draft.version))
     errors.push("Use a version such as 1.0.0 or 1.0.0-beta.1.");
