@@ -73,6 +73,8 @@ juce::String manifestToJson (const PackManifest& m);
 PackPreview analyzeArchive (const juce::File& archive);
 PackPreview analyzeDirectory (const juce::File& dir);
 PackInstallResult installPreview (const PackPreview& preview, const juce::File& destRoot);
+/** Restore Packs/<id> from leftover `.pack-bak-*` after a crash between dest move and commit. */
+int recoverInterruptedPackInstalls (const juce::File& destRoot);
 bool uninstallPack (const juce::File& destRoot, const juce::String& packId, juce::String& error);
 
 bool exportNrkpack (const std::vector<juce::File>& nrkFiles,

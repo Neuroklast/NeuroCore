@@ -10,6 +10,7 @@
 #include "../src/utils/FactoryPresetLibrary.h"
 #include <JuceHeader.h>
 #include <algorithm>
+#include <cmath>
 #include <cstring>
 
 class PresetLibraryPackTest : public juce::UnitTest
@@ -613,6 +614,110 @@ public:
                     sawMul = true;
             }
             expect (sawTanh && sawMul);
+            work.deleteRecursively();
+        }
+
+        beginTest ("interrupted dest replace restores the previous pack from backup");
+        {
+            NeuroKoreAudioProcessor proc;
+            PresetManager mgr (proc);
+            juce::String err;
+            expect (proc.setFormula ("stage1: y = tanh(x)", err));
+            auto work = juce::File::getSpecialLocation (juce::File::tempDirectory)
+                            .getChildFile ("nk-bak-" + juce::String (juce::Random::getSystemRandom().nextInt()));
+            work.deleteRecursively();
+            work.createDirectory();
+            const auto nrk = work.getChildFile ("Keep.nrk");
+            expect (mgr.savePreset (nrk, "Keep"));
+            PackManifest m;
+            m.name = "Keep Pack";
+            m.id = "net.test.keep-crash";
+            const auto pack = work.getChildFile ("keep.nrkpack");
+            expect (PresetPack::exportNrkpack ({ nrk }, pack, m, err), err);
+            auto lib = work.getChildFile ("lib");
+            auto inst = PresetPack::installPreview (PresetPack::analyzeArchive (pack), lib);
+            expect (inst.ok, inst.error);
+            const auto dest = lib.getChildFile ("Packs").getChildFile ("net.test.keep-crash");
+            const auto sentinel = dest.getChildFile ("user-note.txt");
+            expect (sentinel.replaceWithText ("do-not-lose"));
+            const auto bak = lib.getChildFile (".pack-bak-crash");
+            expect (dest.moveFileTo (bak));
+            expect (! dest.exists());
+            expectEquals (PresetPack::recoverInterruptedPackInstalls (lib), 1);
+            expect (dest.isDirectory());
+            expectEquals (sentinel.loadFileAsString(), juce::String ("do-not-lose"));
+            expect (! bak.exists());
+            work.deleteRecursively();
+        }
+
+        beginTest ("leftover pack backup is dropped when dest already committed");
+        {
+            NeuroKoreAudioProcessor proc;
+            PresetManager mgr (proc);
+            juce::String err;
+            expect (proc.setFormula ("stage1: y = x * a", err));
+            auto work = juce::File::getSpecialLocation (juce::File::tempDirectory)
+                            .getChildFile ("nk-leftover-" + juce::String (juce::Random::getSystemRandom().nextInt()));
+            work.deleteRecursively();
+            work.createDirectory();
+            const auto nrk = work.getChildFile ("Tone.nrk");
+            expect (mgr.savePreset (nrk, "Tone"));
+            PackManifest m;
+            m.name = "Tone Pack";
+            m.id = "net.test.tone-leftover";
+            const auto pack = work.getChildFile ("tone.nrkpack");
+            expect (PresetPack::exportNrkpack ({ nrk }, pack, m, err), err);
+            auto lib = work.getChildFile ("lib");
+            auto inst = PresetPack::installPreview (PresetPack::analyzeArchive (pack), lib);
+            expect (inst.ok, inst.error);
+            const auto dest = lib.getChildFile ("Packs").getChildFile ("net.test.tone-leftover");
+            const auto bak = lib.getChildFile (".pack-bak-leftover");
+            expect (bak.createDirectory());
+            expect (dest.copyDirectoryTo (bak));
+            expectEquals (PresetPack::recoverInterruptedPackInstalls (lib), 0);
+            expect (dest.isDirectory());
+            expect (! bak.exists());
+            work.deleteRecursively();
+        }
+
+        beginTest ("pack install during playback does not change the live script");
+        {
+            NeuroKoreAudioProcessor proc;
+            proc.setPlayConfigDetails (2, 2, 48000.0, 64);
+            proc.prepareToPlay (48000.0, 64);
+            juce::String err;
+            expect (proc.setFormula ("stage1: y = x * a", err), err);
+            auto render = [&]()
+            {
+                juce::AudioBuffer<float> buf (2, 64);
+                for (int i = 0; i < 64; ++i)
+                {
+                    buf.setSample (0, i, 0.2f);
+                    buf.setSample (1, i, -0.1f);
+                }
+                juce::MidiBuffer midi;
+                proc.processBlock (buf, midi);
+                for (int c = 0; c < 2; ++c)
+                    for (int i = 0; i < 64; ++i)
+                        expect (std::isfinite (buf.getSample (c, i)));
+            };
+            render();
+            PresetManager mgr (proc);
+            auto work = juce::File::getSpecialLocation (juce::File::tempDirectory)
+                            .getChildFile ("nk-live-" + juce::String (juce::Random::getSystemRandom().nextInt()));
+            work.deleteRecursively();
+            work.createDirectory();
+            const auto nrk = work.getChildFile ("Other.nrk");
+            expect (mgr.savePreset (nrk, "Other"));
+            PackManifest m;
+            m.name = "Live Pack";
+            m.id = "net.test.live-pack";
+            const auto pack = work.getChildFile ("live.nrkpack");
+            expect (PresetPack::exportNrkpack ({ nrk }, pack, m, err), err);
+            auto inst = PresetPack::installPreview (PresetPack::analyzeArchive (pack), work.getChildFile ("lib"));
+            expect (inst.ok, inst.error);
+            expectEquals (proc.getScript(), juce::String ("stage1: y = x * a"));
+            render();
             work.deleteRecursively();
         }
     }
