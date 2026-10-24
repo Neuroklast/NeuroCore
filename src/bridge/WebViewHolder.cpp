@@ -17,6 +17,7 @@
 #include "../dsl/GraphModel.h"
 #include "../ui/StandaloneAudioSettings.h"
 #include <cstdint>
+#include <cmath>
 
 #if JUCE_WINDOWS
 #ifndef NOMINMAX
@@ -689,6 +690,46 @@ struct WebViewHolder::Impl : private juce::Timer,
                                 pushHost();
                                 complete (juce::var (true));
                             })
+                        .withNativeFunction ("standaloneTransport",
+                            [this] (const juce::Array<juce::var>& args, auto complete)
+                            {
+                                if (! proc.isStandalone())
+                                {
+                                    complete (failVar ("Transport is controlled by the DAW."));
+                                    return;
+                                }
+                                const auto props = args.size() > 0 ? args[0] : juce::var();
+                                const auto action = props.getProperty ("action", "").toString();
+                                auto& transport = proc.getStandaloneTransport();
+                                if (action == "play") transport.play();
+                                else if (action == "pause") transport.pause();
+                                else if (action == "stop") transport.stop();
+                                else if (action == "toggle")
+                                {
+                                    if (transport.isPlaying()) transport.pause();
+                                    else transport.play();
+                                }
+                                else if (action == "input") transport.setSource (StandaloneTransport::Source::Input);
+                                else if (action == "file") transport.setSource (StandaloneTransport::Source::File);
+                                else if (action == "tone") transport.setSource (StandaloneTransport::Source::TestTone);
+                                else if (action == "bpm")
+                                {
+                                    const auto bpm = (double) props.getProperty ("value", 120.0);
+                                    if (! std::isfinite (bpm) || bpm < 20.0 || bpm > 400.0)
+                                    {
+                                        complete (failVar ("BPM must be between 20 and 400."));
+                                        return;
+                                    }
+                                    UiSettings::get().setUserBpm ((float) bpm);
+                                }
+                                else
+                                {
+                                    complete (failVar ("Unknown standalone transport action."));
+                                    return;
+                                }
+                                pushHost();
+                                complete (juce::var (true));
+                            })
                         .withNativeFunction ("midiLearn",
                             [this] (const juce::Array<juce::var>& args, auto complete)
                             {
@@ -898,14 +939,17 @@ struct WebViewHolder::Impl : private juce::Timer,
         const bool exportPreset = kind.equalsIgnoreCase ("exportPreset");
         const bool exportPack = kind.equalsIgnoreCase ("exportPack");
         const bool packArtwork = kind.equalsIgnoreCase ("packArtwork");
+        const bool standaloneAudio = proc.isStandalone() && kind.equalsIgnoreCase ("standaloneAudio");
         const char* title = lic ? "Install license"
             : exportPreset ? "Export preset"
             : exportPack ? "Export pack"
+            : standaloneAudio ? "Choose audition audio"
             : packArtwork ? "Choose pack cover"
             : preset ? "Import preset" : "Load IR";
         const char* filter = lic ? "*.lic"
             : exportPreset ? "*.nrk"
             : exportPack ? "*.nrkpack"
+            : standaloneAudio ? "*.wav;*.aif;*.aiff;*.flac;*.ogg;*.mp3"
             : packArtwork ? "*.png;*.jpg;*.jpeg"
             : preset ? "*.nrk;*.zip;*.nrkpack" : "*.wav;*.aif;*.aiff;*.flac";
         fileChooser = std::make_unique<juce::FileChooser> (title, juce::File(), filter);
@@ -915,7 +959,7 @@ struct WebViewHolder::Impl : private juce::Timer,
         else
             flags |= juce::FileBrowserComponent::openMode
                    | juce::FileBrowserComponent::canSelectMultipleItems;
-        fileChooser->launchAsync (flags, [this, lic, preset, exportPreset, exportPack, packArtwork, slot, extra] (const juce::FileChooser& fc)
+        fileChooser->launchAsync (flags, [this, lic, preset, exportPreset, exportPack, packArtwork, standaloneAudio, slot, extra] (const juce::FileChooser& fc)
         {
             const auto f = fc.getResult();
             if (f == juce::File())
@@ -929,7 +973,18 @@ struct WebViewHolder::Impl : private juce::Timer,
                 }
                 return;
             }
-            if (packArtwork)
+            if (standaloneAudio)
+            {
+                juce::String error;
+                const bool ok = proc.getStandaloneTransport().loadFile (f, error);
+                auto* result = new juce::DynamicObject();
+                result->setProperty ("ok", ok);
+                result->setProperty ("message", ok ? juce::String ("Audio loaded") : error);
+                if (browser != nullptr)
+                    browser->emitEventIfBrowserIsVisible ("standaloneAudioSelected", juce::var (result));
+                pushHost();
+            }
+            else if (packArtwork)
             {
                 auto* event = new juce::DynamicObject();
                 const auto ext = f.getFileExtension().toLowerCase();

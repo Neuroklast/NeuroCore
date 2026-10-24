@@ -409,6 +409,15 @@ juce::var hostVar (NeuroKoreAudioProcessor& proc)
     root->setProperty ("bpm", proc.getEffectiveBpm());
     root->setProperty ("tempoSource", proc.isHostTempo() ? "HOST" : "USER");
     root->setProperty ("standalone", proc.wrapperType == juce::AudioProcessor::wrapperType_Standalone);
+    if (proc.isStandalone())
+    {
+        const auto& transport = proc.getStandaloneTransport();
+        root->setProperty ("transportPlaying", transport.isPlaying());
+        root->setProperty ("transportPpq", transport.positionPpq());
+        root->setProperty ("auditionSource", transport.source() == StandaloneTransport::Source::File ? "file"
+                              : transport.source() == StandaloneTransport::Source::TestTone ? "tone" : "input");
+        root->setProperty ("auditionFile", transport.loadedFileName());
+    }
     root->setProperty ("os", os);
     root->setProperty ("motion", juce::String (UiSettings::motionKey (UiSettings::get().motion())));
     root->setProperty ("theme", UiSettings::get().themeId());

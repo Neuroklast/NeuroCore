@@ -30,6 +30,7 @@
 #include "../utils/FormulaQuality.h"
 #include "../core/DspEngine.h"
 #include "../core/ScriptManager.h"
+#include "../core/StandaloneTransport.h"
 #include "../core/MidiVariableMapper.h"
 #include "../licensing/LicenseManager.h"
 #include "../ui/MidiLearnManager.h"
@@ -207,6 +208,9 @@ public:
     float getEffectiveBpm() const noexcept;
     bool isHostTempo() const noexcept;
     int getHostBlockSize() const noexcept { return hostBlock.load (std::memory_order_relaxed); }
+    bool isStandalone() const noexcept { return wrapperType == wrapperType_Standalone; }
+    StandaloneTransport& getStandaloneTransport() noexcept { return standaloneTransport; }
+    const StandaloneTransport& getStandaloneTransport() const noexcept { return standaloneTransport; }
 
     float getLoudnessDb()      const noexcept { return dspEngine.getLoudnessDb(); }
     bool  isLimiterActive()    const noexcept { return dspEngine.isLimiterActive(); }
@@ -317,6 +321,7 @@ private:
     // Sub-components (extracted from the God-Class)
     DspEngine       dspEngine;
     ScriptManager   scriptManager;
+    StandaloneTransport standaloneTransport;
     CpuProtect      cpuProtect;
     bridge::TelemetryPump telemetryPump;
     MidiVariableMapper midiVariableMapper;

@@ -419,7 +419,7 @@ void DspEngine::processPreparedBlock (juce::AudioBuffer<float>& buffer,
     const double flushSec = (double) Config::kIdleHoldSec
                           + (double) cachedTailSeconds
                           + (double) juce::jmax (0, osLatencySamples) / sr;
-    const bool idle = ! bypassActive && silentSec > flushSec;
+    const bool idle = ! bypassActive && ! keepControlsAlive && silentSec > flushSec;
     idleActive.store (idle, std::memory_order_relaxed);
 
     uint16_t inputJumpCount = 0;

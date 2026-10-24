@@ -45,6 +45,7 @@
 #include "ModulationBlocksTest.h"
 #include "ControlIntegrationTest.h"
 #include "MsegIntegrationTest.h"
+#include "StandaloneTransportTest.h"
 #include <JuceHeader.h>
 #include <iostream>
 
@@ -113,6 +114,7 @@ int main (int argc, char* argv[])
   ModulationBlocksTest modulationBlocksTest;
   ControlIntegrationTest controlIntegrationTest;
   MsegIntegrationTest msegIntegrationTest;
+  StandaloneTransportTest standaloneTransportTest;
 
   class LoggingRunner : public juce::UnitTestRunner
   {

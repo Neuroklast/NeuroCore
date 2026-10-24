@@ -37,7 +37,7 @@ target_compile_definitions(NeuroKoreDspContracts PRIVATE
     JUCE_STANDALONE_APPLICATION=1 NK_HAS_EXPR_JIT=0
     NEUROKORE_RESOURCES_DIR="${NK_ROOT}/resources")
 target_link_libraries(NeuroKoreDspContracts PRIVATE
-    juce::juce_dsp juce::juce_audio_processors juce::juce_recommended_config_flags)
+    juce::juce_dsp juce::juce_audio_processors juce::juce_audio_formats juce::juce_recommended_config_flags)
 enable_testing()
 add_test(NAME FxRuntimeTest COMMAND NeuroKoreDspContracts)
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")

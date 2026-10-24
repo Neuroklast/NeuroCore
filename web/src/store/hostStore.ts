@@ -33,6 +33,10 @@ export interface HostState {
   bpm: number;
   tempoSource: string;
   standalone: boolean;
+  transportPlaying: boolean;
+  transportPpq: number;
+  auditionSource: string;
+  auditionFile: string;
   osFactor: number;
   presetName: string;
   originName: string;
@@ -303,6 +307,10 @@ export const useHostStore = create<HostState>((set) => ({
   bpm: 120,
   tempoSource: "HOST",
   standalone: false,
+  transportPlaying: false,
+  transportPpq: 0,
+  auditionSource: "input",
+  auditionFile: "",
   osFactor: 4,
   presetName: "",
   originName: "",
@@ -398,6 +406,11 @@ export const useHostStore = create<HostState>((set) => ({
     bpm: Number(p.bpm ?? 120),
     tempoSource: String(p.tempoSource ?? "HOST"),
     standalone: typeof p.standalone === "boolean" ? p.standalone : s.standalone,
+    transportPlaying: typeof p.transportPlaying === "boolean" ? p.transportPlaying : s.transportPlaying,
+    transportPpq: typeof p.transportPpq === "number" ? p.transportPpq : s.transportPpq,
+    auditionSource: ["input", "file", "tone"].includes(String(p.auditionSource))
+      ? String(p.auditionSource) : s.auditionSource,
+    auditionFile: typeof p.auditionFile === "string" ? p.auditionFile : s.auditionFile,
     osFactor: p.os != null ? Number(p.os) : s.osFactor,
     os: p.os != null ? osIndexFromFactor(Number(p.os)) : s.os,
     motion: prefs.motion ?? s.motion,

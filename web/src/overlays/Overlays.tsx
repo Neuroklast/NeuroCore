@@ -328,9 +328,10 @@ export function SettingsBody() {
         </section>
         <section className="nk-settings-panel" data-settings-tempo="">
           <h3>TEMPO</h3>
-          <Seg label="Tempo source" value={tempo === "USER" ? "USER" : "HOST"}
+          {!standalone && <Seg label="Tempo source" value={tempo === "USER" ? "USER" : "HOST"}
             options={[{ id: "HOST", label: "Host" }, { id: "USER", label: "Manual" }]}
-            onPick={(id) => setTempo(id === "HOST")} />
+            onPick={(id) => setTempo(id === "HOST")} />}
+          {standalone && <p>The standalone transport uses the manual BPM. Play/Pause/Stop are in the transport bar.</p>}
           <label className="nk-settings-bpm">
             <span>BPM</span>
             <input type="number" min={20} max={400} step={1}

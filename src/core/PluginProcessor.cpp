@@ -365,7 +365,10 @@ bool NeuroKoreAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts
         return false;
 
    #if ! JucePlugin_IsSynth
-    if (layouts.getMainOutputChannelSet() != layouts.getMainInputChannelSet())
+    // The standalone app may have output-only audio hardware. It can still
+    // process a loaded audition file or its explicitly selected test tone.
+    if (layouts.getMainOutputChannelSet() != layouts.getMainInputChannelSet()
+        && ! (isStandalone() && layouts.getMainInputChannelSet().isDisabled()))
         return false;
    #endif
 
@@ -449,9 +452,19 @@ void NeuroKoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         buffer.clear();
         return;
     }
-    if (buffer.getNumSamples() == 0 || getTotalNumInputChannels() == 0) return;
+    // Standalone may legitimately have zero *hardware* inputs while playing a
+    // loaded file or test tone. Still process the output bus in that case.
+    if (buffer.getNumSamples() == 0 || (! isStandalone() && getTotalNumInputChannels() == 0))
+        return;
 
-    auto main = getBusCount (true) > 0 ? getBusBuffer (buffer, true, 0) : buffer;
+    auto main = getTotalNumInputChannels() > 0 && getBusCount (true) > 0
+        ? getBusBuffer (buffer, true, 0)
+        : (getBusCount (false) > 0 ? getBusBuffer (buffer, false, 0) : buffer);
+    const auto standaloneClock = isStandalone()
+        ? standaloneTransport.beginBlock (main, getSampleRate(), getEffectiveBpm())
+        : StandaloneTransport::Snapshot {};
+    // Clock advances even on CPU hold or script-compile lock miss.
+    dspEngine.setKeepControlsAlive (isStandalone() && standaloneClock.playing);
     telemetryPump.noteInput (main);
     const float* scL = nullptr;
     const float* scR = nullptr;
@@ -528,6 +541,11 @@ void NeuroKoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
                     ppq = pos.ppqPosition;
                     playing = pos.isPlaying;
                 }
+            }
+            if (isStandalone())
+            {
+                ppq = standaloneClock.ppq;
+                playing = standaloneClock.playing;
             }
             scriptManager.signalChain.setTempo (getEffectiveBpm(), ppq, playing);
             hostBlock.store (nSamp, std::memory_order_relaxed);
@@ -844,7 +862,7 @@ bool NeuroKoreAudioProcessor::isLiveMode() const noexcept
 
 bool NeuroKoreAudioProcessor::isHostTempo() const noexcept
 {
-    return UiSettings::get().useHostTempo();
+    return ! isStandalone() && UiSettings::get().useHostTempo();
 }
 
 float NeuroKoreAudioProcessor::getEffectiveBpm() const noexcept

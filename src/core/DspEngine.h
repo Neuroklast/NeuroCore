@@ -100,6 +100,8 @@ public:
 
     /** True while input+tail have been below the idle gate (wet OS/DSL skipped). */
     bool isIdle() const noexcept { return idleActive.load (std::memory_order_relaxed); }
+    /** Standalone clock requires control lanes on silent input. */
+    void setKeepControlsAlive (bool enabled) noexcept { keepControlsAlive = enabled; }
 
     /** Temporarily suppress the wet signal (used during validation). */
     void setValidationBypass(bool enable);
@@ -168,6 +170,7 @@ private:
     /** 0→1 ramp after formula/OS change — kills loudness spike & zipper. */
     juce::SmoothedValue<float> switchRamp;
     bool bypassActive { false };
+    bool keepControlsAlive { false }; // Audio callback owned.
     bool hostBypass { false };
     double silentSec { 0.0 };
     // Refresh the longest audible tail at a bounded cadence, not once for
