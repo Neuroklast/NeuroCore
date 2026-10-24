@@ -278,6 +278,8 @@ public:
             juce::String err;
             expect (proc.setFormula ("stage1: y = x * a", err));
             proc.setCurrentPresetName ("KeepMe");
+            if (auto* p = proc.apvts.getParameter ("a"))
+                p->setValueNotifyingHost (0.3f);
             juce::TemporaryFile tmp (".nrk");
             expect (mgr.savePreset (tmp.getFile(), "broken"));
             juce::MemoryBlock raw;
@@ -295,6 +297,8 @@ public:
             expect (! mgr.loadPreset (patched.getFile()));
             expectEquals (proc.getScript(), juce::String ("stage1: y = x * a"));
             expectEquals (proc.getCurrentPresetName(), juce::String ("KeepMe"));
+            if (auto* p = proc.apvts.getParameter ("a"))
+                expectWithinAbsoluteError (p->getValue(), 0.3f, 0.02f);
         }
 
         beginTest ("index search stays usable at 5000 entries");

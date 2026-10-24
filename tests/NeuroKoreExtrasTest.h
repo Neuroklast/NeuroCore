@@ -650,6 +650,24 @@ private:
             expect(! mgr.isParameterActive(3));
         }
 
+        beginTest ("ScriptManager: failed applyFormula does not rename knobs");
+        {
+            ScriptManager mgr;
+            juce::String err;
+            expect (mgr.applyFormula ("param a = KeepMe [0, 2]\nstage1: y = x * a", err), err);
+            const auto keptName = mgr.getVariableName (0);
+            const auto keptScript = mgr.getScript();
+            expect (keptName.isNotEmpty());
+            expect (! mgr.applyFormula (
+                "param a = Drive [0, 2]\n"
+                "random1: rate = 10; min = 0; max = 1; mix = 1\n"
+                "modmath1: ina = modmath2; inb = random1; mode = add\n"
+                "modmath2: ina = modmath1; inb = random1; mode = add\n"
+                "stage1: y = x * a", err));
+            expectEquals (mgr.getVariableName (0), keptName);
+            expectEquals (mgr.getScript(), keptScript);
+        }
+
         beginTest("ScriptManager: evaluateFormula");
         {
             ScriptManager mgr;

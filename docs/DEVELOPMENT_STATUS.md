@@ -2,7 +2,11 @@
 
 **Stand:** 2026-10-24 (0.7.2-beta)
 **Version:** 0.7.2-beta  
-**Branch:** `fix/preset-pack-install-safety`
+**Branch:** `fix/atomic-host-state-restore`
+
+## Atomic host/preset restore (2026-10-24)
+
+`setStateInformation` prepares IRs first (unchanged fail-closed). An invalid nonempty `DSLScript` returns before MIDI, parameters, IR swap, or preset name. Empty/missing script still commits the rest so STAT-only blobs load. `applyFormula` loads preview then live and writes aliases/`dslScript` only after both succeed. `.nrk` DSCR is parsed before STAT apply. Native: IrStateBounds + PresetLibraryPackTest 266 passed / 0 failed.
 
 ## Pack install path and atomic commit (2026-10-24)
 

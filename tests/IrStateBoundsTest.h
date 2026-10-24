@@ -2,6 +2,7 @@
 
 #include <JuceHeader.h>
 #include "../src/core/Config.h"
+#include "../src/core/EffectParameters.h"
 #include "../src/core/PluginProcessor.h"
 #include <cmath>
 #include <cstring>
@@ -110,6 +111,68 @@ public:
             proc.setStateInformation (blob.getData(), (int) blob.getSize());
             expectWithinAbsoluteError (proc.getIrSampleRate ("ir1"), 44100.0, 0.1);
             expectEquals (proc.getIrNumSamples ("ir1"), 64);
+        }
+
+        beginTest ("illegal host script leaves previous params IR MIDI and name");
+        {
+            NeuroKoreAudioProcessor proc;
+            juce::String err;
+            expect (proc.setFormula ("stage1: y = x * a", err), err);
+            proc.setCurrentPresetName ("KeepMe");
+            expect (loadClick (proc, 64, err), err);
+            if (auto* p = proc.apvts.getParameter (EffectParameters::paramA))
+                p->setValueNotifyingHost (0.25f);
+            proc.midiLearnManager.setMapping (7, EffectParameters::paramA);
+            const float ir0 = proc.getIrBuffer ("ir1")->getSample (0, 0);
+            juce::MemoryBlock blob;
+            proc.getStateInformation (blob);
+            auto xml = juce::AudioProcessor::getXmlFromBinary (blob.getData(), (int) blob.getSize());
+            expect (xml != nullptr);
+            auto tree = juce::ValueTree::fromXml (*xml);
+            tree.setProperty ("DSLScript", "this is not dsl!!", nullptr);
+            tree.setProperty (EffectParameters::paramA, 0.9, nullptr);
+            tree.setProperty ("CurrentPresetName", "Hacked", nullptr);
+            auto midi = tree.getChildWithName ("MidiLearnMappings");
+            if (midi.isValid() && midi.getNumChildren() > 0)
+                midi.getChild (0).setProperty ("cc", 99, nullptr);
+            auto ir = tree.getChildWithName ("IrSlot");
+            if (ir.isValid())
+                ir.setProperty ("name", "evil.wav", nullptr);
+            auto outXml = tree.createXml();
+            juce::MemoryBlock patched;
+            juce::AudioProcessor::copyXmlToBinary (*outXml, patched);
+            proc.setStateInformation (patched.getData(), (int) patched.getSize());
+            expectEquals (proc.getScript(), juce::String ("stage1: y = x * a"));
+            expectEquals (proc.getCurrentPresetName(), juce::String ("KeepMe"));
+            expectEquals (proc.getIrNumSamples ("ir1"), 64);
+            expectEquals (proc.getIrName ("ir1"), juce::String ("click.wav"));
+            expectWithinAbsoluteError (proc.getIrBuffer ("ir1")->getSample (0, 0), ir0, 1.0e-3f);
+            expectEquals (proc.midiLearnManager.getMappedCC (EffectParameters::paramA), 7);
+            auto* p = proc.apvts.getParameter (EffectParameters::paramA);
+            expect (p != nullptr);
+            expectWithinAbsoluteError (p->getValue(), 0.25f, 0.02f);
+        }
+
+        beginTest ("valid host roundtrip restores script MIDI knob and IR");
+        {
+            NeuroKoreAudioProcessor src;
+            juce::String err;
+            expect (src.setFormula ("stage1: y = x * a", err), err);
+            src.setCurrentPresetName ("Tone");
+            expect (loadClick (src, 32, err), err);
+            if (auto* p = src.apvts.getParameter (EffectParameters::paramA))
+                p->setValueNotifyingHost (0.4f);
+            src.midiLearnManager.setMapping (11, EffectParameters::paramA);
+            juce::MemoryBlock blob;
+            src.getStateInformation (blob);
+            NeuroKoreAudioProcessor dst;
+            dst.setStateInformation (blob.getData(), (int) blob.getSize());
+            expectEquals (dst.getScript(), juce::String ("stage1: y = x * a"));
+            expectEquals (dst.midiLearnManager.getMappedCC (EffectParameters::paramA), 11);
+            expectEquals (dst.getIrNumSamples ("ir1"), 32);
+            auto* p = dst.apvts.getParameter (EffectParameters::paramA);
+            expect (p != nullptr);
+            expectWithinAbsoluteError (p->getValue(), 0.4f, 0.02f);
         }
 
         beginTest ("file import truncates IRs longer than kIrMaxSeconds");

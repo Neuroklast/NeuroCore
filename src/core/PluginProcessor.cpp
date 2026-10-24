@@ -757,14 +757,25 @@ void NeuroKoreAudioProcessor::setStateInformation (const void* data, int sizeInB
             }
 
             auto midiState = tree.getChildWithName("MidiLearnMappings");
+            const juce::ValueTree pendingMidi = midiState.isValid() ? midiState.createCopy()
+                                                                   : juce::ValueTree ("MidiLearnMappings");
             if (midiState.isValid())
-            {
-                midiLearnManager.setState(midiState);
                 tree.removeChild(midiState, nullptr);
-            }
             for (int i = tree.getNumChildren(); --i >= 0;)
                 if (tree.getChild (i).getType() == juce::Identifier ("IrSlot"))
                     tree.removeChild (i, nullptr);
+
+            if (scriptFromState.isNotEmpty())
+            {
+                juce::String err;
+                if (! applyFormula (scriptFromState, err, false))
+                {
+                    logError ("Failed to restore DSL script from state: " + err);
+                    return;
+                }
+            }
+
+            midiLearnManager.setState (pendingMidi);
 
             if (tree.hasProperty (kPresetNameStateKey))
                 currentPresetName = pendingPresetName;
@@ -778,12 +789,6 @@ void NeuroKoreAudioProcessor::setStateInformation (const void* data, int sizeInB
             restoringHostState = false;
             applySharedProcessingPrefs();
 
-            if (scriptFromState.isNotEmpty())
-            {
-                juce::String err;
-                if (!applyFormula(scriptFromState, err))
-                    logError("Failed to restore DSL script from state: " + err);
-            }
             {
                 juce::StringArray oldKeys;
                 for (const auto& kv : irBank)
