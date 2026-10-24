@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { fitOrigin, hasUsableViewport, layoutForViewport } from "./fit";
+import { hasUsableViewport, layoutForViewport } from "./fit";
 
 type ShellMetrics = ReturnType<typeof layoutForViewport>;
 const INITIAL: ShellMetrics = { mode: "wide", scale: 1, width: "100%", height: "100%", x: 0, y: 0 };

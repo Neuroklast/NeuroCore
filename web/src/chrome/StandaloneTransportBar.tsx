@@ -32,7 +32,7 @@ export function StandaloneTransportBar() {
   };
 
   return (
-    <div className="flex h-[40px] w-full shrink-0 items-center gap-2 overflow-hidden border-y border-[var(--nk-line)] bg-surface-high px-3 text-[12px]"
+    <div className="nk-transport flex h-[40px] w-full shrink-0 items-center gap-2 overflow-hidden border-y border-[var(--nk-line)] bg-surface-high px-3 text-[12px]"
       role="group" aria-label="Standalone Transport">
       <span className="font-brand tracking-wider text-muted">TRANSPORT</span>
       <button type="button" className={"nk-clip " + (playing ? "on" : "")}
@@ -58,7 +58,7 @@ export function StandaloneTransportBar() {
         void getNativeFunction("pickFile")({ kind: "standaloneAudio" })
           .catch((error: unknown) => setStatus(error instanceof Error ? error.message : "Audio chooser failed."));
       }}>LOAD AUDIO…</button>
-      <span className="min-w-0 flex-1 truncate text-muted" title={status || file}>
+      <span className="nk-transport-status min-w-0 flex-1 truncate text-muted" title={status || file}>
         {status || (source === "tone" ? "Test generator on · 440 Hz · low level" :
           source === "file" ? (file || "No audio loaded") : "External input · generator off")}
       </span>
