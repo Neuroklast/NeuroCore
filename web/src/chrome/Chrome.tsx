@@ -30,10 +30,10 @@ export function Toolbar() {
   const setOverlay = useHostStore((s) => s.setOverlay);
   const bypassed = mix <= 1e-5;
   return (
-    <header className="flex h-[52px] w-full min-w-0 shrink-0 items-center gap-2 overflow-hidden px-3">
+    <header className="nk-toolbar flex h-[52px] w-full min-w-0 shrink-0 items-center gap-2 overflow-hidden px-3">
       <button
         type="button"
-        className="mr-2 flex shrink-0 items-center gap-3 border-0 bg-transparent p-0 text-left"
+        className="nk-brand mr-2 flex shrink-0 items-center gap-3 border-0 bg-transparent p-0 text-left"
         data-tip="neuroklast.net"
         onClick={() => {
           if (hasJuceBridge()) {
@@ -156,7 +156,7 @@ export function Knobs({ bind = true, rail = "left" }: { bind?: boolean; rail?: "
   const knobs = useHostStore((s) => s.knobs);
   if (rail === "bottom") {
     return (
-      <div className="flex h-[160px] shrink-0 items-stretch gap-px border-t border-[var(--nk-line)] py-3">
+      <div className="nk-knob-rail flex h-[160px] shrink-0 items-stretch gap-px border-t border-[var(--nk-line)] py-3">
         {knobs.map((k) => (
           <div key={k.id} className="min-w-0 flex-1">
             <Knob knob={k} bind={bind} compact />

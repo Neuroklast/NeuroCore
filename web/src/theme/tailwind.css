@@ -3995,3 +3995,171 @@ html[data-motion="off"] .nk-workspace-handoff, html[data-motion="reduced"] .nk-w
   .nk-settings-grid { grid-template-columns: minmax(0, 1fr); }
   .nk-settings-license { flex-wrap: wrap; }
 }
+
+
+/* Responsive host layout. The `nk-scale-stage` owns the measured WebView size.
+ * Real JUCE window sizes keep transform:none; no shrinking text or drag handles.
+ * Breakpoints reflect the editor container, not OS display density. */
+.nk-scale-stage { min-width: 0; min-height: 0; }
+.nk-os { min-height: 0; min-width: 0; }
+
+/* Compact desktop windows: allow chrome to reflow instead of cutting off Help,
+ * Settings, the preset selector, or the host mode controls. */
+.nk-scale-stage:is([data-layout="compact"], [data-layout="tight"]) .nk-toolbar {
+  height: auto;
+  min-height: 96px;
+  align-content: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  padding-block: 4px;
+  overflow: visible;
+}
+.nk-scale-stage:is([data-layout="compact"], [data-layout="tight"]) .nk-brand {
+  margin-right: 4px;
+}
+.nk-scale-stage:is([data-layout="compact"], [data-layout="tight"]) .nk-preset-cluster {
+  flex: 1 1 230px;
+  min-width: 220px;
+  max-width: none;
+}
+.nk-scale-stage:is([data-layout="compact"], [data-layout="tight"]) .nk-header-right {
+  flex: 1 1 100%;
+  min-width: 0;
+  margin-left: 0;
+  justify-content: space-between;
+  gap: 8px;
+}
+.nk-scale-stage:is([data-layout="compact"], [data-layout="tight"]) .nk-header-tools {
+  min-width: 0;
+  gap: 5px;
+}
+.nk-scale-stage:is([data-layout="compact"], [data-layout="tight"]) .nk-header-tools .nk-clip {
+  padding-inline: 9px;
+}
+.nk-scale-stage:is([data-layout="compact"], [data-layout="tight"]) .nk-header-primary {
+  margin-left: auto;
+}
+.nk-scale-stage:is([data-layout="compact"], [data-layout="tight"]) .nk-ws-row {
+  height: 36px;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+.nk-scale-stage:is([data-layout="compact"], [data-layout="tight"]) .nk-ws-row::-webkit-scrollbar {
+  display: none;
+}
+.nk-scale-stage:is([data-layout="compact"], [data-layout="tight"]) .nk-ws-views {
+  margin-left: 0;
+}
+.nk-scale-stage:is([data-layout="compact"], [data-layout="tight"]) .nk-ws-tab {
+  min-width: 94px;
+}
+.nk-scale-stage:is([data-layout="compact"], [data-layout="tight"]) .nk-knob-rail {
+  height: 132px;
+  padding-block: 5px;
+}
+.nk-scale-stage:is([data-layout="compact"], [data-layout="tight"]) .nk-macro-rule {
+  height: auto;
+  min-height: 36px;
+  align-content: center;
+  flex-wrap: wrap;
+  gap: 5px 10px;
+  padding: 4px 10px;
+}
+.nk-scale-stage:is([data-layout="compact"], [data-layout="tight"]) .nk-macro-rule .nk-cut {
+  min-width: 130px;
+}
+.nk-scale-stage:is([data-layout="compact"], [data-layout="tight"]) .nk-foot {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  font-size: 11px;
+  scrollbar-width: thin;
+}
+.nk-scale-stage:is([data-layout="compact"], [data-layout="tight"]) .nk-foot > span {
+  flex: 0 0 auto;
+  min-width: max-content;
+  overflow: visible;
+}
+.nk-scale-stage:is([data-layout="compact"], [data-layout="tight"]) .nk-preset-body {
+  gap: 8px;
+}
+.nk-scale-stage:is([data-layout="compact"], [data-layout="tight"]) .nk-preset-folders {
+  width: 166px;
+}
+.nk-scale-stage:is([data-layout="compact"], [data-layout="tight"]) .nk-preset-detail {
+  width: 222px;
+}
+.nk-scale-stage:is([data-layout="compact"], [data-layout="tight"]) .nk-preset-browser {
+  gap: 8px;
+}
+.nk-scale-stage:is([data-layout="compact"], [data-layout="tight"]) .nk-face {
+  --nk-face-col: min(28%, 270px);
+  --nk-face-inset: 8px;
+  --nk-face-gap: 6px;
+  --nk-face-n: 7ch;
+  --nk-face-u: 6ch;
+}
+.nk-scale-stage:is([data-layout="compact"], [data-layout="tight"]) .nk-face-row {
+  column-gap: 4px;
+}
+.nk-scale-stage:is([data-layout="compact"], [data-layout="tight"]) .nk-face-hud {
+  grid-template-rows: 80px minmax(0, 1fr);
+}
+
+/* Tight host windows use lower chrome overhead and 2-column Preset Explorer.
+ * All actions remain available; panels get their own scrollable areas. */
+.nk-scale-stage[data-layout="tight"] .nk-toolbar {
+  min-height: 88px;
+  padding-inline: 10px;
+}
+.nk-scale-stage[data-layout="tight"] .nk-knob-rail {
+  height: 116px;
+}
+.nk-scale-stage[data-layout="tight"] .nk-chrome-x {
+  padding-inline: 8px;
+}
+.nk-scale-stage[data-layout="tight"] .nk-transport {
+  height: auto;
+  min-height: 42px;
+  flex-wrap: wrap;
+  align-content: center;
+  gap: 5px 8px;
+  overflow: visible;
+  padding-block: 4px;
+}
+.nk-scale-stage[data-layout="tight"] .nk-transport-status {
+  flex-basis: 100%;
+  min-width: 0;
+  order: 2;
+  font-size: 11px;
+}
+.nk-scale-stage[data-layout="tight"] .nk-transport .nk-clip {
+  min-height: 28px;
+  padding-inline: 8px;
+}
+.nk-scale-stage[data-layout="tight"] .nk-preset-folders { width: 130px; }
+.nk-scale-stage[data-layout="tight"] .nk-preset-detail { width: 184px; }
+.nk-scale-stage[data-layout="tight"] .nk-preset-body { gap: 6px; }
+.nk-scale-stage[data-layout="tight"] .nk-preset-chrome {
+  flex-wrap: wrap;
+  height: auto;
+  min-height: 40px;
+}
+.nk-scale-stage[data-layout="tight"] .nk-overlay-host { padding: 7px; }
+.nk-scale-stage[data-layout="tight"] .nk-overlay > .min-h-0.p-5 { padding: 10px; }
+.nk-scale-stage[data-layout="tight"] .nk-face {
+  --nk-face-col: min(29%, 248px);
+  --nk-face-inset: 6px;
+  --nk-face-gap: 5px;
+}
+.nk-scale-stage[data-layout="tight"] .nk-face-tele {
+  font-size: 9.5px;
+  letter-spacing: 0;
+}
+.nk-scale-stage[data-layout="tight"] .nk-face-hud {
+  grid-template-rows: 98px minmax(0, 1fr);
+}

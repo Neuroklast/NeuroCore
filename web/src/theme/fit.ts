@@ -1,7 +1,35 @@
-/** Native design canvas. Window resize scales this; layout does not reflow. */
+/** Original design dimensions retained for default-size visuals and legacy fitting. */
 export const DESIGN_W = 1280;
 export const DESIGN_H = 860;
 export const DESIGN_GRID = 16;
+
+/** Real-size, responsive editor begins at 900×600; smaller previews get a safety scale. */
+export const RESPONSIVE_MIN_W = 900;
+export const RESPONSIVE_MIN_H = 600;
+export type ResponsiveMode = "wide" | "compact" | "tight" | "fallback";
+export type ResponsiveLayout = {
+  mode: ResponsiveMode;
+  scale: number;
+  width: number | "100%";
+  height: number | "100%";
+  x: number;
+  y: number;
+};
+export function layoutForViewport(width: number, height: number): ResponsiveLayout {
+  if (!hasUsableViewport(width, height)) {
+    return { mode: "wide", scale: 1, width: "100%", height: "100%", x: 0, y: 0 };
+  }
+  if (width < RESPONSIVE_MIN_W || height < RESPONSIVE_MIN_H) {
+    const scale = Math.min(width / RESPONSIVE_MIN_W, height / RESPONSIVE_MIN_H);
+    const x = Math.max(0, (width - RESPONSIVE_MIN_W * scale) / 2);
+    const y = Math.max(0, (height - RESPONSIVE_MIN_H * scale) / 2);
+    return { mode: "fallback", scale, width: RESPONSIVE_MIN_W, height: RESPONSIVE_MIN_H, x, y };
+  }
+  const mode = width < 1000 || height < 690 ? "tight"
+    : width < 1220 || height < 800 ? "compact" : "wide";
+  return { mode, scale: 1, width: "100%", height: "100%", x: 0, y: 0 };
+}
+
 
 export function snapUiFitToGrid(fit: number): number {
   if (! (fit > 0) || ! Number.isFinite(fit)) {

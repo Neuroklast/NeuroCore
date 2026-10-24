@@ -64,9 +64,12 @@ public:
             prefs.setEditorSize (800, 538);
             expectEquals (prefs.editorWidth(), Config::kUiMinWindowWidth);
             expectEquals (prefs.editorHeight(), Config::kUiMinWindowHeight);
-            const int aspectH = juce::jmax (1,
-                (int) std::lround ((double) Config::kUiMinWindowWidth / Config::kUiAspectRatio));
-            expectEquals (aspectH, Config::kUiMinWindowHeight);
+            // Responsive editor no longer forces the original 1280:860 aspect.
+            expect (Config::kUiMinWindowWidth * Config::kUiDesignHeight
+                != Config::kUiMinWindowHeight * Config::kUiDesignWidth);
+            prefs.setEditorSize (950, 680);
+            expectEquals (prefs.editorWidth(), 950);
+            expectEquals (prefs.editorHeight(), 680);
             prefs.setEditorSize (oldW, oldH);
         }
     }

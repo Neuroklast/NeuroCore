@@ -217,7 +217,7 @@ export function App() {
 
   return (
     <ScaleShell>
-    <main data-ws={workspace} className="nk-os relative flex h-[860px] w-[1280px] flex-col overflow-hidden font-mono text-ink">
+    <main data-ws={workspace} className="nk-os relative flex h-full w-full min-h-0 min-w-0 flex-col overflow-hidden font-mono text-ink">
       <Hud />
       <Toolbar />
       <StandaloneTransportBar />

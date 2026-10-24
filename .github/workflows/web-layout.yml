@@ -28,6 +28,9 @@ jobs:
       - name: Build
         working-directory: web
         run: npm run build
+      - name: Responsive layout contracts
+        working-directory: web
+        run: npx vitest run src/theme/fit.test.ts src/theme/responsiveShell.test.ts
       - name: Serial signal-flow contracts
         working-directory: web
         env:
