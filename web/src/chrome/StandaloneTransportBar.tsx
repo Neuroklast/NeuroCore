@@ -6,6 +6,7 @@ import { useHostStore } from "../store/hostStore";
 export function StandaloneTransportBar() {
   const standalone = useHostStore((s) => s.standalone);
   const playing = useHostStore((s) => s.transportPlaying);
+  const ppq = useHostStore((s) => s.transportPpq);
   const bpm = useHostStore((s) => s.bpm);
   const source = useHostStore((s) => s.auditionSource);
   const file = useHostStore((s) => s.auditionFile);
@@ -43,7 +44,7 @@ export function StandaloneTransportBar() {
         <input className="w-[64px] border border-[var(--nk-line)] bg-surface px-1 py-1 text-center text-ink"
           type="number" min="20" max="400" step="1" value={tempo}
           onChange={(e) => setTempo(e.target.value)} onBlur={commitTempo}
-          onKeyDown={(e) => { if (e.key === "Enter") { commitTempo(); e.currentTarget.blur(); } }}/>
+          onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}/>
       </label>
       <span className="text-muted">SOURCE</span>
       <select aria-label="Standalone audio source" className="max-w-[130px] border border-[var(--nk-line)] bg-surface px-1 py-1"
@@ -61,7 +62,7 @@ export function StandaloneTransportBar() {
         {status || (source === "tone" ? "Test generator on · 440 Hz · low level" :
           source === "file" ? (file || "No audio loaded") : "External input · generator off")}
       </span>
-      <span className="shrink-0 text-muted">{playing ? "RUNNING" : "STOPPED"}</span>
+      <span className="shrink-0 text-muted">{playing ? "RUNNING" : ppq > 1e-6 ? "PAUSED" : "STOPPED"}</span>
     </div>
   );
 }

@@ -149,13 +149,14 @@ export function Knob({ knob, bind = true, compact = false }: { knob: KnobState; 
     const el = e.currentTarget;
     el.setPointerCapture(e.pointerId);
     const startY = e.clientY;
+    const logicalScale = el.offsetWidth > 0 ? el.getBoundingClientRect().width / el.offsetWidth : 1;
     const start = live.current;
     gesture.current = true;
     setSpin(start);
     send(start, "begin");
     setHud(true);
     const move = (ev: globalThis.PointerEvent) => {
-      const raw = Math.max(0, Math.min(1, start - (ev.clientY - startY) / 140));
+      const raw = Math.max(0, Math.min(1, start - (ev.clientY - startY) / (140 * Math.max(0.01, logicalScale))));
       const next = enums && enums.length > 0 ? snapEnum01(raw, enums.length) : raw;
       live.current = next;
       setSpin(next);
@@ -323,8 +324,8 @@ export function Knob({ knob, bind = true, compact = false }: { knob: KnobState; 
         <line x1={p0x} y1={p0y} x2={p1x} y2={p1y} stroke="var(--nk-warn)" strokeWidth="1.6" strokeLinecap="round" />
       </svg>
       <div className="nk-prm-meta-row">
-        <span>PRM-{knob.id.toUpperCase()}</span>
-        <span>{wired ? "SRC:BIND" : "SRC:MACRO"}</span>
+        <span>MACRO {knob.id.toUpperCase()}</span>
+        <span>{wired ? "ASSIGNED" : "AVAILABLE"}</span>
       </div>
       {edit != null ? (
         <input

@@ -157,7 +157,7 @@ export function InspectBody({ nodeId }: { nodeId: string | null }) {
               {node.type === "adsr" ? "ADSR Envelope" : "Envelope"}
             </div>
             <div className="w-full h-28 flex items-end px-2 pb-1">
-              <svg viewBox="0 0 100 40" preserveAspectRatio="none" width="100%" height="40" className="nk-inspect-curve">
+              <svg viewBox="0 0 100 40" preserveAspectRatio="xMidYMid meet" width="100%" height="100%" className="nk-inspect-curve" aria-hidden="true">
                 <path
                   d={node.type === "adsr" ? adsrEnvelopePath(node.args) : envEnvelopePath(node.args)}
                   stroke="var(--nk-cyan)"
@@ -220,14 +220,13 @@ export function InspectBody({ nodeId }: { nodeId: string | null }) {
           <summary className="cursor-pointer select-none text-[10px] tracking-widest text-muted uppercase px-2 py-1">
             Technical Details
           </summary>
-          <div className="p-2 space-y-1 text-[9px]">
-            {rows.slice(0, 14).map((r) => (
+          <div className="p-2 space-y-1 text-[11px] max-h-[280px] overflow-auto">
+            {rows.map((r) => (
               <div key={`${r.group}-${r.key}`} className="flex justify-between">
                 <span className="text-muted">{r.key}</span>
                 <span className="font-mono text-ink truncate max-w-[220px]">{r.value}</span>
               </div>
             ))}
-            {rows.length > 14 && <div className="text-muted">… more entries</div>}
           </div>
         </details>
       </div>
