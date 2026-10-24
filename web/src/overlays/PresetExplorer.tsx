@@ -273,7 +273,7 @@ export function PresetExplorer() {
         <input
           id="preset-search"
           className="h-8 min-w-[16rem] flex-1 border border-panel bg-surface-high px-2 text-white"
-          placeholder="Search presets, tags, sources..."
+          placeholder="Search presets, tags, effects..."
           value={q}
           onChange={(e) => {
             const nextQ = e.target.value;

@@ -66,6 +66,8 @@ describe("explorer model", () => {
   it("searches name, tags, description — not a formula field", () => {
     expect(filterExplorer(presets, "spring", "").map((p) => p.name)).toEqual(["Spring Tank"]);
     expect(filterExplorer(presets, "od", "").map((p) => p.name)).toEqual(["Blues Break OD"]);
+    expect(filterExplorer(presets, "modulation", "").map((p) => p.name)).toEqual(["Arp Shimmer"]);
+    expect(filterExplorer(presets, "guitar", "").map((p) => p.name)).toEqual(["Blues Break OD", "Metal Scoop"]);
     expect(explorerFolders(scopeRows(presets, "factory")).find((f) => f.name === "")?.label).toBe("All Presets");
   });
 
