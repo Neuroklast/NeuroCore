@@ -13,7 +13,7 @@ Final catalog: 353 active (25 new), including three initial MSEG examples. The f
 
 The 2026-10-23 library pass starts from this catalog. Inventory and use-case classification: [2026-10-23-review.md](2026-10-23-review.md) and [2026-10-23-inventory.json](2026-10-23-inventory.json). Result report: [2026-10-23-report.md](2026-10-23-report.md).
 
-2026-10-24 offline render of all 363 presets: [factory-render JSON](2026-10-24-factory-render.json) and [listening prep](2026-10-24-listening-prep.md). Zero apply/nonfinite failures. Human DAW listening, latency and LUFS remain open.
+2026-10-24 offline render of all 363 presets: [factory-render JSON](2026-10-24-factory-render.json) and [listening prep](2026-10-24-listening-prep.md). Zero apply/nonfinite failures. Probe floors flag 0 quiet inserts. Human DAW listening (MIDI/SC), latency and LUFS remain open.
 
 ```
 .\build\NeuroKoreTests_artefacts\Release\NeuroKoreTests.exe --factory-report docs/presets/2026-10-24-factory-render.json

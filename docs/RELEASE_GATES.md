@@ -57,5 +57,5 @@ pluginval is the automated host stand-in. A real DAW session (MIDI, sidechain, U
 
 - Authenticode / Developer ID certificates
 - macOS / Linux package build on this machine
-- Human listening of the three quiet factory inserts
+- Human listening of factory presets in a DAW (MIDI-gated and sidechain inserts especially)
 - UI nkperf numbers

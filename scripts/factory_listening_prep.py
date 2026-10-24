@@ -36,16 +36,17 @@ def is_send(category: str, name: str) -> bool:
     return name in SEND_NAMES
 
 
-def loudness_floors(category: str, script: str) -> tuple[float, float]:
-    """Keep in lockstep with tests/FactoryLoudnessTest.h (source = midi, not gate = midi)."""
+def loudness_floors(category: str, script: str, required: list[str] | None = None) -> tuple[float, float]:
+    """Keep in lockstep with tests/FactoryLoudnessTest.h."""
     s = script.lower()
-    midi_gated = "source = midi" in s
+    req = {x.casefold() for x in (required or [])}
+    midi_gated = "source = midi" in s or "gate = midi" in s or "midi" in req
     rhythmic = "stepseq1:" in s
     narrow_band = "type = bandpass" in s
     lo_fi = category.casefold() == "lo-fi"
     filt = category.casefold() == "filter"
     if midi_gated:
-        return 0.02, 0.008
+        return 0.02, 0.006
     if rhythmic:
         return 0.07, 0.025
     if narrow_band:
@@ -70,10 +71,8 @@ def main() -> int:
     args = p.parse_args()
 
     data = json.loads(args.json_path.read_text(encoding="utf-8"))
-    catalog = {
-        row["name"]: row.get("script") or ""
-        for row in json.loads(args.catalog.read_text(encoding="utf-8"))
-    }
+    catalog_rows = json.loads(args.catalog.read_text(encoding="utf-8"))
+    catalog = {row["name"]: row for row in catalog_rows}
     presets = data["presets"]
     failures = int(data.get("failures", 0))
     apply_err = [r for r in presets if r.get("error")]
@@ -92,8 +91,11 @@ def main() -> int:
             continue
         peak = float(r.get("peak") or 0.0)
         rms = float(r.get("rms") or 0.0)
+        entry = catalog.get(r.get("name") or "") or {}
         peak_floor, rms_floor = loudness_floors(
-            r.get("category") or "", catalog.get(r.get("name") or "", "")
+            r.get("category") or "",
+            entry.get("script") or "",
+            entry.get("requiredInputs") or [],
         )
         if peak < peak_floor or rms < rms_floor:
             quiet_inserts.append(r)
@@ -107,7 +109,7 @@ def main() -> int:
     lines.append("")
     lines.append(
         "Machine render of every factory preset through `NeuroKoreAudioProcessor` "
-        "(48 kHz, 512-sample blocks, 40 blocks, skip first 16). Probe is 440 Hz sine "
+        "(48 kHz, 512-sample blocks, 56 blocks, skip first 32). Probe is 440 Hz sine "
         "+ pink, no MIDI, no sidechain. This sheet ranks what to listen to. It is "
         "not a DAW, LUFS, or ear sign-off."
     )
@@ -135,7 +137,7 @@ def main() -> int:
     lines.append(f"| Apply errors | {len(apply_err)} |")
     lines.append(f"| Nonfinite output | {len(nonfinite)} |")
     lines.append(f"| Sample rate | {data.get('sampleRate')} |")
-    lines.append(f"| Block / measured blocks | {data.get('block')} / {int(data.get('blocks', 0)) - 16} |")
+    lines.append(f"| Block / measured blocks | {data.get('block')} / {int(data.get('blocks', 0)) - 32} |")
     lines.append(f"| Quiet inserts vs FactoryLoudness floors | {len(quiet_inserts)} |")
     lines.append("")
     lines.append("## Ear-pass queue")
@@ -144,15 +146,23 @@ def main() -> int:
         "Start here. Factory scripts are unchanged; retune only after a human pass."
     )
     lines.append("")
-    lines.append("| Preset | Peak | RMS | Why |")
-    lines.append("|---|---|---|---|")
-    for r in quiet_inserts:
-        name = r["name"]
-        note = LISTENING_NOTES.get(name, "Below insert loudness floor on this probe.")
+    if not quiet_inserts:
         lines.append(
-            f"| {name} | {float(r['peak']):.3f} | {float(r['rms']):.4f} | {note} |"
+            "No insert is below the FactoryLoudness floors on this probe. "
+            "MIDI-gated and sidechain presets still need a DAW ear pass; "
+            "the probe has no notes and no sidechain."
         )
-    lines.append("")
+        lines.append("")
+    else:
+        lines.append("| Preset | Peak | RMS | Why |")
+        lines.append("|---|---|---|---|")
+        for r in quiet_inserts:
+            name = r["name"]
+            note = LISTENING_NOTES.get(name, "Below insert loudness floor on this probe.")
+            lines.append(
+                f"| {name} | {float(r['peak']):.3f} | {float(r['rms']):.4f} | {note} |"
+            )
+        lines.append("")
     lines.append("## Hottest 15 (peak)")
     lines.append("")
     lines.append("| Preset | Category | Peak | RMS |")

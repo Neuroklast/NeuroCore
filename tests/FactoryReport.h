@@ -29,7 +29,7 @@ inline int runFactoryReport (const char* outPath)
     nlohmann::json report;
     report["sampleRate"] = 48000;
     report["block"] = 512;
-    report["blocks"] = 40;
+    report["blocks"] = 56;
     report["count"] = (int) lib.getEntries().size();
     auto rows = nlohmann::json::array();
     int failures = 0;
@@ -56,7 +56,7 @@ inline int runFactoryReport (const char* outPath)
         juce::AudioBuffer<float> buf (2, 512);
         juce::MidiBuffer midi;
         uint32_t rng = 0xA341316Cu ^ (uint32_t) i;
-        for (int b = 0; b < 40; ++b)
+        for (int b = 0; b < 56; ++b)
         {
             for (int s = 0; s < 512; ++s)
             {
@@ -69,7 +69,7 @@ inline int runFactoryReport (const char* outPath)
                 buf.setSample (1, s, x * 0.92f);
             }
             proc.processBlock (buf, midi);
-            if (b < 16)
+            if (b < 32)
                 continue;
             for (int s = 0; s < 512; ++s)
             {

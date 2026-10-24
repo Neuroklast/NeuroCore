@@ -122,8 +122,9 @@ public:
             expect (e != nullptr);
             if (e != nullptr)
             {
-                const float open = runDuck (*e, false, 3200.f);
-                const float ducked = runDuck (*e, true, 3200.f);
+                const float open = runDuck (*e, false, 2000.f);
+                const float ducked = runDuck (*e, true, 2000.f);
+                expect (open > 0.02f, "open=" + juce::String (open, 4));
                 expect (ducked < open * 0.95f,
                         "duck=" + juce::String (ducked, 4) + " open=" + juce::String (open, 4));
             }

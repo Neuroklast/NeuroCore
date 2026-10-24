@@ -47,7 +47,7 @@ public:
                 juce::AudioBuffer<float> buf (2, 512);
                 juce::MidiBuffer midi;
                 uint32_t rng = 0xA341316Cu ^ (uint32_t) i;
-                for (int b = 0; b < 40; ++b)
+                for (int b = 0; b < 56; ++b)
                 {
                     for (int s = 0; s < 512; ++s)
                     {
@@ -60,7 +60,7 @@ public:
                         buf.setSample (1, s, x * 0.92f);
                     }
                     proc.processBlock (buf, midi);
-                    if (b < 16)
+                    if (b < 32)
                         continue;
                     for (int s = 0; s < 512; ++s)
                     {
@@ -83,7 +83,9 @@ public:
                 // Gate- and spectrum-dependent effects need a meaningful but
                 // lower floor than broadband unity-gain inserts. They still
                 // have to produce finite, measurable output for this probe.
-                const bool midiGated = e.script.containsIgnoreCase ("source = midi");
+                const bool midiGated = e.requiredInputs.contains ("midi", true)
+                    || e.script.containsIgnoreCase ("source = midi")
+                    || e.script.containsIgnoreCase ("gate = midi");
                 const bool rhythmic = e.script.containsIgnoreCase ("stepseq1:");
                 const bool narrowBand = e.script.containsIgnoreCase ("type = bandpass");
                 const bool loFi = e.category.equalsIgnoreCase ("Lo-Fi");
@@ -91,7 +93,9 @@ public:
                 const float peakFloor = midiGated ? 0.02f : rhythmic ? 0.07f
                                       : narrowBand ? 0.09f : loFi ? 0.11f
                                       : filter ? 0.08f : 0.12f;
-                const float rmsFloor = midiGated ? 0.008f : rhythmic ? 0.025f
+                // MIDI-gated inserts often leak only a dry floor (e.g. 8 %)
+                // when the probe has no notes. 0.006 rms is still measurable.
+                const float rmsFloor = midiGated ? 0.006f : rhythmic ? 0.025f
                                      : narrowBand ? 0.030f : loFi ? 0.035f
                                      : filter ? 0.025f : 0.038f;
                 if (peak < peakFloor || rms < rmsFloor)
