@@ -129,7 +129,7 @@ export function PackBuilder({ rows, selected, onSelected, onBack }: Props) {
               const id = rowKey(row);
               return <label key={id} className="flex items-center gap-2 text-[12px] py-1 cursor-pointer">
                 <input type="checkbox" checked={selectedKeys.has(id)}
-                  onChange={(e) => onSelected(selectPackPreset(selected, id, e.target.checked))}/>
+                  onChange={(e) => onSelected(selectPackPreset(included.map(rowKey), id, e.target.checked))}/>
                 <span className="truncate" title={row.name}>{row.name}</span>
                 <span className="text-muted ml-auto shrink-0">{row.category}</span>
               </label>;
@@ -144,12 +144,12 @@ export function PackBuilder({ rows, selected, onSelected, onBack }: Props) {
                 <span className="text-muted w-5">{index + 1}.</span>
                 <span className="flex-1 truncate" title={row.name}>{row.name}</span>
                 <button type="button" className="nk-clip" aria-label={"Move " + row.name + " up"}
-                  disabled={index === 0} onClick={() => onSelected(movePackPreset(selected, index, -1))}>↑</button>
+                  disabled={index === 0} onClick={() => onSelected(movePackPreset(included.map(rowKey), index, -1))}>↑</button>
                 <button type="button" className="nk-clip" aria-label={"Move " + row.name + " down"}
                   disabled={index === included.length - 1}
-                  onClick={() => onSelected(movePackPreset(selected, index, 1))}>↓</button>
+                  onClick={() => onSelected(movePackPreset(included.map(rowKey), index, 1))}>↓</button>
                 <button type="button" className="nk-clip" aria-label={"Remove " + row.name}
-                  onClick={() => onSelected(selectPackPreset(selected, key, false))}>×</button>
+                  onClick={() => onSelected(selectPackPreset(included.map(rowKey), key, false))}>×</button>
               </div>;
             })}
             {included.length === 0 && <p className="text-muted text-[12px]">Add presets above to build your pack.</p>}
