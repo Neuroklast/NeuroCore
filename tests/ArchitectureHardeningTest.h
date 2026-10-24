@@ -13,6 +13,10 @@
 #include "TestHelpers.h"
 #include <cmath>
 #include <vector>
+#if NK_ALLOCATION_PROBE
+extern "C" void nkBeginAllocationProbe();
+extern "C" unsigned nkEndAllocationProbe();
+#endif
 
 /** TDD contracts for non-UI architecture hardening (A1–A10). */
 class ArchitectureHardeningTest : public juce::UnitTest
@@ -333,6 +337,35 @@ public:
             chain.processBlock (buf);
             expectEquals ((int) ExpressionEvaluator::takeLockedEvaluateCalls(), 0,
                           "evaluate() lock+ADAA-reset is not the audio path");
+            expectEquals (TestHelpers::countNonFinite (buf), 0);
+        }
+
+        beginTest ("independent stage SIMD does not take the expression parse lock");
+        {
+            dsl::SignalChain chain;
+            juce::String err;
+            expect (chain.loadScript ("stage1: y = x * a", err), err);
+            chain.prepare ({ 48000.0, 64, 2 });
+            juce::AudioBuffer<float> warm (2, 64);
+            warm.clear();
+            chain.processBlock (warm);
+            ExpressionEvaluator::takeLockedEvaluateCalls();
+            juce::AudioBuffer<float> buf (2, 64);
+            for (int i = 0; i < 64; ++i)
+            {
+                buf.setSample (0, i, 0.25f);
+                buf.setSample (1, i, 0.25f);
+            }
+           #if NK_ALLOCATION_PROBE
+            nkBeginAllocationProbe();
+           #endif
+            chain.processBlock (buf);
+           #if NK_ALLOCATION_PROBE
+            expectEquals ((int) nkEndAllocationProbe(), 0,
+                          "stage SIMD must not copy std::function on the callback");
+           #endif
+            expectEquals ((int) ExpressionEvaluator::takeLockedEvaluateCalls(), 0,
+                          "stage SIMD must not take ExpressionEvaluator::lock");
             expectEquals (TestHelpers::countNonFinite (buf), 0);
         }
 

@@ -184,7 +184,7 @@ void MidiLearnManager::processMidiMessages (const juce::MidiBuffer& midiBuffer) 
         }
 
         if (auto* p = ccTarget[(size_t) cc].load (std::memory_order_acquire))
-            p->setValueNotifyingHost (static_cast<float> (value) / 127.0f);
+            p->setValue (static_cast<float> (value) / 127.0f);
     }
 }
 

@@ -2,7 +2,11 @@
 
 **Stand:** 2026-10-24 (0.7.2-beta)
 **Version:** 0.7.2-beta  
-**Branch:** `fix/atomic-host-state-restore`
+**Branch:** `fix/audio-thread-realtime`
+
+## Audio-thread realtime (2026-10-24)
+
+MIDI-learned CCs call `setValue` on the callback, not `setValueNotifyingHost` (no APVTS CriticalSection). Independent `stage` SIMD no longer takes `ExpressionEvaluator::lock` or copies `std::function`. Osc/Env size the control lane in `prepare` and never `resize` in render; Env taps/publish use the filled count, not `modLane.back()`. Native: ArchitectureHardening + MidiLearn + FxRuntimeTest 500 passed / 0 failed.
 
 ## Atomic host/preset restore (2026-10-24)
 
