@@ -169,7 +169,7 @@ end;
 
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
-  if CurStep = ssInstall then
+  if (CurStep = ssInstall) and WizardIsComponentSelected('vst3') then
     RemoveOldVersionedBundles;
 end;
 

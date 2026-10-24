@@ -2,7 +2,11 @@
 
 **Stand:** 2026-10-24 (0.7.2-beta)
 **Version:** 0.7.2-beta  
-**Branch:** `feat/factory-listening-report`
+**Branch:** `fix/release-gates-installer-sign`
+
+## Release gates (2026-10-24)
+
+Installer deletes leftover `NEUROKORE-*.vst3` only when the VST3 component is selected. `NEUROKORE_REQUIRE_SIGN=1` makes `sign_windows.ps1` fail instead of skipping. Gate sheet: `docs/RELEASE_GATES.md`. Alpha licenses stay ON for this beta. macOS/Linux packages, Authenticode/Developer ID, and real DAW sessions are not claimed. Python: `test_installer_vst3_cleanup` + `test_sign_windows`.
 
 ## Factory listening prep (2026-10-24)
 

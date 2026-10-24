@@ -2,6 +2,7 @@
 # Env (first match wins):
 #   NEUROKORE_SIGN_PFX + NEUROKORE_SIGN_PASSWORD  (PFX path)
 #   NEUROKORE_SIGN_THUMBPRINT                     (CurrentUser/My or LocalMachine/My)
+# Set NEUROKORE_REQUIRE_SIGN=1 to fail instead of skipping (sale channel).
 param(
     [Parameter(Mandatory = $true)][string]$Path
 )
@@ -18,6 +19,9 @@ $signtool = @(
     Select-Object -First 1 -ExpandProperty FullName
 
 if (-not $signtool) {
+    if ($env:NEUROKORE_REQUIRE_SIGN -eq "1") {
+        throw "signtool.exe not found - cannot sign $Path"
+    }
     Write-Host "signtool.exe not found - skip signing $Path"
     return
 }
@@ -33,6 +37,9 @@ if ($env:NEUROKORE_SIGN_PFX) {
 } elseif ($env:NEUROKORE_SIGN_THUMBPRINT) {
     $args += @("/sha1", $env:NEUROKORE_SIGN_THUMBPRINT, "/sm")
 } else {
+    if ($env:NEUROKORE_REQUIRE_SIGN -eq "1") {
+        throw "No NEUROKORE_SIGN_PFX or NEUROKORE_SIGN_THUMBPRINT - cannot sign $Path"
+    }
     Write-Host "No NEUROKORE_SIGN_PFX or NEUROKORE_SIGN_THUMBPRINT - skip signing $Path"
     return
 }
