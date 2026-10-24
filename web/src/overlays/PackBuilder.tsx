@@ -66,7 +66,7 @@ export function PackBuilder({ rows, selected, onSelected, onBack }: Props) {
       <header className="mb-3 flex items-start justify-between gap-3">
         <div>
           <div className="nk-archive-label">PRESET PACK BUILDER</div>
-          <p className="text-muted text-[12px] mt-1">Build a portable .nrkpack with metadata, checksums and an optional cover.</p>
+          <p className="text-muted text-[12px] mt-1">Create a shareable preset pack with a description and optional cover artwork.</p>
         </div>
         <button type="button" className="nk-clip" onClick={onBack}>Back to Library</button>
       </header>
@@ -87,10 +87,13 @@ export function PackBuilder({ rows, selected, onSelected, onBack }: Props) {
                 onChange={(e) => patch({ version: e.target.value })}/>
             </label>
           </div>
-          <label className="flex flex-col gap-1 text-[12px]">Pack ID (keep for future updates)
-            <input style={inputStyle} maxLength={128} value={draft.id} placeholder="pack.label.collection"
-              onChange={(e) => { setIdEdited(true); patch({ id: e.target.value }); }}/>
-          </label>
+          <details className="text-[12px]">
+            <summary className="cursor-pointer text-muted">Advanced pack identity</summary>
+            <label className="mt-2 flex flex-col gap-1">Pack ID (keep for future updates)
+              <input style={inputStyle} maxLength={128} value={draft.id} placeholder="pack.label.collection"
+                onChange={(e) => { setIdEdited(true); patch({ id: e.target.value }); }}/>
+            </label>
+          </details>
           <label className="flex flex-col gap-1 text-[12px]">Description
             <textarea style={{ ...inputStyle, minHeight: 68, resize: "vertical" }} maxLength={2000}
               value={draft.description} placeholder="Describe the sounds and their intended uses"
@@ -124,7 +127,7 @@ export function PackBuilder({ rows, selected, onSelected, onBack }: Props) {
           <input style={inputStyle} aria-label="Find presets for pack" placeholder="Search saved presets"
             value={search} onChange={(e) => setSearch(e.target.value)}/>
           <p className="text-muted text-[11px]">Factory sounds need Save As first. Select saved user or installed-pack presets.</p>
-          <div className="flex flex-col gap-1 overflow-y-auto" style={{ maxHeight: 150 }} aria-label="Exportable presets">
+          <div className="flex flex-col gap-1 overflow-y-auto" style={{ maxHeight: 220 }} aria-label="Exportable presets">
             {visible.map((row) => {
               const id = rowKey(row);
               return <label key={id} className="flex items-center gap-2 text-[12px] py-1 cursor-pointer">
@@ -137,7 +140,7 @@ export function PackBuilder({ rows, selected, onSelected, onBack }: Props) {
             {visible.length === 0 && <p className="text-muted text-[12px]">No exportable presets found.</p>}
           </div>
           <div className="nk-archive-label">03 / ORDER</div>
-          <div className="flex flex-col gap-1 overflow-y-auto" style={{ maxHeight: 160 }}>
+          <div className="flex flex-col gap-1 overflow-y-auto" style={{ maxHeight: 220 }}>
             {included.map((row, index) => {
               const key = rowKey(row);
               return <div key={key} className="flex items-center gap-1 text-[12px] p-1" style={{ background: "var(--nk-well)" }}>
@@ -179,7 +182,7 @@ export function PackBuilder({ rows, selected, onSelected, onBack }: Props) {
           {draft.website && <p className="text-muted mt-1">{draft.website}</p>}
           <ol className="mt-2 list-decimal pl-5">{included.map((row) =>
             <li key={rowKey(row)}>{row.name}</li>)}</ol>
-          <p className="text-muted mt-2">After export, NEUROKORE re-opens the archive to verify its content without installing it.</p>
+          <p className="text-muted mt-2">NEUROKORE checks the exported pack before you share it.</p>
         </div>
       )}
     </section>

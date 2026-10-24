@@ -49,7 +49,8 @@ export function InspectKnob({
   const live = useRef(0);
   const moveRef = useRef<((ev: globalThis.PointerEvent) => void) | null>(null);
   const upRef = useRef<((ev: globalThis.PointerEvent) => void) | null>(null);
-  const label = argKey.replace(/[_-]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  const label = chipSpec(nodeType).paramJackLabels[argKey]
+    ?? argKey.replace(/[_-]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
   const value = draft ?? current;
 
   const isNum = isLiteralNumber(value) && field.kind !== "enum";
@@ -98,9 +99,10 @@ export function InspectKnob({
       live.current = norm01;
       gesture.current = true;
       setDraft(value);
+      const logicalScale = el.offsetWidth > 0 ? el.getBoundingClientRect().width / el.offsetWidth : 1;
       const move = (ev: globalThis.PointerEvent) => {
         const fine = ev.shiftKey ? 0.25 : 1;
-        const next = Math.max(0, Math.min(1, start.current - (ev.clientY - e.clientY) / 140 * fine));
+        const next = Math.max(0, Math.min(1, start.current - (ev.clientY - e.clientY) / (140 * Math.max(0.01, logicalScale)) * fine));
         live.current = next;
         setDraft(String(snapInspectNumber(field.min + next * (field.max - field.min), field.min, field.max, field.integer)));
       };

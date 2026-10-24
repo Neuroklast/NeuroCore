@@ -6,8 +6,8 @@ import { useHostStore } from "../store/hostStore";
 
 const original = useHostStore.getState();
 const mounted: ReactTestRenderer[] = [];
-function show(standalone: boolean, playing = false, source = "input") {
-  act(() => useHostStore.setState({ standalone, transportPlaying: playing, auditionSource: source, bpm: 128 }));
+function show(standalone: boolean, playing = false, source = "input", ppq = 0) {
+  act(() => useHostStore.setState({ standalone, transportPlaying: playing, transportPpq: ppq, auditionSource: source, bpm: 128 }));
   let renderer!: ReactTestRenderer;
   act(() => { renderer = create(createElement(StandaloneTransportBar)); });
   mounted.push(renderer);
@@ -28,6 +28,10 @@ describe("standalone transport", () => {
     expect(root.findByProps({ "aria-label": "Play" }).props["aria-pressed"]).toBe(false);
     expect(root.findByProps({ "aria-label": "Standalone audio source" }).props.value).toBe("input");
     expect(root.findAllByType("button").some(b => b.children.includes("LOAD AUDIO…"))).toBe(true);
+  });
+  it("distinguishes paused playback from stopped playback", () => {
+    const root = show(true, false, "file", 12);
+    expect(root.findAllByType("span").some(span => span.children.includes("PAUSED"))).toBe(true);
   });
   it("reflects native playback state and opt-in test tone", () => {
     const root = show(true, true, "tone");

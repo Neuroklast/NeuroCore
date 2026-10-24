@@ -50,7 +50,7 @@ L / BOTH / R chooses which input side the sound hears. BOTH is the default. A de
 ## Playing
 
 Top bar
-- Mark left, then the preset name — click the name for the library. Untitled if nothing is loaded. `<` / `>` step through factory, then your sounds. Functions, Stages, Settings, Help, LIVE / STUDIO and Bypass sit on the right of this row.
+- Mark left, then the preset name — click the name for the library. Untitled if nothing is loaded. `<` / `>` step through factory, then your sounds. Functions, Stages, Settings, Help, LIVE / STUDIO and DRY sit on the right of this row.
 - The row under it is Unit / Circuit / Terminal, then A | B, A→B and MATCH on the right. Unit and Circuit crossfade. Unit still tears down its GPU view when you leave it. Circuit stays mounted. Motion Off cuts the fade.
 - Functions — look up formula words and insert them.
 - Stages — chain on the left, parameters of the selected block on the right. Arrow keys move the selection; Enter opens Inspect. The title X closes Inspect and every other overlay. Select an IR block to open that cabinet slot.
@@ -66,7 +66,7 @@ The **SOURCE** menu defaults to **Audio input**, preserving microphone/interface
 
 - Settings — motion, Live / Studio, theme (Signal, Gold, Azure, DIGICIDE), frame rate (30 or 60), unsaved prompt, tempo, standalone audio device, About, License, Help. These apply to every instance on this machine, including inserts whose window is closed, and are kept after you close the DAW in `%AppData%/NEUROKLAST/NeuroKore/ui.settings`. Window size, oversampling, Soft Clip, and Unit meter view (source, time/freq, linear/dB, grid, invert Y, delta) are stored there too. Mix, knobs, and the formula stay with the insert. A saved project cannot override OS, Soft Clip, or meters — AppData wins. Resize the window by dragging the frame; the next launch opens at that size. The UI scales with the display (4K / HiDPI): the frame and the web UI grow together. Live/Studio does not change the window size. Signal is crimson plus cyan. Gold is Cyberpunk 2077 yellow, sky, and teal. DIGICIDE is the industrial steel look; Unit then shows the Digicide mask instead of the Neurokore mark. Motion **Full** plays even if Windows animation effects are off. Off is always still.
 - LIVE / STUDIO — Live keeps delay low so playing feels immediate. Studio uses linear-phase oversampling for mix and master work (more delay; the host shows it as latency). Same switch lives in Settings. Changing it on one insert updates every other NEUROKORE on this machine. It does not resize the window.
-- Bypass — Mix to 0 (dry) and locks the Mix slider. Oversampling and the output clipper stop; delay stays the same as the host latency so the track does not jump. Turn Bypass off and the previous Mix comes back.
+- DRY — Temporarily sets Mix to 0% and locks the Mix slider. This is not the host/plugin bypass. Oversampling and the output clipper may stop, while host latency remains consistent. Turn DRY off to restore the previous Mix.
 - Help — this guide.
 
 Knobs
@@ -222,7 +222,7 @@ Status bar (left to right)
 
 If something is wrong
 - Terminal stuck on Loading: old build. This one uses the packaged editor.
-- No sound: Mix, Bypass, and SAFE. If SAFE, lower OS or simplify, then keep playing — it retries.
+- No sound: Mix, DRY, and SAFE. If SAFE, lower OS or simplify, then keep playing — it retries.
 - Sidechain silent: enable the extra input in the DAW, then cable IN **sc**.
 - Preset name has a star: you have unsaved edits. Save As... before you load another factory row.
 - Help search: type a word (license, save as, multiband, pitch, DEMO) to filter this guide.

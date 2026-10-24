@@ -1,4 +1,4 @@
-import { lazy, Suspense, useMemo, useRef } from "react";
+import { lazy, Suspense, useMemo } from "react";
 import { sourceForNode } from "../hack/dslSourceMap";
 import { applyPatchDraft, discardPatchDraft } from "../hack/terminalCompile";
 import { useAstStore } from "../store/astStore";
@@ -8,6 +8,7 @@ import { draftBanner, readPatchDocument } from "../store/patchWorkspace";
 import { useSourceInspectorStore } from "../store/sourceInspectorStore";
 import { useTelemetryStore } from "../store/telemetryStore";
 import { chipFootPeak } from "./chipFace";
+import { clientToPane } from "../theme/fit";
 import { nodeMeter } from "./nodeMeter";
 import type { InspectorDock } from "./sourceInspectorLayout";
 import { inspectorBox, inspectorHeightAt, inspectorWidthAt } from "./sourceInspectorLayout";
@@ -46,7 +47,6 @@ export function SourceInspector({
   const setDraftEditing = useAstStore((s) => s.setDraftEditing);
   const setDraftScript = useAstStore((s) => s.setDraftScript);
   const box = inspectorBox(dock, paneW, paneH, width, height);
-  const paneOrigin = useRef({ left: 0, top: 0 });
   const node = ast?.nodes.find((n) => n.id === primaryId) ?? null;
   const shownScript = editing ? script : (lastValid || script);
   const source = useMemo(
@@ -91,7 +91,6 @@ export function SourceInspector({
           if (! r) {
             return;
           }
-          paneOrigin.current = { left: r.left, top: r.top };
           e.currentTarget.setPointerCapture(e.pointerId);
           e.preventDefault();
           e.stopPropagation();
@@ -100,8 +99,9 @@ export function SourceInspector({
           if (! e.currentTarget.hasPointerCapture(e.pointerId)) {
             return;
           }
-          const x = e.clientX - paneOrigin.current.left;
-          const y = e.clientY - paneOrigin.current.top;
+          const paneEl = (e.currentTarget as HTMLElement).closest(".nk-circuit-workspace") as HTMLElement | null;
+          if (!paneEl) return;
+          const { x, y } = clientToPane(paneEl, e.clientX, e.clientY);
           if (dock === "bottom") {
             setHeight(inspectorHeightAt(paneH, y));
             return;

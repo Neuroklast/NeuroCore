@@ -65,6 +65,8 @@ export function StepSeqEditor({ nodeId, args }: { nodeId: string; args: Record<s
           {liveStep >= 0 ? `Step ${liveStep + 1} / ${count}` : `Stopped · ${count}`}
         </span>
       </div>
+      <div className="overflow-x-auto" aria-label="Step sequence steps">
+        <div style={{ minWidth: Math.max(320, count * 26) }}>
       <div
         ref={plotRef}
         className="relative h-24 border-y border-[var(--nk-line)] bg-black/40"
@@ -123,12 +125,14 @@ export function StepSeqEditor({ nodeId, args }: { nodeId: string; args: Record<s
             data-mute-step={i}
             aria-label={`Mute step ${i + 1}`}
             aria-pressed={muted}
-            className={`min-h-[18px] border text-[7px] leading-none ${muted ? "border-[var(--nk-accent)] text-[var(--nk-accent)]" : "border-[var(--nk-line)] text-muted"}`}
+            className={`min-h-[26px] border text-[11px] leading-none ${muted ? "border-[var(--nk-accent)] text-[var(--nk-accent)]" : "border-[var(--nk-line)] text-muted"}`}
             onClick={() => toggleMute(i)}
           >
             {muted ? "M" : "·"}
           </button>
         ))}
+      </div>
+        </div>
       </div>
     </section>
   );

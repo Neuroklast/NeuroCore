@@ -113,7 +113,7 @@ export function Toolbar() {
             type="button"
             className={`${headerClipClass("bypass")} ${bypassed ? "on" : ""}`}
             aria-pressed={bypassed}
-            data-tip="Mix to 0 (dry). Not a DSP bypass."
+            data-tip="Dry-only monitoring: mix to 0%. This is not host/plugin bypass." aria-label="Toggle dry-only monitoring"
             onClick={() => {
               const value = useHostStore.getState().toggleBypass();
               if (hasJuceBridge()) {
@@ -121,7 +121,7 @@ export function Toolbar() {
               }
             }}
           >
-            BYPASS
+            DRY
           </button>
         </div>
       </div>
@@ -298,7 +298,7 @@ export function Footer() {
       <span>SR {footerSr(sr)}</span>
       <span>BUF {footerBuf(buf)}</span>
       <span>BPM {bpm.toFixed(1)}</span>
-      <span>{tempoSource}</span>
+      <span>{tempoSource === "HOST" ? "Host tempo" : tempoSource === "USER" ? "Manual tempo" : "Tempo unavailable"}</span>
       <span>OS {osFactor}x</span>
       <span className="text-right">{footerLicenseLabel(licensed, demoRemainSec)}</span>
     </footer>
