@@ -2,11 +2,11 @@
 
 **Stand:** 2026-10-24 (0.7.2-beta)
 **Version:** 0.7.2-beta  
-**Branch:** `fix/vst3-moduleinfo-cid`
+**Branch:** `fix/ci-moduleinfo-cid-contract`
 
 ## VST3 moduleinfo CID vs factory (2026-10-24)
 
-`moduleinfo.json` CID is Steinberg `UID::toString` (`ABCDEF019182FAEB…`), matching JUCE/pluginval uniqueId `18b17b0d`. Raw Windows TUID hex (`01EFCDAB…`) made pluginval scan then fail Open plugin. Factory TUIDs unchanged. Writer, CMake, and `package_windows.ps1` refuse `--endian` / `01EFCDAB…` on every build. pluginval 1.0.4 on the official 0.7.2-beta bundle after the full Windows package rebuild: strictness 5 SUCCESS (3 repeats) and strictness 10 SUCCESS (uniqueId `18b17b0d`, fuzz/thread-safety included). Vitest versionLock CID contract green.
+`moduleinfo.json` CID is Steinberg `UID::toString` (`ABCDEF019182FAEB…`), matching JUCE/pluginval uniqueId `18b17b0d`. Raw Windows TUID hex (`01EFCDAB…`) made pluginval scan then fail Open plugin. Factory TUIDs unchanged. Writer, CMake, and `package_windows.ps1` refuse `--endian` / `01EFCDAB…` on every build. pluginval 1.0.4 on the official 0.7.2-beta bundle after the full Windows package rebuild: strictness 5 SUCCESS (3 repeats) and strictness 10 SUCCESS (uniqueId `18b17b0d`, fuzz/thread-safety included). Vitest versionLock CID contract runs the writer into a temp file (Linux CI: `Resources/moduleinfo.json` is not `resources/moduleinfo.json`).
 
 ## Factory curation own name (2026-10-24)
 

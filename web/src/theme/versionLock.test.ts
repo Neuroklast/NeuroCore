@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -63,13 +64,28 @@ describe("product version is one string", () => {
     // convertJucePluginId Windows TUID hex is 01EFCDAB…; Steinberg/JUCE parse
     // moduleinfo CID with UID::fromString (COM on Windows). Canonical word hex
     // round-trips to the factory TUID. Raw TUID hex does not.
-    const json = readFileSync(join(root, "resources/moduleinfo.json"), "utf8");
-    expect(json).toContain('"CID": "ABCDEF019182FAEB4E524B4C4E524B4F"');
-    expect(json).toContain('"CID": "ABCDEF011234ABCD4E524B4C4E524B4F"');
-    expect(json).toContain('"CID": "ABCDEF01C0DEF00D4E524B4C4E524B4F"');
-    expect(json).not.toContain("01EFCDAB8291EBFA");
-    expect(json).not.toContain("01EFCDAB3412CDAB");
-    expect(json).not.toContain("01EFCDABDEC00DF0");
+    // Linux CI has Resources/ and resources/ as distinct dirs; generate into
+    // a temp file instead of reading a checkout copy.
+    const writer = join(root, "scripts/write_vst3_moduleinfo.mjs");
+    const tmpDir = mkdtempSync(join(tmpdir(), "nk-moduleinfo-"));
+    try {
+      const out = join(tmpDir, "moduleinfo.json");
+      const ok = spawnSync(
+        process.execPath,
+        [writer, "--out", out, "--version", nk.version],
+        { encoding: "utf8" },
+      );
+      expect(ok.status, ok.stderr + ok.stdout).toBe(0);
+      const json = readFileSync(out, "utf8");
+      expect(json).toContain('"CID": "ABCDEF019182FAEB4E524B4C4E524B4F"');
+      expect(json).toContain('"CID": "ABCDEF011234ABCD4E524B4C4E524B4F"');
+      expect(json).toContain('"CID": "ABCDEF01C0DEF00D4E524B4C4E524B4F"');
+      expect(json).not.toContain("01EFCDAB8291EBFA");
+      expect(json).not.toContain("01EFCDAB3412CDAB");
+      expect(json).not.toContain("01EFCDABDEC00DF0");
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
   });
 
   it("every build path refuses Windows TUID hex for moduleinfo CID", () => {
@@ -85,29 +101,19 @@ describe("product version is one string", () => {
     expect(pack).toContain("01EFCDAB");
 
     const writer = join(root, "scripts/write_vst3_moduleinfo.mjs");
-    const tmpDir = join(root, "build", "validation");
-    mkdirSync(tmpDir, { recursive: true });
-    const endianOut = join(tmpDir, "moduleinfo-endian-reject.json");
-    const endian = spawnSync(
-      process.execPath,
-      [writer, "--endian", "windows", "--out", endianOut],
-      { encoding: "utf8" },
-    );
-    expect(endian.status).not.toBe(0);
-    expect(`${endian.stderr}${endian.stdout}`).toMatch(/endian|UID::toString/i);
-
-    const okOut = join(tmpDir, "moduleinfo-cid-ok.json");
-    const ok = spawnSync(
-      process.execPath,
-      [writer, "--out", okOut, "--version", nk.version],
-      { encoding: "utf8" },
-    );
-    expect(ok.status, ok.stderr + ok.stdout).toBe(0);
-    const written = readFileSync(okOut, "utf8");
-    expect(written).toContain('"CID": "ABCDEF019182FAEB4E524B4C4E524B4F"');
-    expect(written).toContain('"CID": "ABCDEF011234ABCD4E524B4C4E524B4F"');
-    expect(written).toContain('"CID": "ABCDEF01C0DEF00D4E524B4C4E524B4F"');
-    expect(written).not.toContain("01EFCDAB");
+    const tmpDir = mkdtempSync(join(tmpdir(), "nk-moduleinfo-endian-"));
+    try {
+      const endianOut = join(tmpDir, "moduleinfo-endian-reject.json");
+      const endian = spawnSync(
+        process.execPath,
+        [writer, "--endian", "windows", "--out", endianOut],
+        { encoding: "utf8" },
+      );
+      expect(endian.status).not.toBe(0);
+      expect(`${endian.stderr}${endian.stdout}`).toMatch(/endian|UID::toString/i);
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
   });
 
   it("Windows release syncs the living manual and packages every time", () => {
