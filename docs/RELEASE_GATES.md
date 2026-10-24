@@ -1,6 +1,6 @@
-# 0.7.2-beta release gates
+# 0.8.0-beta release gates
 
-Honest status for the remaining Bestandsprüfung items. Version stays **0.7.2-beta**. This is not a 1.0 claim.
+Honest status for the remaining Bestandsprüfung items. Version is **0.8.0-beta**. This is not a 1.0 claim.
 
 ## Licensing
 

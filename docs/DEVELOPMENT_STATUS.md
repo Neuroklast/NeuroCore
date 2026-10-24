@@ -1,8 +1,12 @@
 # Entwicklungsstand NEUROKORE
 
-**Stand:** 2026-10-24 (0.7.2-beta)
-**Version:** 0.7.2-beta  
-**Branch:** `fix/factory-sc-midi-probe`
+**Stand:** 2026-10-24 (0.8.0-beta)
+**Version:** 0.8.0-beta  
+**Branch:** `feat/v0.8.0-beta`
+
+## 0.8.0-beta (2026-10-24)
+
+Product label is 0.8.0-beta (numeric 0.8.0). VST3 class IDs unchanged. Canonical sources: CMake `NEUROKORE_VERSION_LABEL`/`NUMERIC`, `PLUGIN_VERSION`, `nk.version`, Inno, operator manual, AGENTS.md, web package.json. Living docs synced from `docs/manual/NEUROKORE.md`. Local Windows Release 2026-10-24: `NEUROKORE-0.8.0-beta-Setup.exe` SHA256 `d315afaeb1bf3dc89eaf760ea31fc828efbe64a0cc4ff64e56202c64ea7ddae9` (unsigned), plus win64 zip. Alpha licenses stay ON. This is not a 1.0 claim.
 
 ## Factory SC/MIDI probe honesty (2026-10-24)
 
