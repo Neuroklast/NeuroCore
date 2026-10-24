@@ -124,7 +124,7 @@ public:
                         {
                             const int src = juce::jmin (ch, channels - 1);
                             const float* samples = active->data.getReadPointer (src);
-                            input.setSample (ch, i, 0.5f * ((1.f - frac) * samples[a] + frac * samples[b]));
+                            input.setSample (ch, i, (1.f - frac) * samples[a] + frac * samples[b]);
                         }
                     }
                     fileCursor = firstPos + (double) count * increment;
