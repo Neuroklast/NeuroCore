@@ -449,9 +449,14 @@ void NeuroKoreAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         buffer.clear();
         return;
     }
-    if (buffer.getNumSamples() == 0 || getTotalNumInputChannels() == 0) return;
+    // Standalone may legitimately have zero *hardware* inputs while playing a
+    // loaded file or test tone. Still process the output bus in that case.
+    if (buffer.getNumSamples() == 0 || (! isStandalone() && getTotalNumInputChannels() == 0))
+        return;
 
-    auto main = getBusCount (true) > 0 ? getBusBuffer (buffer, true, 0) : buffer;
+    auto main = getTotalNumInputChannels() > 0 && getBusCount (true) > 0
+        ? getBusBuffer (buffer, true, 0)
+        : (getBusCount (false) > 0 ? getBusBuffer (buffer, false, 0) : buffer);
     const auto standaloneClock = isStandalone()
         ? standaloneTransport.beginBlock (main, getSampleRate(), getEffectiveBpm())
         : StandaloneTransport::Snapshot {};
