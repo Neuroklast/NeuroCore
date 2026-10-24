@@ -1,6 +1,7 @@
 #include "PresetPack.h"
 #include "PresetIdentity.h"
 #include "PresetLibrary.h"
+#include "PresetManager.h"
 #include "../core/Config.h"
 #include "../third_party/nlohmann/json.hpp"
 #include <cstring>
@@ -891,22 +892,48 @@ bool PresetPack::exportNrkpack (const std::vector<juce::File>& nrkFiles,
     presetDir.createDirectory();
 
     juce::ZipFile::Builder builder;
+    juce::StringArray usedFiles;
     for (const auto& f : nrkFiles)
     {
         if (! PresetLibrary::isNrkFile (f))
             continue;
-        const auto name = f.getFileName();
+        PresetManager::Info info;
+        PresetManager::readInfo (f, info);
+        auto stem = PresetIdentity::slug (info.id.isNotEmpty() ? info.id : f.getFileNameWithoutExtension());
+        if (stem.isEmpty())
+            stem = "preset";
+        auto name = stem + Config::kPresetFileExtension;
+        int n = 2;
+        while (usedFiles.contains (name))
+            name = stem + "-" + juce::String (n++) + Config::kPresetFileExtension;
+        usedFiles.add (name);
+
         const auto copied = presetDir.getChildFile (name);
+        if (copied.existsAsFile())
+        {
+            error = "Duplicate archive path " + name;
+            tmp.deleteRecursively();
+            return false;
+        }
         if (! f.copyFileTo (copied))
         {
-            error = "Could not stage " + name;
+            error = "Could not stage " + f.getFileName();
             tmp.deleteRecursively();
             return false;
         }
         PackPresetRef ref;
-        ref.id = f.getFileNameWithoutExtension();
+        ref.id = info.id.isNotEmpty() ? info.id : f.getFileNameWithoutExtension();
         ref.file = "presets/" + name;
+        ref.category = info.category;
+        ref.tags = info.tags;
+        ref.requiredInputs = info.requiredInputs;
         ref.sha256 = PresetIdentity::fileSha256 (copied);
+        if (! zipPathSafe (ref.file))
+        {
+            error = "Illegal preset path " + ref.file;
+            tmp.deleteRecursively();
+            return false;
+        }
         manifest.presets.push_back (ref);
         builder.addFile (copied, 9, ref.file);
     }
