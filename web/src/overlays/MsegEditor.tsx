@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { setCircuitArgs } from "../assemble/addBlock";
-import { deleteMsegPoint, formatMsegPoints, insertMsegPoint, moveMsegPoint, msegPath, readMsegPoints, type MsegPoint } from "../assemble/msegModel";
+import { deleteMsegPoint, formatMsegPoints, insertMsegPoint, moveMsegPoint, msegEditorPath, msegEditorPointer, msegEditorPosition, readMsegPoints, type MsegPoint, type MsegEditorSize } from "../assemble/msegModel";
 
 type Bounds = {loopstart:number;loopend:number;sustain:number};
 export function MsegEditor({nodeId,args}:{nodeId:string;args:Record<string,string>}) {
@@ -10,6 +10,23 @@ export function MsegEditor({nodeId,args}:{nodeId:string;args:Record<string,strin
   const bounds=useRef<Bounds>({loopstart:0,loopend:points.length-1,sustain:-1});
   const drag=useRef<{index:number;before:MsegPoint[]}|null>(null);
   const svg=useRef<SVGSVGElement>(null);
+  const [plotSize,setPlotSize]=useState<MsegEditorSize>({width:600,height:180});
+  useLayoutEffect(()=>{
+    const element=svg.current;
+    if(!element)return;
+    const update=(width:number,height:number)=>{
+      if(width<=0||height<=0)return;
+      const next={width:Math.round(width),height:Math.round(height)};
+      setPlotSize(prev=>prev.width===next.width&&prev.height===next.height?prev:next);
+    };
+    update(element.clientWidth,element.clientHeight);
+    const observer=new ResizeObserver(entries=>{
+      const rect=entries[0]?.contentRect;
+      if(rect)update(rect.width,rect.height);
+    });
+    observer.observe(element);
+    return ()=>observer.disconnect();
+  },[]);
   useEffect(()=>{
     const next=readMsegPoints(args.points);
     current.current=next;setPoints(next);setSelected(i=>Math.min(i,next.length-1));
@@ -43,7 +60,7 @@ export function MsegEditor({nodeId,args}:{nodeId:string;args:Record<string,strin
       <span>MSEG · {points.length}/64 points</span>
       <button type="button" className="min-h-[28px] px-2" disabled={points.length>=64} onClick={()=>commit(insertMsegPoint(current.current))}>Add point</button>
     </div>
-    <svg ref={svg} viewBox="-6 -6 112 52" preserveAspectRatio="none" width="100%" height="140"
+    <svg ref={svg} viewBox={`0 0 ${plotSize.width} ${plotSize.height}`} preserveAspectRatio="xMidYMid meet" width="100%" height="180"
       style={{touchAction:"none"}} aria-label="MSEG point editor"
       onPointerDown={e=>{
         const hit=(e.target as Element).closest("[data-mseg-point]");
@@ -53,9 +70,7 @@ export function MsegEditor({nodeId,args}:{nodeId:string;args:Record<string,strin
       }}
       onPointerMove={e=>{
         if(!drag.current)return;
-        const rect=e.currentTarget.getBoundingClientRect();
-        const time=((e.clientX-rect.left)/rect.width*112-6)/100;
-        const value=1-((e.clientY-rect.top)/rect.height*52-6)/20;
+        const {time,value}=msegEditorPointer(e.clientX,e.clientY,e.currentTarget.getBoundingClientRect(),plotSize);
         const next=moveMsegPoint(current.current,drag.current.index,time,value);
         current.current=next;setPoints(next);
       }}
@@ -68,8 +83,8 @@ export function MsegEditor({nodeId,args}:{nodeId:string;args:Record<string,strin
       onPointerCancel={cancel}
       onLostPointerCapture={cancel}
       onKeyDown={e=>{if(e.key==="Escape"){e.preventDefault();cancel();}}}>
-      <path d="M0 20 H100" stroke="var(--nk-line)" fill="none"/>
-      <path d={msegPath(points)} stroke="var(--nk-accent)" fill="none" strokeWidth="0.7"/>
+      <path d={`M${msegEditorPosition(0,0,plotSize).x} ${msegEditorPosition(0,0,plotSize).y} H${msegEditorPosition(1,0,plotSize).x}`} stroke="var(--nk-line)" fill="none" strokeWidth="1.5"/>
+      <path d={msegEditorPath(points,plotSize)} stroke="var(--nk-accent)" fill="none" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round"/>
       {points.map((p,i)=><g key={i} data-mseg-point={i} tabIndex={0} role="button" aria-label={`Point ${i+1}`}
         onFocus={()=>setSelected(i)}
         onKeyDown={e=>{
@@ -78,8 +93,9 @@ export function MsegEditor({nodeId,args}:{nodeId:string;args:Record<string,strin
           const dy=e.key==="ArrowDown"?-0.05:e.key==="ArrowUp"?0.05:0;
           if(dx||dy){e.preventDefault();commit(moveMsegPoint(current.current,i,p.time+dx,p.value+dy));}
         }}>
-        <circle cx={p.time*100} cy={(1-p.value)*20} r="5.5" fill="transparent"/>
-        <circle cx={p.time*100} cy={(1-p.value)*20} r={i===selected?1.7:1.2} fill="var(--nk-accent)" pointerEvents="none"/>
+        <circle cx={msegEditorPosition(p.time,p.value,plotSize).x} cy={msegEditorPosition(p.time,p.value,plotSize).y} r="12" fill="transparent"/>
+        <circle cx={msegEditorPosition(p.time,p.value,plotSize).x} cy={msegEditorPosition(p.time,p.value,plotSize).y}
+          r={i===selected?5:4} fill="var(--nk-accent)" stroke="var(--nk-well)" strokeWidth="1" pointerEvents="none"/>
       </g>)}
     </svg>
     <div className="flex flex-wrap items-center gap-2">
