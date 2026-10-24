@@ -897,13 +897,16 @@ struct WebViewHolder::Impl : private juce::Timer,
         const bool preset = kind.equalsIgnoreCase ("preset");
         const bool exportPreset = kind.equalsIgnoreCase ("exportPreset");
         const bool exportPack = kind.equalsIgnoreCase ("exportPack");
+        const bool packArtwork = kind.equalsIgnoreCase ("packArtwork");
         const char* title = lic ? "Install license"
             : exportPreset ? "Export preset"
             : exportPack ? "Export pack"
+            : packArtwork ? "Choose pack cover"
             : preset ? "Import preset" : "Load IR";
         const char* filter = lic ? "*.lic"
             : exportPreset ? "*.nrk"
             : exportPack ? "*.nrkpack"
+            : packArtwork ? "*.png;*.jpg;*.jpeg"
             : preset ? "*.nrk;*.zip;*.nrkpack" : "*.wav;*.aif;*.aiff;*.flac";
         fileChooser = std::make_unique<juce::FileChooser> (title, juce::File(), filter);
         int flags = juce::FileBrowserComponent::canSelectFiles;
@@ -912,12 +915,40 @@ struct WebViewHolder::Impl : private juce::Timer,
         else
             flags |= juce::FileBrowserComponent::openMode
                    | juce::FileBrowserComponent::canSelectMultipleItems;
-        fileChooser->launchAsync (flags, [this, lic, preset, exportPreset, exportPack, slot, extra] (const juce::FileChooser& fc)
+        fileChooser->launchAsync (flags, [this, lic, preset, exportPreset, exportPack, packArtwork, slot, extra] (const juce::FileChooser& fc)
         {
             const auto f = fc.getResult();
             if (f == juce::File())
+            {
+                if (exportPack && browser != nullptr)
+                {
+                    auto* event = new juce::DynamicObject();
+                    event->setProperty ("ok", false);
+                    event->setProperty ("error", "Export cancelled");
+                    browser->emitEventIfBrowserIsVisible ("presetPackExportResult", juce::var (event));
+                }
                 return;
-            if (lic)
+            }
+            if (packArtwork)
+            {
+                auto* event = new juce::DynamicObject();
+                const auto ext = f.getFileExtension().toLowerCase();
+                const bool valid = f.existsAsFile() && f.getSize() > 0
+                    && f.getSize() <= 5ll * 1024 * 1024
+                    && (ext == ".png" || ext == ".jpg" || ext == ".jpeg")
+                    && juce::ImageFileFormat::loadFrom (f).isValid();
+                event->setProperty ("ok", valid);
+                if (valid)
+                {
+                    event->setProperty ("path", f.getFullPathName());
+                    event->setProperty ("name", f.getFileName());
+                }
+                else
+                    event->setProperty ("error", "Choose a valid PNG or JPEG cover under 5 MB");
+                if (browser != nullptr)
+                    browser->emitEventIfBrowserIsVisible ("packArtworkSelected", juce::var (event));
+            }
+            else if (lic)
             {
                 if (f.existsAsFile())
                     proc.importProductLicense (f);
@@ -935,7 +966,7 @@ struct WebViewHolder::Impl : private juce::Timer,
                 const auto raw = extra.getProperty ("presetIds", juce::var());
                 if (raw.isArray())
                     for (int i = 0; i < raw.size(); ++i)
-                        ids.add (raw[i].toString());
+                        ids.addIfNotAlreadyThere (raw[i].toString());
                 if (proc.presetLibraryDirty)
                 {
                     proc.presetLibrary.rebuild (proc.presetManager, FactoryPresetLibrary::getInstance(),
@@ -943,20 +974,56 @@ struct WebViewHolder::Impl : private juce::Timer,
                     proc.presetLibraryDirty = false;
                 }
                 std::vector<juce::File> files;
-                for (const auto& id : ids)
-                    if (auto* e = proc.presetLibrary.findById (id))
-                        if (e->filePath.isNotEmpty())
-                            files.push_back (juce::File (e->filePath));
-                PackManifest m;
-                m.name = extra.getProperty ("name", "Pack").toString();
-                m.author = extra.getProperty ("author", "").toString();
                 juce::String err;
-                if (! PresetPack::exportNrkpack (files, f, m, err) && browser != nullptr)
+                for (const auto& id : ids)
                 {
-                    auto* o = new juce::DynamicObject();
-                    o->setProperty ("ok", false);
-                    o->setProperty ("error", err.isNotEmpty() ? err : juce::String ("Could not export pack"));
-                    browser->emitEventIfBrowserIsVisible ("presetLibraryResult", juce::var (o));
+                    const auto* entry = proc.presetLibrary.findById (id);
+                    if (entry == nullptr || entry->filePath.isEmpty()
+                        || ! PresetLibrary::isNrkFile (juce::File (entry->filePath)))
+                    {
+                        err = "Preset no longer available for export: " + id;
+                        break;
+                    }
+                    files.emplace_back (entry->filePath);
+                }
+
+                PackManifest m;
+                m.id = extra.getProperty ("id", "").toString().trim();
+                m.name = extra.getProperty ("name", "Pack").toString().trim();
+                m.author = extra.getProperty ("author", "").toString().trim();
+                m.version = extra.getProperty ("version", "1.0.0").toString().trim();
+                m.description = extra.getProperty ("description", "").toString().trim();
+                m.website = extra.getProperty ("website", "").toString().trim();
+                const auto artworkPath = extra.getProperty ("artworkSource", "").toString();
+                if (artworkPath.isNotEmpty())
+                    m.artworkSource = juce::File (artworkPath);
+                auto file = f;
+                if (! file.hasFileExtension (PresetPack::kPackExtension) && ! file.hasFileExtension (".zip"))
+                    file = file.withFileExtension (PresetPack::kPackExtension);
+                bool ok = err.isEmpty() && files.size() == (size_t) ids.size()
+                    && PresetPack::exportNrkpack (files, file, m, err);
+                if (ok)
+                {
+                    // Verify the actual archive without installing or replacing an existing pack.
+                    const auto check = PresetPack::analyzeArchive (file);
+                    ok = check.error.isEmpty() && check.presetCount == (int) files.size()
+                         && check.manifest.name == m.name && check.manifest.version == m.version
+                         && check.manifest.author == m.author && check.manifest.description == m.description
+                         && check.manifest.website == m.website
+                         && (artworkPath.isEmpty() || (check.manifest.artwork.isNotEmpty()
+                             && check.manifest.artworkSha256.isNotEmpty()));
+                    if (! ok)
+                        err = check.error.isNotEmpty() ? check.error : juce::String ("Pack round-trip verification failed");
+                }
+                if (browser != nullptr)
+                {
+                    auto* event = new juce::DynamicObject();
+                    event->setProperty ("ok", ok);
+                    event->setProperty ("count", ok ? (int) files.size() : 0);
+                    event->setProperty ("path", file.getFullPathName());
+                    if (! ok)
+                        event->setProperty ("error", err.isNotEmpty() ? err : juce::String ("Could not export pack"));
+                    browser->emitEventIfBrowserIsVisible ("presetPackExportResult", juce::var (event));
                 }
             }
             else if (preset)
